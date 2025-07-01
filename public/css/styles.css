@@ -1,0 +1,24 @@
+h1 {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.container h1 {
+  text-align: left;
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 24px;
+  color: #0056b3;
+  font-weight: bold;
+}
+
+button[onclick="processDataX()"] {
+  background-color: #ffc117;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}

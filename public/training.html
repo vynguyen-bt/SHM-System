@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
+        .filter-container input {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .filter-container button {
+            padding: 8px 16px;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Xử lý dữ liệu huấn luyện</h1>
+
+    <!-- Tải dữ liệu từ các tệp CSV -->
+    <div class="filter-container">
+        <label for="csvFileInput">Tải nhiều tệp CSV từ Robot Structural Analysis:</label>
+        <input type="file" id="csvFileInput" accept=".csv" multiple />
+    </div>
+
+    <!-- Nhập nút phần tử và mode khảo sát -->
+    <div class="filter-container">
+        <label for="nodeInput">Nhập nút phần tử:</label>
+        <input type="text" id="nodeInput" placeholder="Enter Node values (e.g., 995, 954)" />
+    </div>
+
+    <div class="filter-container">
+        <label for="modeInput">Nhập Mode khảo sát:</label>
+        <input type="number" id="modeInput" placeholder="Enter Mode" />
+    </div>
+
+    <!-- Nút để tính toán -->
+    <div class="filter-container">
+        <button onclick="sortAndFilterDataForAllCSV()">Tính toán cho tất cả CSV</button>
+    </div>
+
+    <!-- Nút để xuất dữ liệu CSV -->
+    <button onclick="exportData()">Export Data</button>
+
+    <script>
+        const csvDataArr = [];
+        const filteredDataArr = [];
+
+        // Handle CSV file input
+        document.getElementById('csvFileInput').addEventListener('change', function (event) {
+            const files = event.target.files;
+            csvDataArr.length = 0;  // Clear previous data
+
+            // Đọc và xử lý từng tệp CSV
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const text = e.target.result;
+                    const data = parseCSV(text); // Parse CSV
+                    csvDataArr.push(data); // Thêm dữ liệu vào mảng
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Hàm parse CSV
+        function parseCSV(text) {
+            const rows = text.split('\n');
+            const data = [];
+
+            rows.forEach((row, rowIndex) => {
+                if (row.trim() === "" || rowIndex === 0) return; // Skip empty rows and header row
+
+                const cols = row.split(',');
+                const nodeCaseMode = cols[0].split('/');
+                const node = nodeCaseMode[0].trim();
+                const caseValue = nodeCaseMode[1].trim();
+                const mode = nodeCaseMode[2].trim();
+                const frequency = cols[1].trim();
+                const eigenvector = cols[2].trim();
+
+                data.push({ node, case: caseValue, mode, frequency, eigenvector });
+            });
+
+            return data;
+        }
+
+        // Hàm xử lý và lọc dữ liệu cho tất cả các CSV
+        function sortAndFilterData(dataArr, filteredDataArr) {
+            const nodeValue = document.getElementById('nodeInput').value.trim();
+            let sortedData = [...dataArr];
+
+            if (nodeValue !== '') {
+                const nodeOrder = nodeValue.split(',').map(item => item.trim());
+
+                sortedData = sortedData.sort((a, b) => {
+                    const indexA = nodeOrder.indexOf(a.node.toString());
+                    const indexB = nodeOrder.indexOf(b.node.toString());
+                    return indexA - indexB;
+                });
+            }
+
+            const modeValue = document.getElementById('modeInput').value.trim();
+            if (modeValue !== '') {
+                sortedData = sortedData.filter(item => item.mode === modeValue);
+            }
+
+            filteredDataArr.length = 0;
+            filteredDataArr.push(...sortedData);
+        }
+
+        // Chức năng tính toán cho tất cả các CSV
+        function sortAndFilterDataForAllCSV() {
+            filteredDataArr.length = 0;  // Clear previous filtered data
+
+            if (csvDataArr.length === 0) {
+                console.error('No CSV data loaded');
+                return;
+            }
+
+            // File đầu tiên làm tham chiếu
+            const referenceData = csvDataArr[0];
+
+            // Duyệt qua từng tệp CSV
+            csvDataArr.forEach((dataArr, index) => {
+                const filteredData = [];
+                sortAndFilterData(dataArr, filteredData);  // Lọc dữ liệu
+
+                // Đồng bộ dấu với file tham chiếu
+                if (index > 0) { // Không cần đồng bộ chính file tham chiếu
+                    syncSigns(referenceData, filteredData);  // Đồng bộ dấu nếu không phải là file đầu tiên
+                }
+
+                // Thêm dữ liệu đã lọc và đồng bộ dấu vào mảng kết quả
+                filteredDataArr.push(...filteredData);
+            });
+
+            console.log('Filtered and Synced Data:', filteredDataArr); // Kiểm tra dữ liệu đã lọc và đồng bộ
+        }
+
+        // Hàm export dữ liệu
+        function exportData() {
+            let allData = [];
+
+            // Lọc và sắp xếp dữ liệu theo yêu cầu
+            csvDataArr.forEach((dataArr) => {
+                const filteredData = [];
+                sortAndFilterData(dataArr, filteredData);  // Lọc dữ liệu
+
+                const eigenvectorValues = filteredData.map(item => item.eigenvector);  // Lấy giá trị eigenvector
+                allData.push(eigenvectorValues);  // Thêm vào mảng dữ liệu
+            });
+
+            // Sắp xếp dữ liệu theo hàng ngang
+            let rows = [];
+            allData.forEach(dataArr => {
+                rows.push(dataArr.join(','));  // Join các giá trị eigenvector
+            });
+
+            // Kết hợp thành chuỗi CSV
+            const csvContent = rows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'filtered_results.csv';  // Tên tệp CSV xuất
+            link.click();
+        }
+    </script>
+</body>
+
+</html>

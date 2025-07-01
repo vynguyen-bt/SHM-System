@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SHM - BIM</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.0.0"></script>
+  </head>
+  <body>
+    <h1>HỆ THỐNG CHẨN ĐOÁN HƯ HỎNG KẾT CẤU - SHM</h1>
+    <div class="main-part">
+      <button onclick="switchToPartB1()" class="button-open">
+        0. Mô phỏng phần tử hư hỏng
+      </button>
+      <div class="body-part">
+        <div id="partB1">
+          <div class="container">
+            <h1>0. Mô phỏng phần tử hư hỏng</h1>
+            <label for="txt-file-delta-x" style="display: none"
+              >Tải tệp thông tin phần tử (TXT file):</label
+            >
+            <input
+              type="file"
+              id="txt-file-delta-x"
+              accept=".txt"
+              onchange="readDeltaX()"
+              style="display: none"
+            />
+            <label for="folder-input"
+              ><strong>Tải thư mục dữ liệu:</strong></label
+            >
+            <input
+              type="file"
+              id="folder-input"
+              webkitdirectory
+              directory
+              multiple
+            />
+            <label for="survey-index"
+              ><strong>Nhập phần tử mô phỏng 1:</strong></label
+            >
+            <input type="number" id="survey-index" min="1" />
+            <label for="damage-value"
+              ><strong>Nhập mức độ hư hỏng 1 (%):</strong></label
+            >
+            <input type="number" id="damage-value" min="0" />
+            <label for="survey-index2"
+              ><strong>Nhập phần tử mô phỏng 2:</strong></label
+            >
+            <input type="number" id="survey-index2" min="1" />
+            <label for="damage-value2"
+              ><strong>Nhập mức độ hư hỏng 2 (%):</strong></label
+            >
+            <input type="number" id="damage-value2" min="0" />
+            <button onclick="exportValue()">Xuất dữ liệu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="main-part">
+      <button onclick="switchToPartA()" class="button-open">
+        1. Chẩn đoán vị trí hư hỏng kết cấu
+      </button>
+      <div class="body-part">
+        <div id="partA">
+          <div class="container">
+            <h1>1. Chẩn đoán vị trí hư hỏng kết cấu</h1>
+            <label for="txt-file-non-damaged" style="display: none"
+              >Tải dữ liệu dạng dao động (Không hư hỏng, TXT file):</label
+            >
+            <input
+              type="file"
+              id="txt-file-non-damaged"
+              accept=".txt"
+              style="display: none"
+            />
+            <label for="txt-file-damaged" style="display: none"
+              >Tải dữ liệu dạng dao động (Hư hỏng, TXT file):</label
+            >
+            <input
+              type="file"
+              id="txt-file-damaged"
+              accept=".txt"
+              style="display: none"
+            />
+            <h2>Thông số chẩn đoán</h2>
+            <label for="mode-number"
+              ><strong>Nhập Mode khảo sát:</strong></label
+            >
+            <input type="number" id="mode-number" value="1" step="1" min="1" />
+            <label for="curvature-multiplier"
+              ><strong>Nhập ngưỡng hư hỏng (%):</strong></label
+            >
+            <input
+              type="number"
+              id="curvature-multiplier"
+              value="50"
+              step="any"
+              min="0"
+              max="1"
+            />
+            <label for="element-y"
+              ><strong>Nhập phần tử khảo sát 1:</strong></label
+            >
+            <input type="number" id="element-y" value="5" step="any" min="1" />
+            <label for="element-y-2"
+              ><strong>Nhập phần tử khảo sát 2:</strong></label
+            >
+            <input type="number" id="element-y-2" value="" step="any" min="1" />
+            <br />
+            <div id="input-container" style="display: none">
+              <label for="train-value">Giá trị huấn luyện đầu tiên:</label>
+              <input type="number" id="train-value" value="0" step="0.1" />
+              <label for="step-value">Bước nhảy:</label>
+              <input type="number" id="step-value" value="5" step="0.1" />
+            </div>
+            <button onclick="processData()">Tính toán kết quả</button>
+            <h2>Kết quả đồ thị hiệu độ cong dạng dao động</h2>
+            <canvas id="curvatureChart"></canvas>
+            <div id="results"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="main-part">
+      <button
+        onclick="switchToPartB(); processFilestrain(); processFileTest();"
+        class="button-open"
+      >
+        2. Chẩn đoán mức độ hư hỏng kết cấu
+      </button>
+      <div class="body-part">
+        <div id="partB" class="body-part">
+          <div class="container">
+            <h1>2. Chẩn đoán mức độ hư hỏng - ANNs</h1>
+            <div class="form-group">
+              <label for="trainFile" style="display: none"
+                >Tải dữ liệu huấn luyện (.csv):</label
+              >
+              <input
+                type="file"
+                id="trainFile"
+                class="form-control"
+                accept=".csv"
+                style="display: none"
+              />
+            </div>
+            <div class="form-group">
+              <label for="testFile" style="display: none"
+                >Tải dữ liệu chẩn đoán (.csv):</label
+              >
+              <input
+                type="file"
+                id="testFile"
+                class="form-control"
+                accept=".csv"
+                style="display: none"
+              />
+            </div>
+            <input
+              type="file"
+              id="fileInputTest"
+              accept=".txt"
+              style="display: none"
+            />
+            <button
+              class="btn btn-primary"
+              id="trainButton"
+              onclick="trainModel()"
+              style="display: none"
+            >
+              Huấn luyện dữ liệu
+            </button>
+            <button
+              class="btn btn-success"
+              id="predictButton"
+              onclick="predict()"
+              style="display: none"
+            >
+              Dự đoán mức độ hư hỏng
+            </button>
+            <button class="btn btn-info" onclick="trainAndPredict()">
+              Dự đoán mức độ hư hỏng
+            </button>
+            <div class="progress mt-3" id="progressBar" style="display: none">
+              <div
+                class="progress-bar progress-bar-striped progress-bar-animated"
+                role="progressbar"
+                style="width: 0%"
+                id="progress"
+              ></div>
+            </div>
+            <table
+              class="table table-bordered mt-4"
+              id="resultsTable"
+              style="display: none"
+            >
+              <thead>
+                <tr>
+                  <th>Phần tử 1</th>
+                  <th>Phần tử 2</th>
+                  <th>Phần tử 3</th>
+                  <th>Phần tử 4</th>
+                  <th>Phần tử 5</th>
+                  <th>Phần tử 6</th>
+                  <th>Phần tử 7</th>
+                  <th>Phần tử 8</th>
+                  <th>Phần tử 9</th>
+                  <th>Phần tử 10</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+            <div class="chart-container">
+              <canvas id="predictionChart"></canvas>
+            </div>
+            <div id="lowValuesList" hidden>
+              <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
+              <ul id="lowValues"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="main-part">
+      <button onclick="switchToPartB3();processDataX();" class="button-open">
+        3. Cải thiện kết quả chẩn đoán bước 1
+      </button>
+      <div class="body-part">
+        <div id="partB3" class="body-part">
+          <div class="container">
+            <h1>3. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán</h1>
+            <button
+              onclick="processDataX()"
+              style="visibility: hidden; position: absolute"
+            >
+              Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
+            </button>
+            <div id="resultsX"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="js/switch.js"></script>
+    <script src="js/fileHandling.js"></script>
+    <script src="js/chartProcessing.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/trainPredict.js"></script>
+    <script src="js/TestShm.js"></script>
+  </body>
+</html>

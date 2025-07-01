@@ -1,0 +1,1346 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SHM - BIM</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/main.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.0.0"></script>
+
+</head>
+
+<body>
+    <h1 style="font-size: 36px; font-weight: bold;">HỆ THỐNG CHẨN ĐOÁN HƯ HỎNG KẾT CẤU - SHM</h1>
+    <div class="main-part">
+        <button onclick="switchToPartB1()" class="button-open">
+            0. Mô phỏng phần tử hư hỏng
+        </button>
+        <div class="body-part">
+            <div id="partB1">
+                <div class="container">
+                    <h1 style="text-align: left; font-size: 30px;">0. Mô phỏng phần tử hư hỏng</h1>
+                    <!-- Phần này bị ẩn đi -->
+                    <label for="txt-file-delta-x" style="display: none;">Tải tệp thông tin phần tử (TXT file):</label>
+                    <input type="file" id="txt-file-delta-x" accept=".txt" onchange="readDeltaX()"
+                        style="display: none;" />
+                    <label for="folder-input"><strong>Tải thư mục dữ liệu:</strong></label>
+                    <input type="file" id="folder-input" webkitdirectory directory mul tiple>
+                    <label for="survey-index"><strong>Nhập phần tử mô phỏng 1:</strong></label>
+                    <input type="number" id="survey-index" min="1">
+                    <label for="damage-value"><strong>Nhập mức độ hư hỏng 1 (%):</strong></label>
+                    <input type="number" id="damage-value" min="0">
+                    <label for="survey-index2"><strong>Nhập phần tử mô phỏng 2:</strong></label>
+                    <input type="number" id="survey-index2" min="1">
+                    <label for="damage-value2"><strong>Nhập mức độ hư hỏng 2 (%):</strong></label>
+                    <input type="number" id="damage-value2" min="0">
+                    <button onclick="exportValue()">Xuất dữ liệu</button>
+                    <script>
+                        // Biến toàn cục để lưu dữ liệu
+                        let dataLines = [];
+
+                        // Xử lý khi đọc Folder
+                        document.getElementById('folder-input').addEventListener('change', function (event) {
+                            const files = event.target.files;
+                            let fileMap = {};
+
+                            for (let file of files) {
+                                fileMap[file.name] = file;
+                            }
+
+                            let missingFiles = [];
+
+                            if (fileMap['SElement.txt']) {
+                                loadFile(fileMap['SElement.txt'], 'txt-file-delta-x'); // Sử dụng loadFile tương tự như trong readDeltaX
+                            } else {
+                                missingFiles.push('SElement.txt');
+                            }
+
+                            if (fileMap['Healthy.txt']) {
+                                loadFile(fileMap['Healthy.txt'], 'txt-file-non-damaged');
+                            } else {
+                                missingFiles.push('Healthy.txt');
+                            }
+
+                            if (fileMap['Damage.txt']) {
+                                loadFile(fileMap['Damage.txt'], 'txt-file-damaged');
+                            } else {
+                                missingFiles.push('Damage.txt');
+                            }
+                            if (fileMap['TEST.txt']) {
+                                loadFile(fileMap['TEST.txt'], 'fileInputTest');
+                            } else {
+                                missingFiles.push('TEST.txt');
+                            }
+                            if (fileMap['TRAIN.csv']) {
+                                loadFile(fileMap['TRAIN.csv'], 'trainFile');
+                            } else {
+                                missingFiles.push('TRAIN.csv');
+                            }
+                            if (fileMap['TEST.csv']) {
+                                loadFile(fileMap['TEST.csv'], 'testFile');
+                            } else {
+                                missingFiles.push('TEST.csv');
+                            }
+                            // Load tất cả file TRAIN.txt có trong thư mục
+                            let trainFiles = Object.keys(fileMap).filter(name => /TRAIN\d+\.txt$/i.test(name));
+                            if (trainFiles.length === 0) {
+                                missingFiles.push('TRAIN.txt files');
+                            } else {
+                                loadTrainFiles(trainFiles);
+                            }
+
+                            // if (missingFiles.length > 0) {
+                            //     alert("Không tìm thấy các tệp: " + missingFiles.join(", "));
+                            // }
+                            // if (missingFiles.length > 0) {
+                            //     alert("Không tìm thấy các tệp: " + missingFiles.join(", "));
+                            // }
+                        });
+
+                        function loadFile(file, inputId) {
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const input = document.getElementById(inputId);
+                                if (!input) {
+                                    alert("Lỗi: Không tìm thấy phần tử đầu vào cho " + inputId);
+                                    return;
+                                }
+                                const dataTransfer = new DataTransfer();
+                                const newFile = new File([file], file.name, { type: file.type });
+                                dataTransfer.items.add(newFile);
+                                input.files = dataTransfer.files;
+
+                                // Gọi hàm xử lý dữ liệu từ file (giống như trong readDeltaX)
+                                if (inputId === 'txt-file-delta-x') {
+                                    readDeltaX();
+                                    readDeltaX2();
+                                }
+                            };
+                            reader.onerror = function () {
+                                alert("Lỗi khi đọc tệp " + file.name);
+                            };
+                            reader.readAsText(file);
+                        }
+
+                        // Đọc tệp A.txt và lưu dữ liệu vào dataLines
+                        function readDeltaX2() {
+                            const inputFile = document.getElementById('txt-file-delta-x');
+                            const file = inputFile.files[0]; // Lấy tệp đã được chọn
+                            if (!file) {
+                                alert("Vui lòng chọn tệp để đọc!");
+                                return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const fileContent = event.target.result;
+                                console.log("Nội dung file SElement.txt:", fileContent);
+
+                                dataLines = fileContent.split("\n")
+                                    .map(line => line.trim().split(/\s+/)) // Phân tách theo khoảng trắng
+                                    .filter(line => line.length >= 4) // Đảm bảo có ít nhất 4 phần tử
+                                    .map(line => {
+                                        line[3] = line[3].replace(',', '.');
+                                        return line;
+                                    });
+
+                                console.log("Dữ liệu đã được xử lý:", dataLines);
+                                console.log("Số dòng trong dataLines:", dataLines.length);
+                            };
+                            reader.onerror = function () {
+                                alert("Lỗi khi đọc tệp SElement.txt");
+                            };
+                            reader.readAsText(file);
+                        }
+
+                        // Hàm xuất dữ liệu
+                        function exportValue() {
+                            const index1 = parseInt(document.getElementById('survey-index').value);
+                            const damageValue1 = document.getElementById('damage-value').value;
+                            const index2 = parseInt(document.getElementById('survey-index2').value);
+                            const damageValue2 = document.getElementById('damage-value2').value;
+
+                            console.log("Index nhập vào 1:", index1);
+                            console.log("Số lượng phần tử trong dataLines:", dataLines.length);
+                            console.log("Giá trị damageValue 1:", damageValue1);
+
+                            // Kiểm tra dữ liệu đầu vào cho phần tử 1
+                            if (isNaN(index1)) {
+                                alert("Phần tử khảo sát 1 không hợp lệ! Giá trị nhập vào không phải số.");
+                                return;
+                            }
+                            if (index1 < 1 || index1 > dataLines.length) {
+                                alert(`Phần tử khảo sát 1 phải nằm trong khoảng 1 đến ${dataLines.length}`);
+                                return;
+                            }
+                            if (damageValue1 === "" || isNaN(damageValue1) || damageValue1 < 0 || damageValue1 > 100) {
+                                alert("Vui lòng nhập mức độ hư hỏng hợp lệ cho phần tử 1 (từ 0 đến 100)!");
+                                return;
+                            }
+
+                            // Khởi tạo nội dung file
+                            let value = `${dataLines[index1 - 1][0]} ${damageValue1}`;
+
+                            // Nếu người dùng nhập phần tử 2, kiểm tra và thêm vào file
+                            if (!isNaN(index2) && index2 >= 1 && index2 <= dataLines.length &&
+                                damageValue2 !== "" && !isNaN(damageValue2) && damageValue2 >= 0 && damageValue2 <= 100) {
+                                value += ` ${dataLines[index2 - 1][0]} ${damageValue2}`;
+                            }
+
+                            // Xuất dữ liệu dưới dạng .txt
+                            const blob = new Blob([value], { type: 'text/plain' });
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(blob);
+                            link.download = 'Simulation.txt';
+                            link.click();
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-part">
+        <button onclick="switchToPartA()" class="button-open">
+            1. Chẩn đoán vị trí hư hỏng kết cấu
+        </button>
+        <div class="body-part">
+            <div id="partA">
+                <div class="container">
+                    <h1 style="text-align: left; font-size: 30px;">1. Chẩn đoán vị trí hư hỏng kết cấu</h1>
+                    <!-- Ẩn 2 ô load File txt -->
+                    <label for="txt-file-non-damaged" style="display: none;">Tải dữ liệu dạng dao động (Không hư hỏng,
+                        TXT file):</label>
+                    <input type="file" id="txt-file-non-damaged" accept=".txt" style="display: none;" />
+                    <label for="txt-file-damaged" style="display: none;">Tải dữ liệu dạng dao động (Hư hỏng, TXT
+                        file):</label>
+                    <input type="file" id="txt-file-damaged" accept=".txt" style="display: none;" />
+                    <h2 style="font-size: 24px; color: #0056b3; font-weight: bold;">Thông số chẩn đoán</h2>
+                    <label for="mode-number"><strong>Nhập Mode khảo sát:</strong></label>
+                    <input type="number" id="mode-number" value="1" step="1" min="1">
+                    <label for="curvature-multiplier"><strong>Nhập ngưỡng hư hỏng (%):</strong></label>
+                    <input type="number" id="curvature-multiplier" value="50" step="any" min="0" max="1">
+                    <label for="element-y"><strong>Nhập phần tử khảo sát 1:</strong></label>
+                    <input type="number" id="element-y" value="5" step="any" min="1">
+                    <label for="element-y-2"><strong>Nhập phần tử khảo sát 2:</strong></label>
+                    <input type="number" id="element-y-2" value="" step="any" min="1">
+                    <br>
+                    <div id="input-container" style="display: none;">
+                        <label for="train-value">Giá trị huấn luyện đầu tiên:</label>
+                        <input type="number" id="train-value" value="0" step="0.1">
+
+                        <label for="step-value">Bước nhảy:</label>
+                        <input type="number" id="step-value" value="5" step="0.1">
+                    </div>
+                    <button onclick="processData()">Tính toán kết quả</button>
+                    <!-- <button onclick="calculateAllIndexes()">Tính toàn chỉ số đánh giá hư hỏng</button> -->
+                    <br>
+                    <h2 style="font-size: 24px; color: #0056b3; font-weight: bold;">Kết quả đồ thị hiệu độ cong
+                        dạng dao
+                        động
+                    </h2>
+                    <canvas id="curvatureChart"></canvas>
+                    <div id="results"></div>
+                    <script>
+                        let curvaturesDifference = [];
+                        let deltaX, maxCurvature;
+                        let projectionLengths = [];
+
+                        function readDeltaX() {
+                            const fileInput = document.getElementById('txt-file-delta-x');
+
+                            if (!fileInput.files[0]) {
+                                alert("Vui lòng tải lên tệp TXT chứa chiều dài phần tử!");
+                                return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const lines = event.target.result.trim().split("\n");
+                                if (lines.length > 0) {
+                                    const lastColumnValue = lines[0].trim().split(/\s+/).pop();
+                                    deltaX = parseFloat(lastColumnValue.replace(",", "."));
+                                }
+                            };
+                            reader.readAsText(fileInput.files[0]);
+                        }
+
+
+                        document.getElementById('txt-file-delta-x').addEventListener('change', function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                dataLines = e.target.result.trim().split("\n").map(line => line.trim().split(/\s+/));
+                            };
+                            reader.readAsText(file);
+                        });
+
+                        let chartInstance = null;  // Biến toàn cục để lưu đối tượng biểu đồ
+                        // Phần nút bấm Tính toán
+                        function processData() {
+                            const fileInputNonDamaged = document.getElementById('txt-file-non-damaged');
+                            const fileInputDamaged = document.getElementById('txt-file-damaged');
+                            const modeNumberInput = document.getElementById('mode-number');
+                            const resultsDiv = document.getElementById('results');
+
+                            const modeNumber = parseInt(modeNumberInput.value);
+                            const deltaX2 = deltaX * deltaX;
+
+                            if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+                                alert("Vui lòng tải lên cả hai tệp TXT (Không hư hỏng và Hư hỏng)!");
+                                return;
+                            }
+
+                            const fileNonDamaged = fileInputNonDamaged.files[0];
+                            const fileDamaged = fileInputDamaged.files[0];
+
+                            function readFile(file, callback) {
+                                const reader = new FileReader();
+                                reader.onload = function (event) {
+                                    const lines = event.target.result.trim().split("\n");
+                                    const data = [];
+                                    for (let i = 1; i < lines.length; i++) {
+                                        const parts = lines[i].trim().split(/\s+/);
+                                        if (parts.length === 3) {
+                                            const mode = parseInt(parts[1]);
+                                            const eigenValue = parseFloat(parts[2].replace(",", "."));
+                                            if (mode === modeNumber) {
+                                                data.push(eigenValue);
+                                            }
+                                        }
+                                    }
+                                    callback(data);
+                                };
+                                reader.readAsText(file);
+                            }
+
+                            // Đọc dữ liệu từ tệp không hư hỏng
+                            readFile(fileNonDamaged, function (modeShapeNonDamaged) {
+                                const normNonDamaged = Math.sqrt(modeShapeNonDamaged.reduce((sum, value) => sum + value * value, 0));
+                                const normalizedModeShapeNonDamaged = modeShapeNonDamaged.map(value => value / normNonDamaged);
+
+                                // Đọc dữ liệu từ tệp hư hỏng
+                                readFile(fileDamaged, function (modeShapeDamaged) {
+                                    const normDamaged = Math.sqrt(modeShapeDamaged.reduce((sum, value) => sum + value * value, 0));
+                                    const normalizedModeShapeDamaged = modeShapeDamaged.map(value => value / normDamaged);
+
+                                    // Đồng bộ dấu giữa hai bộ dữ liệu
+                                    for (let i = 0; i < normalizedModeShapeDamaged.length; i++) {
+                                        if (Math.sign(normalizedModeShapeDamaged[i]) !== Math.sign(normalizedModeShapeNonDamaged[i])) {
+                                            normalizedModeShapeDamaged[i] *= -1;
+                                        }
+                                    }
+                                    let curvaturesNonDamaged = [];
+                                    let curvaturesDamaged = [];
+                                    curvaturesDifference = [];
+
+                                    // Tính toán độ cong cho từng phần tử
+                                    for (let i = 0; i < normalizedModeShapeNonDamaged.length; i++) {
+                                        let u_0_non = i === 0 ? normalizedModeShapeNonDamaged[1] : normalizedModeShapeNonDamaged[i - 1];
+                                        let u_1_non = normalizedModeShapeNonDamaged[i];
+                                        let u_2_non = i === normalizedModeShapeNonDamaged.length - 1 ? normalizedModeShapeNonDamaged[i - 1] : normalizedModeShapeNonDamaged[i + 1];
+                                        let u_0_dam = i === 0 ? normalizedModeShapeDamaged[1] : normalizedModeShapeDamaged[i - 1];
+                                        let u_1_dam = normalizedModeShapeDamaged[i];
+                                        let u_2_dam = i === normalizedModeShapeDamaged.length - 1 ? normalizedModeShapeDamaged[i - 1] : normalizedModeShapeDamaged[i + 1];
+                                        let k_i_non = (u_2_non - 2 * u_1_non + u_0_non) / deltaX2;
+                                        curvaturesNonDamaged.push(k_i_non);
+                                        let k_i_dam = (u_2_dam - 2 * u_1_dam + u_0_dam) / deltaX2;
+                                        curvaturesDamaged.push(k_i_dam);
+                                        let curvatureDifference = Math.abs(k_i_dam - k_i_non);
+                                        curvaturesDifference.push(curvatureDifference);
+                                    }
+
+                                    // Tìm giá trị lớn nhất của độ cong chênh lệch
+                                    maxCurvature = Math.max(...curvaturesDifference);
+
+                                    // Xóa biểu đồ cũ nếu đã tồn tại
+                                    if (chartInstance) {
+                                        chartInstance.destroy();
+                                    }
+
+                                    // Tạo biểu đồ mới
+                                    const xLabels = Array.from({ length: curvaturesDifference.length }, (_, i) => (i * deltaX).toFixed(2));
+                                    var ctx = document.getElementById('curvatureChart').getContext('2d');
+                                    chartInstance = new Chart(ctx, {
+                                        type: 'line',
+                                        data: {
+                                            labels: xLabels,
+                                            datasets: [{
+                                                label: 'Z(i)',
+                                                data: curvaturesDifference,
+                                                borderColor: 'rgba(61, 133, 204,1)',
+                                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                                fill: false,
+                                                tension: 0.4
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            scales: {
+                                                x: {
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Chiều dài dầm (m)',
+                                                        font: {
+                                                            family: 'Times New Roman', // Đặt font Times New Roman
+                                                            size: 17, // Kích thước chữ trục hoành
+                                                            weight: 'normal'
+                                                        },
+                                                        color: 'black' // Chỉnh màu chữ thành đen
+                                                    },
+                                                    ticks: {
+                                                        font: {
+                                                            family: 'Times New Roman', // Font chữ cho nhãn trục
+                                                            size: 16,
+                                                            weight: 'normal'
+                                                        },
+                                                        color: 'black' // Chỉnh màu chữ thành đen
+                                                    }
+                                                },
+                                                y: {
+                                                    title: {
+                                                        display: true,
+                                                        text: 'Z(i)',
+                                                        font: {
+                                                            size: 17, // Kích thước chữ trục tung
+                                                            weight: 'normal'
+                                                        },
+                                                        color: 'black' // Chỉnh màu chữ thành đen
+                                                    },
+                                                    ticks: {
+                                                        font: {
+                                                            size: 16 // Kích thước chữ các nhãn trục tung
+                                                        },
+                                                        color: 'black' // Chỉnh màu chữ thành đen
+                                                    },
+                                                    beginAtZero: true
+                                                }
+                                            },
+                                            plugins: {
+                                                annotation: {
+                                                    annotations: {
+                                                        ...[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7].reduce((annotations, multiplier, index) => {
+                                                            const yValue = multiplier * maxCurvature;
+                                                            const colors = [
+                                                                'rgba(75, 192, 192, 1)',   // Màu teal
+                                                                'rgba(255, 159, 64, 1)',    // Màu cam
+                                                                'rgba(153, 102, 255, 1)',   // Màu tím
+                                                                'rgba(255, 99, 132, 1)',    // Màu đỏ
+                                                                'rgba(54, 162, 235, 1)',    // Màu xanh dương
+                                                                'rgba(255, 205, 86, 1)',    // Màu vàng
+                                                                'rgba(153, 204, 255, 1)'    // Màu xanh nhạt
+                                                            ];
+                                                            annotations[`line-${multiplier}`] = {
+                                                                type: 'line',
+                                                                yMin: yValue,
+                                                                yMax: yValue,
+                                                                borderColor: colors[index],
+                                                                borderWidth: 2,
+                                                                borderDash: [5, 5],
+                                                                label: {
+                                                                    content: `${(multiplier * 100).toFixed(0)}% Zmax`,
+                                                                    enabled: true,
+                                                                    position: 'top',  // Vị trí nhãn là 'top'
+                                                                    font: {
+                                                                        size: 18, // Tăng kích thước font
+                                                                        weight: 'bold'
+                                                                    },
+                                                                    backgroundColor: colors[index], // Màu nền của nhãn
+                                                                    color: 'white', // Màu chữ của nhãn
+                                                                    padding: { top: 5, left: 10, right: 10, bottom: 5 }, // Khoảng cách trong nhãn
+                                                                    xAdjust: 360, // Điều chỉnh vị trí x của nhãn (chuyển vị trí ra xa bên phải)
+                                                                    yAdjust: -20, // Điều chỉnh vị trí y của nhãn
+                                                                }
+                                                            };
+                                                            return annotations;
+                                                        }, {})
+                                                    }
+                                                }
+                                            },
+                                            layout: {
+                                                padding: {
+                                                    right: 140 // Thêm khoảng cách ở phía phải biểu đồ để tránh bị cắt nhãn
+                                                }
+                                            }
+                                        }
+                                    });
+
+                                    // Gọi hàm calculateAllIndexes sau khi quá trình xử lý hoàn tất
+                                    calculateAllIndexes();
+                                });
+                            });
+                        }
+
+                        // Định nghĩa hàm calculateAllIndexes để thực thi bất kỳ tính toán nào bạn muốn thực hiện.
+                        function calculateAllIndexes() {
+                            // Thêm mã xử lý cần thiết cho hàm này
+                            console.log('Tính toán tất cả chỉ số đã hoàn tất');
+                        }
+
+                        // // Xử lý sự kiện khi bấm nút "Xóa biểu đồ"
+                        // document.getElementById('clearChartBtn').addEventListener('click', function () {
+                        //     if (chartInstance) {
+                        //         chartInstance.destroy();
+                        //         chartInstance = null; // Reset biến
+                        //     }
+                        //     document.getElementById('curvatureChart').style.display = 'none'; // Ẩn canvas
+                        // });
+
+                        // Xử lý nút tính toán chỉ số hư hỏng
+                        function calculateAllIndexes() {
+                            calculateProjectionLength();
+                            calculateIndexB().then(() => {
+                                calculateIndexC(); // Chỉ gọi calculateIndexC khi calculateIndexB hoàn tất
+                            }).catch((error) => {
+                                console.error(error);
+                            });
+                        }
+
+                        function calculateProjectionLength() {
+                            const curvatureMultiplier = parseFloat(document.getElementById('curvature-multiplier').value) / 100;
+                            const curvatureLevel = curvatureMultiplier * maxCurvature;
+                            const resultsDiv = document.getElementById('results');
+
+                            // Xóa các kết quả cũ
+                            resultsDiv.innerHTML = `
+<strong style="font-size: 24px; color: #0056b3;">Kết quả chỉ số đánh giá độ chính xác chẩn đoán</strong>
+<div style="margin-top: 20px;"></div>
+`;
+                            // Tính chiều dài projection cho mỗi đoạn
+                            projectionLengths = [];
+                            let totalDamagedLength = 0;
+                            for (let i = 0; i < curvaturesDifference.length - 1; i++) {
+                                let projectionLength = 0;
+                                for (let j = 1; j < curvaturesDifference.length; j++) {
+                                    let xPrev = (j - 1) * deltaX;
+                                    let xCurrent = j * deltaX;
+
+                                    if (xPrev >= (i * deltaX) && xCurrent <= ((i + 1) * deltaX)) {
+                                        let yPrev = curvaturesDifference[j - 1];
+                                        let yCurrent = curvaturesDifference[j];
+
+                                        if ((yPrev >= curvatureLevel && yCurrent >= curvatureLevel)) {
+                                            projectionLength += (xCurrent - xPrev);
+                                        } else if ((yPrev >= curvatureLevel && yCurrent < curvatureLevel) ||
+                                            (yPrev < curvatureLevel && yCurrent >= curvatureLevel)) {
+                                            let xIntersection = xPrev + (curvatureLevel - yPrev) * (xCurrent - xPrev) / (yCurrent - yPrev);
+                                            if (yPrev >= curvatureLevel) {
+                                                projectionLength += (xIntersection - xPrev);
+                                            } else {
+                                                projectionLength += (xCurrent - xIntersection);
+                                            }
+                                        }
+                                    }
+                                }
+                                projectionLengths.push(projectionLength);
+                                totalDamagedLength += projectionLength;
+                            }
+
+                            // Tính chỉ số A và A2
+                            const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                            const elementY2 = document.getElementById('element-y-2').value ? parseInt(document.getElementById('element-y-2').value) - 1 : null;
+                            let indexA1 = null;
+                            if (projectionLengths[elementY] !== undefined) {
+                                const elementYLength = projectionLengths[elementY];
+                                indexA1 = (elementYLength / deltaX) * 100;
+                            }
+                            let indexA2 = null;
+                            if (elementY2 !== null && projectionLengths[elementY2] !== undefined) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                indexA2 = (elementY2Length / deltaX) * 100;
+                            }
+
+                            let avgIndexA = null;
+                            if (indexA1 !== null && indexA2 !== null) {
+                                avgIndexA = (indexA1 + indexA2) / 2;
+                            }
+
+                            // Hiển thị chỉ số A
+                            if (avgIndexA !== null) {
+                                resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${avgIndexA.toFixed(2)}%<div style="margin-top: 10px;"></div>`;
+                            } else {
+                                if (indexA1 !== null) {
+                                    resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${indexA1.toFixed(2)}%<div style="margin-top: 10px;"></div>`;
+                                }
+                                if (indexA2 !== null) {
+                                    resultsDiv.innerHTML += `<strong>Chỉ số A 2:</strong> ${indexA2.toFixed(2)}%<br>`;
+                                }
+                            }
+                        }
+
+                        function calculateIndexB() {
+                            return new Promise((resolve, reject) => {
+                                const resultsDiv = document.getElementById('results');
+                                const fileInputDeltaX = document.getElementById('txt-file-delta-x');
+
+                                if (!fileInputDeltaX.files[0]) {
+                                    alert("Vui lòng tải lên tệp TXT chứa chiều dài phần tử!");
+                                    reject("Tệp không được tải lên");
+                                    return;
+                                }
+
+                                const reader = new FileReader();
+                                reader.onload = function (event) {
+                                    const lines = event.target.result.trim().split("\n");
+                                    if (lines.length > 0) {
+                                        const lastColumnValue = lines[0].trim().split(/\s+/).pop();
+                                        const deltaX = parseFloat(lastColumnValue.replace(",", "."));
+
+                                        const totalElementLength = projectionLengths.length * deltaX;
+                                        const totalDamagedLength = projectionLengths.reduce((sum, length) => sum + length, 0);
+                                        const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                                        const elementYLength = projectionLengths[elementY];
+                                        const elementY2Input = document.getElementById('element-y-2').value;
+
+                                        let indexB;
+                                        if (elementY2Input) {
+                                            const elementY2 = parseInt(elementY2Input) - 1;
+                                            const elementY2Length = projectionLengths[elementY2];
+
+                                            const k1 = totalElementLength - totalDamagedLength - deltaX * 2 + elementYLength + elementY2Length;
+                                            const k2 = totalElementLength - deltaX * 2;
+                                            indexB = (k1 / k2) * 100;
+                                        } else {
+                                            const k1 = totalElementLength - totalDamagedLength - deltaX + elementYLength;
+                                            const k2 = totalElementLength - deltaX;
+                                            indexB = (k1 / k2) * 100;
+                                        }
+
+                                        resultsDiv.innerHTML += `<strong>Chỉ số B (Độ chính xác vùng không hư hỏng):</strong> ${indexB.toFixed(2)}%<div style="margin-top: 10px;"></div>`;
+                                        resolve(); // Xác nhận tính toán đã hoàn tất
+                                    }
+                                }
+                                reader.onerror = function () {
+                                    reject("Lỗi khi đọc tệp");
+                                }
+                                reader.readAsText(fileInputDeltaX.files[0]);
+                            });
+                        }
+
+                        function calculateIndexC() {
+                            const resultsDiv = document.getElementById('results');
+                            const elementY2Input = document.getElementById('element-y-2').value;
+
+                            const totalElementLength = projectionLengths.length * deltaX;
+                            const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                            const elementY2 = elementY2Input ? parseInt(elementY2Input) - 1 : null;
+                            const elementYLength = projectionLengths[elementY];
+
+                            let indexA;
+                            if (elementY2Input) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                indexA = ((elementY2Length / deltaX) * 100 + (elementYLength / deltaX) * 100) / 2;
+                            } else {
+                                indexA = (elementYLength / deltaX) * 100;
+                            }
+
+                            const totalDamagedLength = projectionLengths.reduce((sum, length) => sum + length, 0);
+                            let indexB;
+                            if (elementY2Input) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                const k1 = totalElementLength - totalDamagedLength - deltaX * 2 + elementYLength + elementY2Length;
+                                const k2 = totalElementLength - deltaX * 2;
+                                indexB = (k1 / k2) * 100;
+                            } else {
+                                const k1 = totalElementLength - totalDamagedLength - deltaX + elementYLength;
+                                const k2 = totalElementLength - deltaX;
+                                indexB = (k1 / k2) * 100;
+                            }
+
+                            let indexC;
+                            if (elementY2Input) {
+                                indexC = (indexA * (deltaX * 2 / totalElementLength)) + (indexB * (totalElementLength - deltaX * 2) / totalElementLength);
+                            } else {
+                                indexC = (indexA * (deltaX / totalElementLength)) + (indexB * (totalElementLength - deltaX) / totalElementLength);
+                            }
+
+                            resultsDiv.innerHTML += `<strong>Chỉ số C (Độ chính xác tổng thể):</strong> ${indexC.toFixed(2)}%<br>`;
+                        }
+
+                    </script>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-part">
+        <button onclick="switchToPartB(); processFilestrain(); processFileTest();" class="button-open">
+            2. Chẩn đoán mức độ hư hỏng kết cấu
+        </button>
+        <div class="body-part">
+            <div id="partB" class="body-part">
+                <div class="container">
+                    <h1 style="text-align: left; font-size: 30px;">2. Chẩn đoán mức độ hư hỏng - ANNs</h1>
+
+                    <div class="form-group">
+                        <label for="trainFile" style="display: none;">Tải dữ liệu huấn luyện (.csv):</label>
+                        <input type="file" id="trainFile" class="form-control" accept=".csv" style="display: none;" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="testFile" style="display: none;">Tải dữ liệu chẩn đoán (.csv):</label>
+                        <input type="file" id="testFile" class="form-control" accept=".csv" style="display: none;" />
+                    </div>
+
+                    <input type="file" id="fileInputTest" accept=".txt" style="display: none;">
+                    <button class="btn btn-primary" id="trainButton" onclick="trainModel()" style="display: none;">Huấn
+                        luyện dữ liệu</button>
+                    <button class="btn btn-success" id="predictButton" onclick="predict()" style="display: none;">Dự
+                        đoán mức độ hư hỏng</button>
+                    <button class="btn btn-info" onclick="trainAndPredict()">Dự đoán mức độ hư hỏng</button>
+                    <div class="progress mt-3" id="progressBar" style="display: none;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                            style="width: 0%;" id="progress"></div>
+                    </div>
+                    <script>
+                        function processFilestrain() {
+                            const input = document.getElementById('folder-input');
+                            const modeNumber = parseInt(document.getElementById('mode-number').value);
+                            const trainValue = parseFloat(document.getElementById('train-value').value);
+                            const stepValue = parseFloat(document.getElementById('step-value').value);
+                            const elementY = parseInt(document.getElementById('element-y').value);
+
+                            let fileList = Array.from(input.files).filter(file =>
+                                /^TrainingCases1_Result_\d+(\.txt)?$/i.test(file.name)
+                            );
+
+                            // ✅ Sắp xếp theo số phía SAU CÙNG trong tên file (đảm bảo _10 > _2)
+                            fileList.sort((a, b) => {
+                                const numA = parseInt(a.name.match(/(\d+)(?=\.txt?$)/)[0]);
+                                const numB = parseInt(b.name.match(/(\d+)(?=\.txt?$)/)[0]);
+                                return numA - numB;
+                            });
+
+                            let dataMatrix = [];
+                            let nodeOrder = [];
+                            let caseIndex = 0;
+                            let modeDataList = [];
+
+                            if (fileList.length === 0) {
+                                alert("Không tìm thấy file TrainingCases hợp lệ trong thư mục!");
+                                return;
+                            }
+
+                            let filePromises = fileList.map(file => {
+                                return new Promise(resolve => {
+                                    let reader = new FileReader();
+                                    reader.onload = function (event) {
+                                        let lines = event.target.result.split('\n');
+                                        let modeData = {};
+                                        lines.forEach(line => {
+                                            let parts = line.trim().split(/\s+/);
+                                            if (parts.length === 3) {
+                                                let node = parts[0];
+                                                let mode = parseInt(parts[1]);
+                                                let value = parseFloat(parts[2].replace(',', '.'));
+                                                if (mode === modeNumber) {
+                                                    modeData[node] = value;
+                                                    if (!nodeOrder.includes(node)) {
+                                                        nodeOrder.push(node); // giữ nguyên thứ tự xuất hiện
+                                                    }
+                                                }
+                                            }
+                                        });
+                                        modeDataList.push(modeData);
+                                        resolve();
+                                    };
+                                    reader.readAsText(file);
+                                });
+                            });
+
+                            // Xử lý tiếp sau khi đọc xong
+                            Promise.all(filePromises).then(() => {
+                                console.log("File được xử lý theo thứ tự:", fileList.map(f => f.name));
+                                // Gọi hàm xử lý hoặc xuất CSV ở đây
+                            });
+
+                            Promise.all(filePromises).then(() => {
+                                // Không sắp xếp lại nodeOrder — giữ đúng thứ tự xuất hiện trong file
+
+                                let currentDiValue = 0; // Bắt đầu từ 0
+
+                                modeDataList.forEach((modeData) => {
+                                    let row = [caseIndex++];
+
+                                    nodeOrder.forEach(node => {
+                                        row.push(modeData[node] !== undefined ? modeData[node] : 0);
+                                    });
+
+                                    let diArray = new Array(10).fill(0);
+                                    diArray[elementY - 1] = currentDiValue;
+                                    row.push(...diArray);
+                                    dataMatrix.push(row);
+
+                                    // Cập nhật giá trị cho dòng tiếp theo
+                                    currentDiValue += stepValue / 100;
+                                    if (currentDiValue > 0.5) {
+                                        currentDiValue = 0.05; // reset về 0.05 sau 0.5
+                                    }
+                                });
+
+
+
+                                // header theo thứ tự xuất hiện node
+                                exportToCSV(
+                                    dataMatrix,
+                                    ['Case', ...nodeOrder.map((_, i) => 'U' + (i + 1)), ...Array(10).fill().map((_, i) => 'DI' + (i + 1))],
+                                    'TRAIN.csv'
+                                );
+                            });
+                        }
+
+                        function exportToCSV(data, headers, filename) {
+                            let csvContent = headers.join(',') + '\n';
+                            csvContent += data.map(row => row.join(',')).join('\n');
+                            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            let link = document.createElement('a');
+                            let url = URL.createObjectURL(blob);
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', filename);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    </script>
+                    <script>
+                        function processFileTest() {
+                            const fileInput = document.getElementById('fileInputTest');
+                            const mode = document.getElementById('mode-number').value.trim(); // Loại bỏ khoảng trắng
+
+                            if (!fileInput || !fileInput.files.length) {
+                                alert('Vui lòng chọn file TEST.txt');
+                                return;
+                            }
+                            if (!mode || isNaN(mode)) {
+                                alert('Vui lòng nhập Mode hợp lệ!');
+                                return;
+                            }
+
+                            const file = fileInput.files[0];
+                            const reader = new FileReader();
+
+                            reader.onload = function (event) {
+                                const lines = event.target.result.split('\n');
+                                const data = [];
+
+                                for (let i = 1; i < lines.length; i++) { // Bỏ qua dòng tiêu đề
+                                    const parts = lines[i].trim().split(/\s+/);
+                                    if (parts.length === 3) {
+                                        const modeStr = parts[1].trim(); // Xử lý khoảng trắng trong mode
+                                        if (modeStr === mode) {
+                                            data.push(parts[2].replace(',', '.'));
+                                        }
+                                    }
+                                }
+
+                                if (data.length === 0) {
+                                    alert('Không có dữ liệu phù hợp với Mode đã nhập!');
+                                    return;
+                                }
+
+                                // Tạo nội dung file CSV
+                                const header = "Case,U1,U2,U3,U4,U5,U6,U7,U8,U9,U10,U11,DI1,DI2,DI3,DI4,DI5,DI6,DI7,DI8,DI9,DI10\n";
+                                const row = "0," + data.join(",") + ",0,0,0.3,0,0,0,0,0,0,0\n";
+                                const csvContent = header + row;
+
+                                // Xuất file CSV
+                                const blob = new Blob([csvContent], { type: 'text/csv' });
+                                const link = document.createElement('a');
+                                link.href = URL.createObjectURL(blob);
+                                link.download = 'TEST.csv';
+                                link.click();
+                            };
+
+                            reader.readAsText(file);
+                        }
+                    </script>
+                    <script>
+                        // Tác vụ nút bấm kết hợp huấn luyện và kết quả
+                        function trainAndPredict() {
+                            trainModel();
+                            // Chờ một khoảng thời gian trước khi dự đoán để đảm bảo dữ liệu đã được huấn luyện
+                            setTimeout(() => {
+                                predict();
+                            }, 10000); // Đợi 10 giây (có thể điều chỉnh tùy vào thời gian huấn luyện)
+                        }
+
+                    </script>
+
+                    <!-- Bảng kết quả -->
+                    <table class="table table-bordered mt-4" id="resultsTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Phần tử 1</th>
+                                <th>Phần tử 2</th>
+                                <th>Phần tử 3</th>
+                                <th>Phần tử 4</th>
+                                <th>Phần tử 5</th>
+                                <th>Phần tử 6</th>
+                                <th>Phần tử 7</th>
+                                <th>Phần tử 8</th>
+                                <th>Phần tử 9</th>
+                                <th>Phần tử 10</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+
+                    <div class="chart-container">
+                        <canvas id="predictionChart"></canvas>
+                    </div>
+                    <!-- Danh sách phần tử có giá trị < 5 (luôn ẩn) -->
+                    <div id="lowValuesList" hidden>
+                        <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
+                        <ul id="lowValues"></ul>
+                    </div>
+                    <script src="js/Testshm.js"></script>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-part">
+        <button onclick="switchToPartB3();processDataX();" class="button-open">
+            3. Cải thiện kết quả chẩn đoán bước 1
+        </button>
+        <div class="body-part">
+            <div id="partB3" class="body-part">
+                <div class="container">
+                    <h1 style="text-align: left; font-size: 30px;">3. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
+                    </h1>
+                    <button onclick="processDataX()"
+                        style="background-color: #ffc117; color: black; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; visibility: hidden; position: absolute;">
+                        Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
+                    </button>
+                    <div id="resultsX"></div>
+                    <script>
+                        let projectionLengthsX = [];
+                        function readDeltaX() {
+                            const fileInput = document.getElementById('txt-file-delta-x');
+                            if (!fileInput.files[0]) {
+                                alert("Vui lòng tải lên tệp TXT chứa chiều dài phần tử!");
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const lines = event.target.result.trim().split("\n");
+                                if (lines.length > 0) {
+                                    const lastColumnValue = lines[0].trim().split(/\s+/).pop();
+                                    deltaX = parseFloat(lastColumnValue.replace(",", "."));
+                                }
+                            };
+                            reader.readAsText(fileInput.files[0]);
+                        }
+
+                        document.getElementById('txt-file-delta-x').addEventListener('change', function (event) {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                dataLines = e.target.result.trim().split("\n").map(line => line.trim().split(/\s+/));
+                            };
+                            reader.readAsText(file);
+                        });
+
+                        // Phần nút bấm Tính toán
+                        function processDataX() {
+                            const fileInputNonDamaged = document.getElementById('txt-file-non-damaged');
+                            const fileInputDamaged = document.getElementById('txt-file-damaged');
+                            const modeNumberInput = document.getElementById('mode-number');
+                            const resultsDiv = document.getElementById('resultsX');
+
+                            const modeNumber = parseInt(modeNumberInput.value);
+                            const deltaX2 = deltaX * deltaX;
+
+                            if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+                                alert("Vui lòng tải lên cả hai tệp TXT (Không hư hỏng và Hư hỏng)!");
+                                return;
+                            }
+
+                            const fileNonDamaged = fileInputNonDamaged.files[0];
+                            const fileDamaged = fileInputDamaged.files[0];
+
+                            function readFile(file, callback) {
+                                const reader = new FileReader();
+                                reader.onload = function (event) {
+                                    const lines = event.target.result.trim().split("\n");
+                                    const data = [];
+                                    for (let i = 1; i < lines.length; i++) {
+                                        const parts = lines[i].trim().split(/\s+/);
+                                        if (parts.length === 3) {
+                                            const mode = parseInt(parts[1]);
+                                            const eigenValue = parseFloat(parts[2].replace(",", "."));
+                                            if (mode === modeNumber) {
+                                                data.push(eigenValue);
+                                            }
+                                        }
+                                    }
+                                    callback(data);
+                                };
+                                reader.readAsText(file);
+                            }
+
+                            // Đọc dữ liệu từ tệp không hư hỏng
+                            readFile(fileNonDamaged, function (modeShapeNonDamaged) {
+                                const normNonDamaged = Math.sqrt(modeShapeNonDamaged.reduce((sum, value) => sum + value * value, 0));
+                                const normalizedModeShapeNonDamaged = modeShapeNonDamaged.map(value => value / normNonDamaged);
+
+                                // Đọc dữ liệu từ tệp hư hỏng
+                                readFile(fileDamaged, function (modeShapeDamaged) {
+                                    const normDamaged = Math.sqrt(modeShapeDamaged.reduce((sum, value) => sum + value * value, 0));
+                                    const normalizedModeShapeDamaged = modeShapeDamaged.map(value => value / normDamaged);
+
+                                    // Đồng bộ dấu giữa hai bộ dữ liệu
+                                    for (let i = 0; i < normalizedModeShapeDamaged.length; i++) {
+                                        if (Math.sign(normalizedModeShapeDamaged[i]) !== Math.sign(normalizedModeShapeNonDamaged[i])) {
+                                            normalizedModeShapeDamaged[i] *= -1;
+                                        }
+                                    }
+                                    let curvaturesNonDamaged = [];
+                                    let curvaturesDamaged = [];
+                                    curvaturesDifference = [];
+
+                                    // Tính toán độ cong cho từng phần tử
+                                    for (let i = 0; i < normalizedModeShapeNonDamaged.length; i++) {
+                                        let u_0_non = i === 0 ? normalizedModeShapeNonDamaged[1] : normalizedModeShapeNonDamaged[i - 1];
+                                        let u_1_non = normalizedModeShapeNonDamaged[i];
+                                        let u_2_non = i === normalizedModeShapeNonDamaged.length - 1 ? normalizedModeShapeNonDamaged[i - 1] : normalizedModeShapeNonDamaged[i + 1];
+                                        let u_0_dam = i === 0 ? normalizedModeShapeDamaged[1] : normalizedModeShapeDamaged[i - 1];
+                                        let u_1_dam = normalizedModeShapeDamaged[i];
+                                        let u_2_dam = i === normalizedModeShapeDamaged.length - 1 ? normalizedModeShapeDamaged[i - 1] : normalizedModeShapeDamaged[i + 1];
+                                        let k_i_non = (u_2_non - 2 * u_1_non + u_0_non) / deltaX2;
+                                        curvaturesNonDamaged.push(k_i_non);
+                                        let k_i_dam = (u_2_dam - 2 * u_1_dam + u_0_dam) / deltaX2;
+                                        curvaturesDamaged.push(k_i_dam);
+                                        let curvatureDifference = Math.abs(k_i_dam - k_i_non);
+                                        curvaturesDifference.push(curvatureDifference);
+                                    }
+
+                                    // Tìm giá trị lớn nhất của độ cong chênh lệch
+                                    maxCurvature = Math.max(...curvaturesDifference);
+
+                                    // Gọi hàm calculateAllIndexes sau khi quá trình xử lý hoàn tất
+                                    calculateAllIndexesX();
+                                });
+                            });
+                        }
+
+                        // Định nghĩa hàm calculateAllIndexes để thực thi bất kỳ tính toán nào bạn muốn thực hiện.
+                        function calculateAllIndexesX() {
+                            // Thêm mã xử lý cần thiết cho hàm này
+                            console.log('Tính toán tất cả chỉ số đã hoàn tất');
+                        }
+
+                        function calculateAllIndexesX() {
+                            calculateProjectionLengthX();
+                            calculateIndexBX().then(() => {
+                                calculateIndexCX(); // Chỉ gọi calculateIndexCX khi calculateIndexBX hoàn tất
+
+                                // Gọi hàm tính tổng chiều dài hư hỏng dưới 5%
+
+                            }).catch((error) => {
+                                console.error(error);
+                            });
+                        }
+
+                        function calculateProjectionLengthX() {
+                            const curvatureMultiplier = parseFloat(document.getElementById('curvature-multiplier').value) / 100;
+                            const curvatureLevel = curvatureMultiplier * maxCurvature;
+                            const resultsDiv = document.getElementById('resultsX');
+
+                            // Xóa các kết quả cũ
+                            resultsDiv.innerHTML = `
+<strong style="font-size: 24px; color: #0056b3;">Kết quả cải thiện chỉ số đánh giá độ chính xác chẩn đoán so với bước 1</strong>
+<div style="margin-top: 20px;"></div>
+`;
+                            // Tính chiều dài projection cho mỗi đoạn
+                            projectionLengths = [];
+                            let totalDamagedLength = 0;
+                            for (let i = 0; i < curvaturesDifference.length - 1; i++) {
+                                let projectionLength = 0;
+                                for (let j = 1; j < curvaturesDifference.length; j++) {
+                                    let xPrev = (j - 1) * deltaX;
+                                    let xCurrent = j * deltaX;
+
+                                    if (xPrev >= (i * deltaX) && xCurrent <= ((i + 1) * deltaX)) {
+                                        let yPrev = curvaturesDifference[j - 1];
+                                        let yCurrent = curvaturesDifference[j];
+
+                                        if ((yPrev >= curvatureLevel && yCurrent >= curvatureLevel)) {
+                                            projectionLength += (xCurrent - xPrev);
+                                        } else if ((yPrev >= curvatureLevel && yCurrent < curvatureLevel) ||
+                                            (yPrev < curvatureLevel && yCurrent >= curvatureLevel)) {
+                                            let xIntersection = xPrev + (curvatureLevel - yPrev) * (xCurrent - xPrev) / (yCurrent - yPrev);
+                                            if (yPrev >= curvatureLevel) {
+                                                projectionLength += (xIntersection - xPrev);
+                                            } else {
+                                                projectionLength += (xCurrent - xIntersection);
+                                            }
+                                        }
+                                    }
+                                }
+                                projectionLengths.push(projectionLength);
+                                totalDamagedLength += projectionLength;
+                            }
+
+                            // Tính chỉ số A và A2
+                            const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                            const elementY2 = document.getElementById('element-y-2').value ? parseInt(document.getElementById('element-y-2').value) - 1 : null;
+                            let indexA13 = null;
+                            if (projectionLengths[elementY] !== undefined) {
+                                const elementYLength = projectionLengths[elementY];
+                                indexA13 = (elementYLength / deltaX) * 100;
+                            }
+                            let indexA23 = null;
+                            if (elementY2 !== null && projectionLengths[elementY2] !== undefined) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                indexA23 = (elementY2Length / deltaX) * 100;
+                            }
+
+                            let avgIndexA3 = null;
+                            if (indexA13 !== null && indexA23 !== null) {
+                                avgIndexA3 = (indexA13 + indexA23) / 2;
+                            }
+
+                            // Hiển thị chỉ số A
+                            if (avgIndexA3 !== null) {
+                                resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${avgIndexA3.toFixed(2)}%<div style="margin-top: 10px;"></div>`;
+                            } else {
+                                if (indexA13 !== null) {
+                                    resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${indexA13.toFixed(2)}%<div style="margin-top: 10px;"></div>`;
+                                }
+                                if (indexA23 !== null) {
+                                    resultsDiv.innerHTML += `<strong>Chỉ số A 2:</strong> ${indexA23.toFixed(2)}%<br>`;
+                                }
+                            }
+                        }
+
+                        function calculateIndexBX() {
+                            return new Promise((resolve, reject) => {
+                                const resultsDiv = document.getElementById('resultsX');
+                                const fileInputDeltaX = document.getElementById('txt-file-delta-x');
+
+                                if (!fileInputDeltaX.files[0]) {
+                                    alert("Vui lòng tải lên tệp TXT chứa chiều dài phần tử!");
+                                    reject("Tệp không được tải lên");
+                                    return;
+                                }
+
+                                const reader = new FileReader();
+                                reader.onload = function (event) {
+                                    const lines = event.target.result.trim().split("\n");
+                                    if (lines.length > 0) {
+                                        let totalLowValueDamagedLength = 0;
+                                        let lowValueIndices = [];
+
+                                        // Lấy danh sách phần tử từ giao diện
+                                        const lowValuesUl = document.getElementById('lowValues');
+                                        const lowValueItems = lowValuesUl.getElementsByTagName('li');
+
+                                        for (let item of lowValueItems) {
+                                            let match = item.innerText.match(/\d+/); // Lấy số thứ tự của phần tử (ví dụ: "Phần tử 1" -> 1)
+                                            if (match) {
+                                                let index = parseInt(match[0]) - 1; // Chuyển sang index (0-based)
+                                                lowValueIndices.push(index);
+                                            }
+                                        }
+
+                                        // Tính tổng chiều dài hư hỏng của các phần tử trong danh sách
+                                        for (let index of lowValueIndices) {
+                                            totalLowValueDamagedLength += projectionLengths[index] || 0; // Tránh lỗi nếu index không tồn tại
+                                        }
+
+                                        const lastColumnValue = lines[0].trim().split(/\s+/).pop();
+                                        const deltaX = parseFloat(lastColumnValue.replace(",", "."));
+                                        const totalElementLength = projectionLengths.length * deltaX;
+                                        const totalDamagedLength = projectionLengths.reduce((sum, length) => sum + length, 0);
+                                        const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                                        const elementYLength = projectionLengths[elementY];
+                                        const elementY2Input = document.getElementById('element-y-2').value;
+
+                                        let indexBX
+                                        if (elementY2Input) {
+                                            const elementY2 = parseInt(elementY2Input) - 1;
+                                            const elementY2Length = projectionLengths[elementY2];
+
+                                            const k1 = totalElementLength - totalDamagedLength - deltaX * 2 + elementYLength + elementY2Length + totalLowValueDamagedLength;
+                                            const k2 = totalElementLength - deltaX * 2;
+                                            indexBX = (k1 / k2) * 100;
+                                        } else {
+                                            const k1 = totalElementLength - totalDamagedLength - deltaX + elementYLength + totalLowValueDamagedLength;
+                                            const k2 = totalElementLength - deltaX;
+                                            indexBX = (k1 / k2) * 100;
+                                        }
+
+                                        resultsDiv.innerHTML += `<strong>Chỉ số B (Độ chính xác vùng không hư hỏng):</strong> 
+                         <span style="color: green; font-weight: bold;">${indexBX.toFixed(2)}%</span>
+                         <div style="margin-top: 10px;"></div>`;
+                                        resolve(); // Xác nhận tính toán đã hoàn tất
+
+                                    }
+                                }
+                                reader.onerror = function () {
+                                    reject("Lỗi khi đọc tệp");
+                                }
+                                reader.readAsText(fileInputDeltaX.files[0]);
+                            });
+                        }
+
+                        function calculateIndexCX() {
+                            const resultsDiv = document.getElementById('resultsX');
+                            const elementY2Input = document.getElementById('element-y-2').value;
+                            const totalElementLength = projectionLengths.length * deltaX;
+                            const elementY = parseInt(document.getElementById('element-y').value) - 1;
+                            const elementY2 = elementY2Input ? parseInt(elementY2Input) - 1 : null;
+                            const elementYLength = projectionLengths[elementY];
+
+                            let indexAX;
+                            if (elementY2Input) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                indexAX = ((elementY2Length / deltaX) * 100 + (elementYLength / deltaX) * 100) / 2;
+                            } else {
+                                indexAX = (elementYLength / deltaX) * 100;
+                            }
+                            let totalLowValueDamagedLength = 0;
+                            let lowValueIndices = [];
+
+                            // Lấy danh sách phần tử từ giao diện
+                            const lowValuesUl = document.getElementById('lowValues');
+                            const lowValueItems = lowValuesUl.getElementsByTagName('li');
+
+                            for (let item of lowValueItems) {
+                                let match = item.innerText.match(/\d+/); // Lấy số thứ tự của phần tử (ví dụ: "Phần tử 1" -> 1)
+                                if (match) {
+                                    let index = parseInt(match[0]) - 1; // Chuyển sang index (0-based)
+                                    lowValueIndices.push(index);
+                                }
+                            }
+
+                            // Tính tổng chiều dài hư hỏng của các phần tử trong danh sách
+                            for (let index of lowValueIndices) {
+                                totalLowValueDamagedLength += projectionLengths[index] || 0; // Tránh lỗi nếu index không tồn tại
+                            }
+                            const totalDamagedLength = projectionLengths.reduce((sum, length) => sum + length, 0);
+                            let indexBX;
+                            if (elementY2Input) {
+                                const elementY2Length = projectionLengths[elementY2];
+                                const k1 = totalElementLength - totalDamagedLength - deltaX * 2 + elementYLength + elementY2Length + totalLowValueDamagedLength;
+                                const k2 = totalElementLength - deltaX * 2;
+                                indexBX = (k1 / k2) * 100;
+                            } else {
+                                const k1 = totalElementLength - totalDamagedLength - deltaX + elementYLength + totalLowValueDamagedLength;
+                                const k2 = totalElementLength - deltaX;
+                                indexBX = (k1 / k2) * 100;
+                            }
+
+                            let indexCX;
+                            if (elementY2Input) {
+                                indexCX = (indexAX * (deltaX * 2 / totalElementLength)) + (indexBX * (totalElementLength - deltaX * 2) / totalElementLength);
+                            } else {
+                                indexCX = (indexAX * (deltaX / totalElementLength)) + (indexBX * (totalElementLength - deltaX) / totalElementLength);
+                            }
+
+                            resultsDiv.innerHTML += `<strong>Chỉ số C (Độ chính xác tổng thể):</strong> 
+                         <span style="color: green; font-weight: bold;">${indexCX.toFixed(2)}%</span><br>`;
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <div id="partC">
+    <div class="result-container">
+        <h2>Thông Báo Kết Quả Hư Hỏng</h2>
+        
+    
+        <div>
+            <label for="display-elementY">Phần tử hư hỏng chẩn đoán:</label>
+            <span class="value-display" id="display-elementY">Chưa có giá trị</span>
+        </div>
+    </div>
+    
+    <script>
+            // Cập nhật nội dung của phần tử "display-elementY" với giá trị mới nhất
+            document.getElementById('display-elementY').textContent = elementYValue;
+    </script>
+    
+    </span>
+</div> -->
+
+    <script>
+        function switchToPartA1() {
+            var partA1 = document.getElementById('partA1');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partA1.style.display === 'block') {
+                partA1.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partA1.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        function switchToPartA2() {
+            var partA1 = document.getElementById('partA2');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partA2.style.display === 'block') {
+                partA2.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partA2.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        function switchToPartA() {
+            var partA = document.getElementById('partA');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partA.style.display === 'block') {
+                partA.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partA.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        function switchToPartB() {
+            var partB = document.getElementById('partB');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partB.style.display === 'block') {
+                partB.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partB.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        function switchToPartB1() {
+            var partB1 = document.getElementById('partB1');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partB1.style.display === 'block') {
+                partB1.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partB1.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        function switchToPartB3() {
+            var partB3 = document.getElementById('partB3');
+
+            // Kiểm tra trạng thái hiện tại của phần B và thay đổi nó
+            if (partB3.style.display === 'block') {
+                partB3.style.display = 'none'; // Nếu phần B đang hiển thị, ẩn đi
+            } else {
+                partB3.style.display = 'block'; // Nếu phần B đang ẩn, hiển thị
+            }
+        }
+        // Khi trang tải xong, phần A sẽ hiển thị đầu tiên
+        window.onload = function () {
+            document.getElementById('partB3').style.display = 'none';
+            document.getElementById('partB1').style.display = 'none';
+            document.getElementById('partA').style.display = 'none';
+            document.getElementById('partB').style.display = 'none';
+        };
+    </script>
+</body>
+
+</html>

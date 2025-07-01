@@ -1,0 +1,113 @@
+﻿body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f7fa;
+  color: #333;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #007BFF;
+  margin-bottom: 20px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+label {
+  font-size: 16px;
+  font-weight: 500;
+  display: block;
+  margin: 10px 0 5px;
+}
+
+input,
+button {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  display: block;
+}
+
+input[type="number"],
+input[type="file"] {
+  background-color: #f9f9f9;
+}
+
+button {
+  background-color: #007BFF;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.chart-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+#curvatureChart {
+  width: 100%;
+  max-width: 850px;
+  margin: 20px auto;
+}
+
+.results {
+  margin-top: 20px;
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.note {
+  font-size: 14px;
+  color: #888;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.button-open {
+  margin-top: 20px;
+  font-weight: bold;
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 10px 50px;
+  border-radius: 10px;
+  position: absolute;
+  /* right: 450px; */
+  /* display: flex; */
+  right: 0;
+  margin-right: 100px;
+  height: 40px;
+  /* width: 120px; */
+  min-width: 400px;
+}
+
+.main-part {
+  display: flex;
+  position: relative;
+  min-height: 60px;
+}
+
+.body-part {
+  margin: auto;
+  min-width: 1000px;
+  margin-bottom: 30px;
+}
