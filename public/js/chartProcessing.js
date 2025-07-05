@@ -1,7 +1,7 @@
 let curvaturesDifference = [];
 let deltaX, maxCurvature;
 let projectionLengths = [];
-let chartInstance = null;
+// Đã bỏ chartInstance vì không còn vẽ biểu đồ hiệu độ cong
 
 function processData() {
   const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
@@ -98,124 +98,7 @@ function processData() {
 
       maxCurvature = Math.max(...curvaturesDifference);
 
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      const xLabels = Array.from(
-        { length: curvaturesDifference.length },
-        (_, i) => (i * deltaX).toFixed(2)
-      );
-      var ctx = document.getElementById("curvatureChart").getContext("2d");
-      chartInstance = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: xLabels,
-          datasets: [
-            {
-              label: "Z(i)",
-              data: curvaturesDifference,
-              borderColor: "rgba(61, 133, 204,1)",
-              backgroundColor: "rgba(54, 162, 235, 0.2)",
-              fill: false,
-              tension: 0.4,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: "Chiều dài dầm (m)",
-                font: {
-                  family: "Times New Roman",
-                  size: 17,
-                  weight: "normal",
-                },
-                color: "black",
-              },
-              ticks: {
-                font: {
-                  family: "Times New Roman",
-                  size: 16,
-                  weight: "normal",
-                },
-                color: "black",
-              },
-            },
-            y: {
-              title: {
-                display: true,
-                text: "Z(i)",
-                font: {
-                  size: 17,
-                  weight: "normal",
-                },
-                color: "black",
-              },
-              ticks: {
-                font: {
-                  size: 16,
-                },
-                color: "black",
-              },
-              beginAtZero: true,
-            },
-          },
-          plugins: {
-            annotation: {
-              annotations: {
-                ...[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7].reduce(
-                  (annotations, multiplier, index) => {
-                    const yValue = multiplier * maxCurvature;
-                    const colors = [
-                      "rgba(75, 192, 192, 1)",
-                      "rgba(255, 159, 64, 1)",
-                      "rgba(153, 102, 255, 1)",
-                      "rgba(255, 99, 132, 1)",
-                      "rgba(54, 162, 235, 1)",
-                      "rgba(255, 205, 86, 1)",
-                      "rgba(153, 204, 255, 1)",
-                    ];
-                    annotations[`line-${multiplier}`] = {
-                      type: "line",
-                      yMin: yValue,
-                      yMax: yValue,
-                      borderColor: colors[index],
-                      borderWidth: 2,
-                      borderDash: [5, 5],
-                      label: {
-                        content: `${(multiplier * 100).toFixed(0)}% Zmax`,
-                        enabled: true,
-                        position: "top",
-                        font: {
-                          size: 18,
-                          weight: "bold",
-                        },
-                        backgroundColor: colors[index],
-                        color: "white",
-                        padding: { top: 5, left: 10, right: 10, bottom: 5 },
-                        xAdjust: 360,
-                        yAdjust: -20,
-                      },
-                    };
-                    return annotations;
-                  },
-                  {}
-                ),
-              },
-            },
-          },
-          layout: {
-            padding: {
-              right: 140,
-            },
-          },
-        },
-      });
-
+      // Bỏ phần vẽ biểu đồ hiệu độ cong
       calculateAllIndexes();
     });
   });

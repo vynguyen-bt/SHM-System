@@ -110,14 +110,28 @@ function readDeltaX2() {
   const reader = new FileReader();
   reader.onload = function (event) {
     const fileContent = event.target.result;
-    dataLines = fileContent
-      .split("\n")
-      .map((line) => line.trim().split(/\s+/))
-      .filter((line) => line.length >= 4)
-      .map((line) => {
-        line[3] = line[3].replace(",", ".");
-        return line;
-      });
+    
+    // Parse SElement.txt với định dạng mới (tọa độ node)
+    const { nodes, elements } = parseSElementFile(fileContent);
+    
+    // Lưu thông tin lưới toàn cục
+    window.meshData = {
+      nodes: nodes,
+      elements: elements,
+      dx: 0.01, // Bước lưới theo X
+      dy: 0.01  // Bước lưới theo Y
+    };
+    
+    // Cập nhật dataLines cho tương thích với code cũ
+    dataLines = elements.map(element => [
+      element.id.toString(),
+      element.nodes[0].toString(),
+      element.nodes[1].toString(),
+      element.nodes[2].toString(),
+      element.nodes[3].toString()
+    ]);
+    
+    console.log(`Đã đọc ${nodes.length} node và tạo ${elements.length} phần tử`);
   };
   reader.onerror = function () {
     alert("Lỗi khi đọc tệp SElement.txt");
