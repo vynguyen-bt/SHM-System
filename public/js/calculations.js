@@ -878,7 +878,7 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
   const resultsDiv = document.getElementById("results");
   
   resultsDiv.innerHTML = `
-    <strong style="font-size: 24px; color: #0056b3;">Kết quả chẩn đoán hư hỏng bằng năng lượng biến dạng</strong>
+    <strong style="font-size: 24px; color: #0056b3;">Kết quả chẩn đoán vị trí hư hỏng bằng năng lượng biến dạng</strong>
     <div style="margin-top: 20px;"></div>
   `;
   
@@ -913,27 +913,46 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
 
   // --- Bổ sung khối chỉ số A, B, C (theo vùng) ---
   const elementYInput = document.getElementById('element-y');
-  let elementY = elementYInput ? parseInt(elementYInput.value) : null;
-  if (elementY && elementY >= 1 && elementY <= elements.length) {
-    // Luôn so sánh id dưới dạng chuỗi đã trim để tránh lỗi kiểu dữ liệu hoặc ký tự lạ
-    const actualDamagedId = String(elements[elementY - 1].id).trim();
+  const elementY2Input = document.getElementById('element-y-2');
+  const elementY3Input = document.getElementById('element-y-3');
+  let elementY = elementYInput ? elementYInput.value.trim() : '';
+  let elementY2 = elementY2Input && elementY2Input.value ? elementY2Input.value.trim() : '';
+  let elementY3 = elementY3Input && elementY3Input.value ? elementY3Input.value.trim() : '';
+  // Tạo vùng hư hỏng thực tế là tập hợp các phần tử khảo sát hợp lệ (theo id)
+  let actualDamagedIds = [];
+  if (elementY) {
+    const found = elements.find(e => String(e.id).trim() === elementY);
+    if (found) actualDamagedIds.push(String(found.id).trim());
+  }
+  if (elementY2) {
+    const found2 = elements.find(e => String(e.id).trim() === elementY2);
+    if (found2) actualDamagedIds.push(String(found2.id).trim());
+  }
+  if (elementY3) {
+    const found3 = elements.find(e => String(e.id).trim() === elementY3);
+    if (found3) actualDamagedIds.push(String(found3.id).trim());
+  }
+  // Loại bỏ trùng lặp nếu có
+  actualDamagedIds = [...new Set(actualDamagedIds)];
+  if (actualDamagedIds.length > 0) {
     const predictedDamaged = elements.filter(e => z[e.id] >= Z0).map(e => String(e.id).trim());
-    // Sửa lại chỉ số A: Nếu phần tử khảo sát nằm trong predictedDamaged thì A=1, ngược lại A=0
-    const isDamagedDetected = predictedDamaged.includes(actualDamagedId);
-    const indexA = isDamagedDetected ? 1 : 0;
-    // Các chỉ số khác giữ nguyên
-    const actualUndamaged = elements.map(e => String(e.id).trim()).filter(id => id !== actualDamagedId);
-    const predictedUndamaged = elements.map(e => String(e.id).trim()).filter(id => !predictedDamaged.includes(id));
+    // Chỉ số A: tỷ lệ số phần tử khảo sát nằm trong predictedDamaged
+    const detectedCount = actualDamagedIds.filter(id => predictedDamaged.includes(id)).length;
+    const indexA = detectedCount / actualDamagedIds.length;
+    // Các chỉ số khác
+    const allIds = elements.map(e => String(e.id).trim());
+    const actualUndamaged = allIds.filter(id => !actualDamagedIds.includes(id));
+    const predictedUndamaged = allIds.filter(id => !predictedDamaged.includes(id));
     const intersectionUndamaged = actualUndamaged.filter(id => predictedUndamaged.includes(id));
     const areaUndamaged = actualUndamaged.length;
     const areaTotal = elements.length;
     const indexB = areaUndamaged > 0 ? intersectionUndamaged.length / areaUndamaged : 0;
-    const wDam = 1 / areaTotal;
+    const wDam = actualDamagedIds.length / areaTotal;
     const wUndam = areaUndamaged / areaTotal;
     const indexC = indexA * wDam + indexB * wUndam;
     resultsDiv.innerHTML += `
       <div style="margin-top: 24px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-        <b>Chỉ số độ chính xác chẩn đoán (phần tử khảo sát: ${elementY}):</b><br>
+        <b>Chỉ số độ chính xác chẩn đoán (phần tử khảo sát: ${actualDamagedIds.join(', ')}):</b><br>
         <span>Chỉ số A (Độ chính xác vùng hư hỏng): <b>${(indexA*100).toFixed(2)}%</b></span><br>
         <span>Chỉ số B (Độ chính xác vùng không hư hỏng): <b>${(indexB*100).toFixed(2)}%</b></span><br>
         <span>Chỉ số C (Độ chính xác tổng thể): <b>${(indexC*100).toFixed(2)}%</b></span><br>
@@ -1036,7 +1055,7 @@ function draw3DDamageChart(z, elements, Z0) {
       yaxis: { title: 'Y (m)' },
       zaxis: { title: 'Chỉ số hư hỏng' }
     },
-    title: 'Biểu đồ chỉ số hư hỏng 3D dạng cột tối ưu hiệu suất',
+    title: 'Biểu đồ chỉ số hư hỏng 3D',
     width: 800,
     height: 600
   };
