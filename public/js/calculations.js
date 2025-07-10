@@ -962,107 +962,329 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
   // --- END bổ sung ---
 }
 
+// Hàm helper tạo geometry cho hình hộp 3D
+function createBox3D(centerX, centerY, height, width = 0.8, depth = 0.8) {
+  const halfWidth = width / 2;
+  const halfDepth = depth / 2;
+
+  // 8 đỉnh của hình hộp
+  const vertices = {
+    x: [
+      centerX - halfWidth, centerX + halfWidth, centerX + halfWidth, centerX - halfWidth, // đáy
+      centerX - halfWidth, centerX + halfWidth, centerX + halfWidth, centerX - halfWidth  // đỉnh
+    ],
+    y: [
+      centerY - halfDepth, centerY - halfDepth, centerY + halfDepth, centerY + halfDepth, // đáy
+      centerY - halfDepth, centerY - halfDepth, centerY + halfDepth, centerY + halfDepth  // đỉnh
+    ],
+    z: [
+      0, 0, 0, 0, // đáy
+      height, height, height, height // đỉnh
+    ]
+  };
+
+  // 12 mặt tam giác (6 mặt hình hộp, mỗi mặt = 2 tam giác)
+  const faces = {
+    i: [0, 0, 4, 4, 1, 1, 2, 2, 3, 3, 0, 0], // đỉnh thứ nhất của mỗi tam giác
+    j: [1, 3, 5, 7, 2, 5, 3, 6, 0, 7, 4, 1], // đỉnh thứ hai của mỗi tam giác
+    k: [2, 2, 6, 6, 6, 6, 7, 7, 4, 4, 5, 5]  // đỉnh thứ ba của mỗi tam giác
+  };
+
+  return { vertices, faces };
+}
+
 // Vẽ biểu đồ 3D chỉ số hư hỏng
 function draw3DDamageChart(z, elements, Z0) {
   // Lấy tọa độ trọng tâm và giá trị z
-  const x0 = [], y0 = [], z0 = [];
   const x1 = [], y1 = [], z1 = [];
   elements.forEach(element => {
-    x0.push(element.center.x);
-    y0.push(element.center.y);
-    z0.push(0);
     x1.push(element.center.x);
     y1.push(element.center.y);
     z1.push(z[element.id] || 0);
   });
 
-  // Tạo trace duy nhất cho tất cả cột (lines)
-  const lineX = [], lineY = [], lineZ = [];
-  for (let i = 0; i < x0.length; i++) {
-    lineX.push(x0[i], x1[i], null);
-    lineY.push(y0[i], y1[i], null);
-    lineZ.push(z0[i], z1[i], null);
+  // Tính toán kích thước tự động cho hình hộp
+  function calculateOptimalBoxSize(elements) {
+    if (elements.length < 2) return { width: 0.008, depth: 0.008 }; // Giá trị mặc định
+
+    // Tìm khoảng cách nhỏ nhất giữa các elements
+    let minDistanceX = Infinity;
+    let minDistanceY = Infinity;
+
+    const xCoords = [...new Set(elements.map(e => e.center.x))].sort((a, b) => a - b);
+    const yCoords = [...new Set(elements.map(e => e.center.y))].sort((a, b) => a - b);
+
+    // Tính khoảng cách nhỏ nhất theo X
+    for (let i = 1; i < xCoords.length; i++) {
+      const distance = xCoords[i] - xCoords[i-1];
+      if (distance > 0 && distance < minDistanceX) {
+        minDistanceX = distance;
+      }
+    }
+
+    // Tính khoảng cách nhỏ nhất theo Y
+    for (let i = 1; i < yCoords.length; i++) {
+      const distance = yCoords[i] - yCoords[i-1];
+      if (distance > 0 && distance < minDistanceY) {
+        minDistanceY = distance;
+      }
+    }
+
+    // Sử dụng 80% khoảng cách nhỏ nhất để tránh chồng lấp
+    const width = minDistanceX === Infinity ? 0.008 : minDistanceX * 0.8;
+    const depth = minDistanceY === Infinity ? 0.008 : minDistanceY * 0.8;
+
+    console.log(`Kích thước hình hộp tự động: width=${width.toFixed(4)}, depth=${depth.toFixed(4)}`);
+    console.log(`Khoảng cách lưới: X=${minDistanceX.toFixed(4)}, Y=${minDistanceY.toFixed(4)}`);
+
+    return { width, depth };
   }
-  const traceLines = {
-    x: lineX,
-    y: lineY,
-    z: lineZ,
-    mode: 'lines',
-    type: 'scatter3d',
-    line: {
-      color: 'rgba(50,50,200,0.85)',
-      width: 10
+
+  const boxSize = calculateOptimalBoxSize(elements);
+
+  // Tạo mesh3d cho các hình hộp 3D (bar3d style)
+  const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
+  const allFacesI = [], allFacesJ = [], allFacesK = [];
+  const allIntensity = [];
+
+  elements.forEach((element, index) => {
+    const height = z[element.id] || 0;
+    const box = createBox3D(element.center.x, element.center.y, height, boxSize.width, boxSize.depth);
+
+    // Offset cho vertices (để tránh trùng lặp chỉ số)
+    const vertexOffset = allVerticesX.length;
+
+    // Thêm vertices
+    allVerticesX.push(...box.vertices.x);
+    allVerticesY.push(...box.vertices.y);
+    allVerticesZ.push(...box.vertices.z);
+
+    // Thêm faces với offset
+    allFacesI.push(...box.faces.i.map(i => i + vertexOffset));
+    allFacesJ.push(...box.faces.j.map(j => j + vertexOffset));
+    allFacesK.push(...box.faces.k.map(k => k + vertexOffset));
+
+    // Thêm intensity cho mỗi vertex (8 vertex cho mỗi box)
+    for (let i = 0; i < 8; i++) {
+      allIntensity.push(height);
+    }
+  });
+
+  // Tính toán colorscale tối ưu dựa trên phạm vi dữ liệu
+  const maxIntensity = Math.max(...allIntensity);
+  const minIntensity = Math.min(...allIntensity);
+
+  // Colorscale cải tiến với độ tương phản cao hơn
+  const optimizedColorscale = [
+    [0, 'rgb(255,255,204)'],      // Vàng nhạt cho giá trị thấp
+    [0.2, 'rgb(255,237,160)'],    // Vàng
+    [0.4, 'rgb(254,217,118)'],    // Cam nhạt
+    [0.6, 'rgb(254,178,76)'],     // Cam
+    [0.8, 'rgb(253,141,60)'],     // Cam đậm
+    [1, 'rgb(227,26,28)']         // Đỏ đậm cho giá trị cao
+  ];
+
+  const traceMesh3D = {
+    type: 'mesh3d',
+    x: allVerticesX,
+    y: allVerticesY,
+    z: allVerticesZ,
+    i: allFacesI,
+    j: allFacesJ,
+    k: allFacesK,
+    intensity: allIntensity,
+    colorscale: optimizedColorscale,
+    cmin: minIntensity,
+    cmax: maxIntensity,
+    opacity: 1.0,
+    showlegend: false,
+    showscale: true,
+    name: 'Chỉ số hư hỏng',
+    hovertemplate: '<b>Phần tử:</b> %{text}<br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f})<br>' +
+                   '<b>Chỉ số hư hỏng:</b> %{z:.4f}<br>' +
+                   '<extra></extra>',
+    lighting: {
+      ambient: 0.9,     // Tăng ánh sáng môi trường để loại bỏ bóng đen
+      diffuse: 0.3,     // Giảm diffuse để giảm bóng
+      specular: 0.1,    // Giảm phản chiếu
+      roughness: 0.3,   // Tăng roughness để làm mờ bóng
+      fresnel: 0.1      // Giảm fresnel effect
     },
-    showlegend: false
+    colorbar: {
+      title: {
+        text: 'Chỉ số hư hỏng',
+        font: { family: 'Times New Roman', size: 14 }
+      },
+      titleside: 'right',
+      thickness: 20,
+      len: 0.8,
+      x: 1.02
+    }
   };
 
-  // Marker ở đỉnh cột
-  const traceMarkers = {
-    x: x1,
-    y: y1,
-    z: z1,
-    mode: 'markers',
-    type: 'scatter3d',
-    marker: {
-      size: 10,
-      color: z1,
-      colorscale: 'Viridis',
-      opacity: 0.95
-    },
-    showlegend: false
-  };
-
-  // Mặt phẳng ngưỡng
+  // Mặt phẳng ngưỡng cải tiến
   const xUnique = [...new Set(x1)].sort((a, b) => a - b);
   const yUnique = [...new Set(y1)].sort((a, b) => a - b);
   const zPlane = Array(yUnique.length).fill().map(() => Array(xUnique.length).fill(Z0));
+
+  // Tạo hiệu ứng gradient cho mặt phẳng ngưỡng
   const tracePlane = {
     x: xUnique,
     y: yUnique,
     z: zPlane,
     type: 'surface',
-    opacity: 0.4,
+    opacity: 0.6, // Tăng opacity để mặt phẳng rõ ràng hơn
     showscale: false,
     name: 'Ngưỡng Z₀',
-    colorscale: [[0, 'red'], [1, 'red']]
+    colorscale: [
+      [0, 'rgba(255,0,0,0.6)'],   // Đỏ đậm hơn
+      [1, 'rgba(255,0,0,0.6)']    // Đỏ đậm hơn
+    ],
+    contours: {
+      z: {
+        show: true,
+        usecolormap: false,
+        color: 'red',
+        width: 6,                    // Tăng độ dày đường viền
+        highlightcolor: 'darkred'
+      }
+    },
+    hovertemplate: '<b>Mặt phẳng ngưỡng</b><br>' +
+                   '<b>Z₀:</b> %{z:.4f}<br>' +
+                   '<extra></extra>'
   };
 
-  // Chú thích cột lớn nhất
-  let maxIdx = 0, maxZ = z1[0];
-  for (let i = 1; i < z1.length; i++) {
-    if (z1[i] > maxZ) {
-      maxZ = z1[i];
-      maxIdx = i;
+  // Tìm giá trị chỉ số hư hỏng cao nhất để tính phần trăm
+  let maxZ = Math.max(...z1);
+
+  // Tạo text labels hiển thị phần trăm cho các phần tử hư hỏng
+  const damagedElements = [];
+  const textX = [], textY = [], textZ = [], textLabels = [];
+
+  for (let i = 0; i < z1.length; i++) {
+    if (z1[i] > Z0) { // Chỉ hiển thị cho phần tử hư hỏng
+      const actualValue = z1[i].toFixed(1) + "%";
+      damagedElements.push(i);
+      textX.push(x1[i]);
+      textY.push(y1[i]);
+      textZ.push(z1[i] + maxZ * 0.05); // Offset phía trên đỉnh bar
+      textLabels.push(actualValue);
     }
   }
-  const traceText = {
-    x: [x1[maxIdx]],
-    y: [y1[maxIdx]],
-    z: [z1[maxIdx]],
+
+  const traceTextPercentage = {
+    x: textX,
+    y: textY,
+    z: textZ,
     mode: 'text',
     type: 'scatter3d',
-    text: ['Chỉ số hư hỏng lớn nhất'],
-    textposition: 'top center',
-    textfont: { color: 'blue', size: 16 },
-    showlegend: false
+    text: textLabels,
+    textposition: 'middle center',
+    textfont: {
+      family: 'Times New Roman',
+      size: 10,
+      color: 'darkred'
+    },
+    showlegend: false,
+    hovertemplate: '<b>Phần tử hư hỏng</b><br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f})<br>' +
+                   '<b>Giá trị thực tế:</b> %{text}<br>' +
+                   '<extra></extra>'
   };
 
-  const data = [traceLines, traceMarkers, tracePlane, traceText];
+  const data = [traceMesh3D, tracePlane, traceTextPercentage];
 
   const layout = {
     scene: {
-      xaxis: { title: 'X (m)' },
-      yaxis: { title: 'Y (m)' },
-      zaxis: { title: 'Chỉ số hư hỏng' }
+      xaxis: {
+        title: {
+          text: 'EX (m)',
+          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+        },
+        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        gridcolor: 'rgba(128,128,128,0.3)',
+        showbackground: true,
+        backgroundcolor: 'rgba(240,240,240,0.8)'
+      },
+      yaxis: {
+        title: {
+          text: 'EY (m)',
+          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+        },
+        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        gridcolor: 'rgba(128,128,128,0.3)',
+        showbackground: true,
+        backgroundcolor: 'rgba(240,240,240,0.8)'
+      },
+      zaxis: {
+        title: {
+          text: 'Damage Index',
+          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+        },
+        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        gridcolor: 'rgba(128,128,128,0.3)',
+        showbackground: true,
+        backgroundcolor: 'rgba(240,240,240,0.8)'
+      },
+      camera: {
+        eye: { x: 1.8, y: 1.8, z: 1.5 }, // Góc nhìn tối ưu hơn
+        center: { x: 0, y: 0, z: 0 },
+        up: { x: 0, y: 0, z: 1 }
+      },
+      aspectmode: 'manual',
+      aspectratio: { x: 1.2, y: 1.2, z: 0.8 }, // Tỷ lệ cải thiện
+      bgcolor: 'rgba(248,249,250,0.9)'
     },
-    title: 'Biểu đồ chỉ số hư hỏng 3D',
-    width: 800,
-    height: 600
+    title: {
+      text: 'Biểu đồ chỉ số hư hỏng 3D - Phân tích kết cấu',
+      font: { family: 'Times New Roman', size: 18, color: '#2c3e50' },
+      x: 0.5,
+      y: 0.95
+    },
+    width: 1000,
+    height: 750,
+    margin: { l: 50, r: 100, t: 80, b: 50 },
+    font: { family: 'Times New Roman', color: '#2c3e50' },
+    paper_bgcolor: 'rgba(255,255,255,0.95)',
+    plot_bgcolor: 'rgba(248,249,250,0.9)'
   };
+
+  // Thông tin debug và thống kê
+  console.log(`=== Thông tin biểu đồ 3D cải tiến ===`);
+  console.log(`Số lượng elements: ${elements.length}`);
+  console.log(`Số lượng vertices: ${allVerticesX.length}`);
+  console.log(`Số lượng faces: ${allFacesI.length}`);
+  console.log(`Phạm vi X: ${Math.min(...x1).toFixed(4)} - ${Math.max(...x1).toFixed(4)}`);
+  console.log(`Phạm vi Y: ${Math.min(...y1).toFixed(4)} - ${Math.max(...y1).toFixed(4)}`);
+  console.log(`Phạm vi Z: ${Math.min(...z1).toFixed(4)} - ${Math.max(...z1).toFixed(4)}`);
+  console.log(`Kích thước hình hộp: ${boxSize.width.toFixed(4)} x ${boxSize.depth.toFixed(4)}`);
+  console.log(`Ngưỡng Z₀: ${Z0.toFixed(4)}`);
+  console.log(`Chỉ số hư hỏng cao nhất: ${maxZ.toFixed(4)}`);
+
+  // Thống kê phân bố chỉ số hư hỏng
+  const damagedCount = z1.filter(z => z > Z0).length;
+  const damagedPercentage = (damagedCount / z1.length * 100).toFixed(1);
+  console.log(`Số phần tử vượt ngưỡng: ${damagedCount}/${z1.length} (${damagedPercentage}%)`);
+  console.log(`Hiển thị giá trị thực tế cho ${damagedElements.length} phần tử hư hỏng (> Z₀)`);
 
   let chartDiv = document.getElementById('damage3DChart');
   if (chartDiv) {
     Plotly.purge(chartDiv);
-    Plotly.newPlot(chartDiv, data, layout);
+    Plotly.newPlot(chartDiv, data, layout, {
+      displayModeBar: true,
+      modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+      displaylogo: false,
+      responsive: true
+    }).then(() => {
+      console.log('✅ Biểu đồ 3D cải tiến đã được render thành công');
+      console.log('🎨 Colorscale: Custom optimized (Yellow-Orange-Red)');
+      console.log('💡 Lighting: Enhanced with fresnel effect');
+      console.log('📊 Features: Colorbar, contours, enhanced markers');
+    }).catch((error) => {
+      console.error('❌ Lỗi khi render biểu đồ 3D:', error);
+    });
+  } else {
+    console.error('❌ Không tìm thấy container #damage3DChart');
   }
 }
