@@ -1,0 +1,270 @@
+# Mạng Nơ-ron Nhân tạo cho Giám sát Sức khỏe Kết cấu
+# Importing libraries
+import numpy as np
+import pandas as pd
+import os
+import json
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Chỉ hiển thị lỗi
+import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+# Tải cấu hình từ tệp JSON
+CONFIG = {
+    'data_dir': r'E:\CAO HỌC\LVTS\NTV\BT2\PY',  # Thư mục chứa tệp dữ liệu
+    'train_file': 'DATA.TRAIN. TH.xlsx',  # Tệp huấn luyện
+    'test_file': 'DATA.CHECK. TH.xlsx',  # Tệp kiểm tra
+    'num_samples': 32,  # Số mẫu huấn luyện
+    'num_features': 225,  # Số phần tử đầu ra của ANN2 (lưới 15x15)
+    'num_samples_test': 1,  # Số mẫu kiểm tra
+    'X_size': 15,  # Kích thước lưới X
+    'Y_size': 15,  # Kích thước lưới Y
+    'P': [97, 111, 112],  # Các chỉ số phần tử hư hỏng (phải nằm trong [0, num_features-1])
+    'learning_rate': 0.001,  # Tốc độ học
+    'batch_size': 16  # Kích thước batch
+}
+# Ghi chú: Để thay đổi input, cần cập nhật các tham số sau:
+# - 'data_dir', 'train_file', 'test_file': Đổi đường dẫn hoặc tên tệp nếu dữ liệu đầu vào nằm ở vị trí khác.
+# - 'num_samples', 'num_samples_test': Đổi số mẫu nếu số dòng trong tệp Excel thay đổi.
+# - 'num_features', 'X_size', 'Y_size': Đổi nếu kích thước lưới đầu ra ANN2 thay đổi (num_features = X_size * Y_size).
+# - 'P': Cập nhật danh sách chỉ số phần tử hư hỏng nếu các vị trí trong lưới thay đổi.
+
+## Hàm xây dựng ANN
+def build_ann(input_shape, output_units, num_layers=3, units=256, dropout_rate=0.2):
+    """Xây dựng ANN cho giám sát sức khỏe kết cấu.
+    Args:
+        input_shape: Số đặc trưng đầu vào.
+        output_units: Số đơn vị đầu ra.
+        num_layers: Số lớp ẩn.
+        units: Số đơn vị mỗi lớp.
+        dropout_rate: Tỷ lệ dropout.
+    Returns:
+        Mô hình Keras Sequential.
+    """
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(units, activation='relu', input_shape=(input_shape,)))
+    model.add(tf.keras.layers.Dropout(dropout_rate))
+    for _ in range(num_layers - 1):
+        model.add(tf.keras.layers.Dense(units, activation='relu'))
+        model.add(tf.keras.layers.Dropout(dropout_rate))
+    model.add(tf.keras.layers.Dense(output_units, activation='linear'))
+    return model
+# Ghi chú: Tham số 'input_shape' của hàm build_ann tự động lấy từ X_train.shape[1].
+# Nếu số đặc trưng đầu vào (cột U1-U12) thay đổi, input_shape sẽ tự động cập nhật sau khi đọc dữ liệu.
+
+## Part 1 - Data Preprocessing
+# Đường dẫn tệp
+TRAIN_PATH = os.path.join(CONFIG['data_dir'], CONFIG['train_file'])
+TEST_PATH = os.path.join(CONFIG['data_dir'], CONFIG['test_file'])
+# Ghi chú: Nếu dùng tệp Excel khác, cập nhật 'train_file' và 'test_file' trong CONFIG.
+# Đảm bảo tệp mới có cùng cấu trúc cột (U1-U12 cho input, cột cuối cho output).
+
+# Kiểm tra tệp
+for path in [TRAIN_PATH, TEST_PATH]:
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Không tìm thấy tệp {path}")
+
+# Tải tập dữ liệu huấn luyện
+dataset_train = pd.read_excel(TRAIN_PATH, sheet_name='KB1.TH', engine='openpyxl')
+dataset_train = dataset_train.iloc[0:CONFIG['num_samples'], 0:16]
+if dataset_train.isnull().any().any():
+    raise ValueError("Dữ liệu huấn luyện chứa giá trị NaN")
+# Ghi chú: Để thay đổi input:
+# - Nếu số cột input thay đổi (khác 12 cột U1-U12), điều chỉnh chỉ số cột trong dataset_train.iloc[:, 1:13].
+# - Ví dụ: Nếu input là U1-U10 (10 cột), đổi thành dataset_train.iloc[:, 1:11].
+# - Nếu số mẫu huấn luyện thay đổi, cập nhật 'num_samples' trong CONFIG.
+
+# Lấy input và output
+X_train = dataset_train.iloc[:, 1:13].values  # 12 đặc trưng đầu vào (U1-U12)
+y_train1 = dataset_train.iloc[:, -len(CONFIG['P']):].values  # 3 cột cuối (tương ứng với P)
+# Ghi chú: Để thay đổi số đặc trưng đầu vào:
+# - Đổi chỉ số cột trong X_train = dataset_train.iloc[:, 1:13]. Ví dụ: U1-U10 thì dùng 1:11.
+# - Cập nhật 'P' trong CONFIG nếu số cột output (hiện là 3, tương ứng với 97, 111, 112) thay đổi.
+# - Đảm bảo số cột output khớp với len(P).
+
+# Chuẩn bị output cho ANN2
+y_train2 = np.zeros((CONFIG['num_samples'], CONFIG['num_features']))
+for i in range(CONFIG['num_samples']):
+    for j, idx in enumerate(CONFIG['P']):
+        y_train2[i, idx] = y_train1[i, j]
+# Ghi chú: y_train2 tạo lưới 225 phần tử (15x15) với các giá trị tại chỉ số P.
+# Nếu kích thước lưới thay đổi (khác 15x15), cập nhật 'num_features', 'X_size', 'Y_size' trong CONFIG.
+# Đảm bảo các chỉ số trong 'P' nằm trong [0, num_features-1].
+
+# Tăng cường dữ liệu
+noise = np.random.normal(0, 0.01, X_train.shape)
+X_train_aug = np.vstack([X_train, X_train + noise])
+y_train1_aug = np.vstack([y_train1, y_train1])
+y_train2_aug = np.vstack([y_train2, y_train2])
+# Ghi chú: Tăng cường dữ liệu thêm nhiễu để tăng số mẫu.
+# Nếu số đặc trưng đầu vào thay đổi, X_train.shape sẽ tự động cập nhật, không cần chỉnh sửa.
+
+# Tải tập dữ liệu kiểm tra
+dataset_test = pd.read_excel(TEST_PATH, sheet_name='KB1.TH', engine='openpyxl')
+dataset_test = dataset_test.iloc[0:CONFIG['num_samples_test'], 0:16]
+if dataset_test.isnull().any().any():
+    raise ValueError("Dữ liệu kiểm tra chứa giá trị NaN")
+# Ghi chú: Tương tự tập huấn luyện, cập nhật 'num_samples_test' nếu số mẫu kiểm tra thay đổi.
+# Đảm bảo tệp kiểm tra có cùng số cột input và output như tệp huấn luyện.
+
+# Lấy input và output từ test
+X_test = dataset_test.iloc[:, 1:13].values  # 12 đặc trưng đầu vào
+y_test1 = dataset_test.iloc[:, -len(CONFIG['P']):].values  # 3 cột cuối
+# Ghi chú: Đổi chỉ số cột trong X_test = dataset_test.iloc[:, 1:13] nếu số đặc trưng input thay đổi.
+# Ví dụ: Nếu input là U1-U10, dùng 1:11.
+
+# Chuẩn bị output cho ANN2 (test)
+y_test2 = np.zeros((CONFIG['num_samples_test'], CONFIG['num_features']))
+for i in range(CONFIG['num_samples_test']):
+    for j, idx in enumerate(CONFIG['P']):
+        y_test2[i, idx] = y_test1[i, j]
+# Ghi chú: Tương tự y_train2, cập nhật 'num_features' và 'P' nếu lưới hoặc chỉ số thay đổi.
+
+# Chuẩn hóa đầu vào
+scaler = StandardScaler()
+X_train_aug = scaler.fit_transform(X_train_aug)
+X_test = scaler.transform(X_test)
+# Ghi chú: Chuẩn hóa tự động điều chỉnh theo số đặc trưng đầu vào.
+# Không cần thay đổi trừ khi bạn muốn dùng phương pháp chuẩn hóa khác.
+
+## Part 2 - Building and Training the ANNs
+# Tắt eager execution để tăng tốc
+tf.config.run_functions_eagerly(False)
+
+# Số lần lặp chẩn đoán
+NUM_RUNS = 5  # THAY ĐỔI: Thêm biến để kiểm soát số lần lặp
+
+# Lưu trữ kết quả của tất cả các lần chạy
+results = []  # THAY ĐỔI: Danh sách lưu trữ dự đoán, MSE, MAE và y_pred2 (cho lần 1)
+
+# Lặp lại quá trình huấn luyện và dự đoán 5 lần
+for run in range(NUM_RUNS):
+    # Xây dựng ANN1 và ANN2 cho mỗi lần lặp
+    ann1 = build_ann(input_shape=X_train_aug.shape[1], output_units=len(CONFIG['P']), num_layers=3, units=256, dropout_rate=0.2)
+    ann2 = build_ann(input_shape=X_train_aug.shape[1], output_units=CONFIG['num_features'], num_layers=3, units=256, dropout_rate=0.2)
+    # Ghi chú: input_shape tự động lấy từ X_train_aug.shape[1] (số đặc trưng đầu vào).
+    # Nếu số đặc trưng đầu vào thay đổi (ví dụ: từ 12 xuống 10), input_shape sẽ tự động cập nhật.
+
+    # Cấu hình huấn luyện
+    optimizer = tf.keras.optimizers.Adam(learning_rate=CONFIG['learning_rate'])
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=50, restore_best_weights=True)
+    reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_lr=0.0001)
+
+    # Huấn luyện ANN1
+    ann1.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mae'])
+    ann1.fit(X_train_aug, y_train1_aug, validation_data=(X_test, y_test1), 
+             batch_size=CONFIG['batch_size'], epochs=1000, callbacks=[early_stopping, reduce_lr], verbose=0)
+
+    # Tạo lại optimizer cho ANN2
+    optimizer = tf.keras.optimizers.Adam(learning_rate=CONFIG['learning_rate'])
+    ann2.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mae'])
+    ann2.fit(X_train_aug, y_train2_aug, validation_data=(X_test, y_test2), 
+             batch_size=CONFIG['batch_size'], epochs=1000, callbacks=[early_stopping, reduce_lr], verbose=0)
+    # Ghi chú: Huấn luyện tự động điều chỉnh theo kích thước input và output.
+    # Không cần thay đổi trừ khi bạn muốn điều chỉnh siêu tham số (learning_rate, batch_size).
+    # THAY ĐỔI: Đặt verbose=0 để giảm đầu ra console.
+
+    # Dự đoán
+    y_pred1 = ann1.predict(X_test, verbose=0)
+    y_pred2 = ann2.predict(X_test, verbose=0)
+
+    # Ghi đè các phần tử trong P
+    for j in range(len(CONFIG['P'])):
+        y_pred2[:, CONFIG['P'][j]] = y_pred1[:, j]
+    # Ghi chú: Đảm bảo len(P) khớp với số cột output của ANN1.
+    # Nếu P thay đổi, kiểm tra các chỉ số trong P nằm trong [0, num_features-1].
+
+    # Đánh giá ANN1
+    mse = mean_squared_error(y_test1, y_pred1)
+    mae = mean_absolute_error(y_test1, y_pred1)
+
+    # Lưu kết quả
+    results.append({
+        'run': run + 1,
+        'y_pred1': y_pred1,
+        'mse': mse,
+        'mae': mae,
+        'y_pred2': y_pred2 if run == 0 else None  # THAY ĐỔI: Chỉ lưu y_pred2 cho lần 1
+    })
+    # THAY ĐỔI: Lưu kết quả vào danh sách thay vì in ngay lập tức
+
+## Part 3 - Displaying Results
+# Hiển thị kết quả của tất cả các lần chạy
+print("\n=== Kết quả của 5 lần chẩn đoán ===")
+for result in results:
+    print(f"\nLần chẩn đoán {result['run']}:")
+    print(f"ANN1 Prediction (Element 113):")
+    print(result['y_pred1'])
+    print(f"\nExpected (Element 113):")
+    print(y_test1)
+    print(f"\nANN1 Test MSE: {result['mse']:.4f}")
+    print(f"ANN1 Test MAE: {result['mae']:.4f}")
+
+## Part 4 - Visualization (chỉ cho lần 1)
+# Tạo đồ thị 3D cho lần đầu tiên
+if results[0]['y_pred2'] is not None:  # THAY ĐỔI: Kiểm tra y_pred2 của lần 1
+    # Thiết lập font chữ
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 12
+
+    # Reshape y_pred2 thành lưới [EY, EX]
+    y_pred2 = np.abs(results[0]['y_pred2'].reshape(CONFIG['Y_size'], CONFIG['X_size']))
+    # Ghi chú: Đảm bảo num_features = X_size * Y_size.
+    # Nếu kích thước lưới thay đổi, cập nhật 'X_size', 'Y_size', 'num_features' trong CONFIG.
+
+    # Tạo lưới EX và EY
+    x = np.arange(CONFIG['X_size'])
+    y = np.arange(CONFIG['Y_size'])
+    x, y = np.meshgrid(x, y)
+
+    # Tạo đồ thị 3D
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Ánh xạ màu với colormap sáng
+    vmax = np.max(y_pred2)
+    normed_values = y_pred2 / vmax
+    colors = plt.cm.YlOrRd(normed_values.flatten())
+
+    # Vẽ toàn bộ lưới với bar3d
+    ax.bar3d(
+        x.flatten(), y.flatten(), np.zeros_like(y_pred2.flatten()),
+        1, 1, y_pred2.flatten(), color=colors, shade=True
+    )
+
+    # Hiển thị giá trị phần trăm trên cột nếu đủ lớn
+    threshold = 0.01
+    for xi, yi, val in zip(x.flatten(), y.flatten(), y_pred2.flatten()):
+        if val > threshold:
+            ax.text(xi + 0.5, yi + 0.5, val + 0.01, f'{val:.2%}', 
+                    ha='center', va='bottom', color='black')
+
+    # Đánh dấu các chỉ số trong P
+    for idx in CONFIG['P']:
+        xi, yi = idx % CONFIG['X_size'], idx // CONFIG['X_size']
+        ax.scatter([xi], [yi], [y_pred2[yi, xi]], color='blue', s=100, marker='*')
+    # Ghi chú: Đánh dấu các chỉ số trong P để làm nổi bật vị trí hư hỏng.
+    # Nếu P thay đổi, đảm bảo các chỉ số nằm trong lưới [0, X_size*Y_size-1].
+
+    # Gán nhãn và tỷ lệ trục
+    ax.set_xlabel('EX')
+    ax.set_ylabel('EY')
+    ax.set_zlabel('Damage Index')
+    ax.set_title('MODE 10 - ANNs-2 (Lần 1)')
+
+    # Tỷ lệ hình học
+    ax.set_box_aspect([30, 29.01639344, 15])
+    ax.view_init(elev=35, azim=-130)
+
+    # Thêm colorbar
+    mappable = plt.cm.ScalarMappable(cmap='YlOrRd')
+    mappable.set_array(y_pred2)
+    plt.colorbar(mappable, ax=ax, shrink=0.6)
+
+    # Lưu và hiển thị
+    plt.tight_layout()
+    plt.savefig('damage_index_3d_run_1.pdf', format='pdf', bbox_inches='tight')
+    plt.show()
+    plt.close()  # THAY ĐỔI: Đóng figure để tránh chồng lấn
