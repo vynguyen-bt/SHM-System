@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - SHM-BIM-FEM</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .log { max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 API Test - SHM-BIM-FEM Backend</h1>
+    
+    <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <p>1. Đảm bảo backend đang chạy trên port 5000</p>
+        <p>2. Click các nút test bên dưới để kiểm tra kết nối</p>
+        <p>3. Xem kết quả trong console và logs</p>
+    </div>
+
+    <div class="test-section">
+        <h3>🌐 Test 1: Backend Connection</h3>
+        <button onclick="testBackendConnection()">Test Backend Connection</button>
+        <div id="connectionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>📤 Test 2: Upload Files API</h3>
+        <input type="file" id="trainFile" accept=".csv">
+        <label for="trainFile">Training File (TRAIN_651.csv)</label><br><br>
+        <input type="file" id="testFile" accept=".csv">
+        <label for="testFile">Test File (TEST_651.csv)</label><br><br>
+        <button onclick="testUploadFiles()">Test Upload & Train</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔮 Test 3: Predict API</h3>
+        <button onclick="testPredict()">Test Predict</button>
+        <div id="predictResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>📝 Console Logs</h3>
+        <div id="logs" class="log"></div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testBackendConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            log('Testing backend connection...', 'info');
+            
+            try {
+                // Test basic connection
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<div class="success">✅ Backend connection successful!</div>';
+                    log('Backend connection successful', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Backend connection failed: ${error.message}</div>`;
+                log(`Backend connection failed: ${error.message}`, 'error');
+                
+                // Additional diagnostics
+                log('Checking if backend is running on port 5000...', 'info');
+                try {
+                    const testResponse = await fetch('http://localhost:5000/upload-files', {
+                        method: 'OPTIONS',
+                        mode: 'cors'
+                    });
+                    log('CORS preflight successful - backend is running', 'success');
+                } catch (corsError) {
+                    log('Backend appears to be down or not accessible', 'error');
+                }
+            }
+        }
+
+        async function testUploadFiles() {
+            const resultDiv = document.getElementById('uploadResult');
+            const trainFile = document.getElementById('trainFile').files[0];
+            const testFile = document.getElementById('testFile').files[0];
+            
+            if (!trainFile || !testFile) {
+                resultDiv.innerHTML = '<div class="error">❌ Please select both training and test files</div>';
+                log('Missing files for upload test', 'error');
+                return;
+            }
+            
+            log(`Testing upload with files: ${trainFile.name}, ${testFile.name}`, 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('train_file', trainFile);
+                formData.append('test_file', testFile);
+                
+                const response = await axios.post(`${API_BASE}/upload-files`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    timeout: 60000 // 60 seconds timeout
+                });
+                
+                resultDiv.innerHTML = '<div class="success">✅ Upload and training successful!</div>';
+                log(`Upload successful: ${response.data.message}`, 'success');
+                
+            } catch (error) {
+                const errorMsg = error.response?.data?.error || error.message;
+                resultDiv.innerHTML = `<div class="error">❌ Upload failed: ${errorMsg}</div>`;
+                log(`Upload failed: ${errorMsg}`, 'error');
+                
+                if (error.response) {
+                    log(`Response status: ${error.response.status}`, 'error');
+                    log(`Response data: ${JSON.stringify(error.response.data)}`, 'error');
+                }
+            }
+        }
+
+        async function testPredict() {
+            const resultDiv = document.getElementById('predictResult');
+            log('Testing prediction API...', 'info');
+            
+            try {
+                const response = await axios.post(`${API_BASE}/predict`, {}, {
+                    timeout: 30000 // 30 seconds timeout
+                });
+                
+                resultDiv.innerHTML = '<div class="success">✅ Prediction successful!</div>';
+                log(`Prediction successful. Got ${response.data.predictions.length} predictions`, 'success');
+                log(`First prediction: ${JSON.stringify(response.data.predictions[0]?.slice(0, 5))}...`, 'info');
+                
+            } catch (error) {
+                const errorMsg = error.response?.data?.error || error.message;
+                resultDiv.innerHTML = `<div class="error">❌ Prediction failed: ${errorMsg}</div>`;
+                log(`Prediction failed: ${errorMsg}`, 'error');
+                
+                if (error.response) {
+                    log(`Response status: ${error.response.status}`, 'error');
+                    log(`Response data: ${JSON.stringify(error.response.data)}`, 'error');
+                }
+            }
+        }
+
+        // Auto-load test files if available
+        window.onload = function() {
+            log('API Test page loaded', 'info');
+            log('Make sure backend is running: cd backend && python app.py', 'info');
+        };
+    </script>
+</body>
+</html>

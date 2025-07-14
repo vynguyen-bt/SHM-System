@@ -6,6 +6,11 @@ function switchToPartA() {
 function switchToPartB() {
   var partB = document.getElementById("partB");
   partB.style.display = partB.style.display === "block" ? "none" : "block";
+
+  // Khởi tạo mục 2 và cập nhật danh sách phần tử hư hỏng từ mục 1
+  if (typeof initializeSection2 === 'function') {
+    setTimeout(initializeSection2, 100); // Delay nhỏ để đảm bảo UI đã render
+  }
 }
 
 function switchToPartB1() {

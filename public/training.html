@@ -40,8 +40,17 @@
 
     <!-- Nhập nút phần tử và mode khảo sát -->
     <div class="filter-container">
-        <label for="nodeInput">Nhập nút phần tử:</label>
-        <input type="text" id="nodeInput" placeholder="Enter Node values (e.g., 995, 954)" />
+        <label for="nodeInput"><strong>
+            
+        </strong>Nhập 651 nút phần tử (phân tách bằng dấu phẩy):</strong></label>
+        <br>
+        <small style="color: #666;">
+            Nhập đúng 651 node IDs để tạo CSV với 662 cột (Case + U1-U651 + DI1-DI10)<br>
+            Ví dụ: 995,954,910,866,822,778,734,690,646,602,558,...
+        </small>
+        <br><br>
+        <textarea id="nodeInput" rows="8" cols="100"
+                  placeholder="Nhập 651 node IDs, phân tách bằng dấu phẩy. Ví dụ: 995,954,910,866,822,778,734,690,646,602,558,514,470,426,382,338,294,250,206,162,118,74,30,999,955,911,867,823,779,735,691,647,603,559,515,471,427,383,339,295,251,207,163,119,75,31,1003,959,915,871,827,783,739,695,651,607,563,519,475,431,387,343,299,255,211,167,123,79,35,1007,963,919,875,831,787,743,699,655,611,567,523,479,435,391,347,303,259,215,171,127,83,39,1011,967,923,879,835,791,747,703,659,615,571,527,483,439,395,351,307,263,219,175,131,87,43,1015,971,927,883,839,795,751,707,663,619,575,531,487,443,399,355,311,267,223,179,135,91,47,1019,975,931,887,843,799,755,711,667,623,579,535,491,447,403,359,315,271,227,183,139,95,51,1023,979,935,891,847,803,759,715,671,627,583,539,495,451,407,363,319,275,231,187,143,99,55,1027,983,939,895,851,807,763,719,675,631,587,543,499,455,411,367,323,279,235,191,147,103,59,1031,987,943,899,855,811,767,723,679,635,591,547,503,459,415,371,327,283,239,195,151,107,63,1035,991,947,903,859,815,771,727,683,639,595,551,507,463,419,375,331,287,243,199,155,111,67,1039,995,951,907,863,819,775,731,687,643,599,555,511,467,423,379,335,291,247,203,159,115,71,1043,999,955,911,867,823,779,735,691,647,603,559,515,471,427,383,339,295,251,207,163,119,75,1047,1003,959,915,871,827,783,739,695,651,607,563,519,475,431,387,343,299,255,211,167,123,79,1051,1007,963,919,875,831,787,743,699,655,611,567,523,479,435,391,347,303,259,215,171,127,83,1055,1011,967,923,879,835,791,747,703,659,615,571,527,483,439,395,351,307,263,219,175,131,87,1059,1015,971,927,883,839,795,751,707,663,619,575,531,487,443,399,355,311,267,223,179,135,91,1063,1019,975,931,887,843,799,755,711,667,623,579,535,491,447,403,359,315,271,227,183,139,95,1067,1023,979,935,891,847,803,759,715,671,627,583,539,495,451,407,363,319,275,231,187,143,99,1071,1027,983,939,895,851,807,763,719,675,631,587,543,499,455,411,367,323,279,235,191,147,103,1075,1031,987,943,899,855,811,767,723,679,635,591,547,503,459,415,371,327,283,239,195,151,107,1079,1035,991,947,903,859,815,771,727,683,639,595,551,507,463,419,375,331,287,243,199,155,111,1083,1039,995,951,907,863,819,775,731,687,643,599,555,511,467,423,379,335,291,247,203,159,115,1087,1043,999,955,911,867,823,779,735,691,647,603,559,515,471,427,383,339,295,251,207,163,119,1091,1047,1003,959,915,871,827,783,739,695,651,607,563,519,475,431,387,343,299,255,211,167,123,1095,1051,1007,963,919,875,831,787,743,699,655,611,567,523,479,435,391,347,303,259,215,171,127"></textarea>
     </div>
 
     <div class="filter-container">
@@ -55,7 +64,8 @@
     </div>
 
     <!-- Nút để xuất dữ liệu CSV -->
-    <button onclick="exportData()">Export Data</button>
+    <button onclick="exportData()">Export Training Data (662 columns)</button>
+    <button onclick="exportTestData()">Export Test Data (662 columns)</button>
 
     <script>
         const csvDataArr = [];
@@ -101,19 +111,30 @@
             return data;
         }
 
-        // Hàm xử lý và lọc dữ liệu cho tất cả các CSV
+        // Hàm xử lý và lọc dữ liệu cho tất cả các CSV - hỗ trợ 651 nodes
         function sortAndFilterData(dataArr, filteredDataArr) {
             const nodeValue = document.getElementById('nodeInput').value.trim();
             let sortedData = [...dataArr];
 
             if (nodeValue !== '') {
-                const nodeOrder = nodeValue.split(',').map(item => item.trim());
+                // Xử lý 651 node IDs được phân tách bằng dấu phẩy
+                const nodeOrder = nodeValue.split(',').map(item => item.trim()).filter(item => item !== '');
+
+                console.log(`Processing ${nodeOrder.length} nodes for 651-feature model`);
+
+                // Đảm bảo có đúng 651 nodes
+                if (nodeOrder.length !== 651) {
+                    alert(`Cảnh báo: Cần đúng 651 nodes, hiện tại có ${nodeOrder.length} nodes`);
+                }
 
                 sortedData = sortedData.sort((a, b) => {
                     const indexA = nodeOrder.indexOf(a.node.toString());
                     const indexB = nodeOrder.indexOf(b.node.toString());
                     return indexA - indexB;
                 });
+
+                // Chỉ giữ lại data của các nodes trong nodeOrder
+                sortedData = sortedData.filter(item => nodeOrder.includes(item.node.toString()));
             }
 
             const modeValue = document.getElementById('modeInput').value.trim();
@@ -154,33 +175,230 @@
             console.log('Filtered and Synced Data:', filteredDataArr); // Kiểm tra dữ liệu đã lọc và đồng bộ
         }
 
-        // Hàm export dữ liệu
+        // Hàm export dữ liệu training với 662 cột (Case + U1-U651 + DI1-DI10)
         function exportData() {
-            let allData = [];
+            const nodeValue = document.getElementById('nodeInput').value.trim();
+            if (nodeValue === '') {
+                alert('Vui lòng nhập 651 node IDs trước khi export!');
+                return;
+            }
 
-            // Lọc và sắp xếp dữ liệu theo yêu cầu
-            csvDataArr.forEach((dataArr) => {
+            const nodeOrder = nodeValue.split(',').map(item => item.trim()).filter(item => item !== '');
+            if (nodeOrder.length !== 651) {
+                alert(`Cần đúng 651 nodes để tạo 662-column CSV. Hiện tại có ${nodeOrder.length} nodes.`);
+                return;
+            }
+
+            let allTrainingData = [];
+
+            // Xử lý từng CSV file để tạo training cases
+            csvDataArr.forEach((dataArr, caseIndex) => {
                 const filteredData = [];
-                sortAndFilterData(dataArr, filteredData);  // Lọc dữ liệu
+                sortAndFilterData(dataArr, filteredData);
 
-                const eigenvectorValues = filteredData.map(item => item.eigenvector);  // Lấy giá trị eigenvector
-                allData.push(eigenvectorValues);  // Thêm vào mảng dữ liệu
+                if (filteredData.length !== 651) {
+                    console.warn(`Case ${caseIndex}: Expected 651 data points, got ${filteredData.length}`);
+                }
+
+                // Tạo row cho training data
+                let row = [caseIndex]; // Case number
+
+                // Thêm U1-U651 (eigenvector values từ 651 nodes)
+                const eigenvectorValues = filteredData.map(item => item.eigenvector);
+
+                // Đảm bảo có đúng 651 values, padding với 0 nếu thiếu
+                while (eigenvectorValues.length < 651) {
+                    eigenvectorValues.push(0);
+                }
+                eigenvectorValues.splice(651); // Cắt bớt nếu thừa
+
+                row.push(...eigenvectorValues);
+
+                // Thêm DI1-DI10 (damage indices) - mặc định tất cả = 0 cho training
+                // Có thể customize logic này để set damage cho specific elements
+                const damageIndices = new Array(10).fill(0);
+                // Ví dụ: set damage cho element đầu tiên với giá trị tăng dần
+                damageIndices[0] = caseIndex * 0.03; // 3% increment per case
+                if (damageIndices[0] > 0.5) damageIndices[0] = 0.5; // Max 50%
+
+                row.push(...damageIndices);
+
+                allTrainingData.push(row);
             });
 
-            // Sắp xếp dữ liệu theo hàng ngang
-            let rows = [];
-            allData.forEach(dataArr => {
-                rows.push(dataArr.join(','));  // Join các giá trị eigenvector
-            });
+            // Tạo header cho 662 cột
+            const headers = [
+                'Case',
+                ...Array.from({length: 651}, (_, i) => `U${i + 1}`), // U1-U651
+                ...Array.from({length: 10}, (_, i) => `DI${i + 1}`)   // DI1-DI10
+            ];
 
-            // Kết hợp thành chuỗi CSV
-            const csvContent = rows.join('\n');
+            // Tạo CSV content
+            let csvContent = headers.join(',') + '\n';
+            csvContent += allTrainingData.map(row => row.join(',')).join('\n');
+
+            // Export file
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'filtered_results.csv';  // Tên tệp CSV xuất
+            link.download = 'TRAIN_651_features.csv';
             link.click();
+
+            console.log(`Exported TRAIN.csv with ${allTrainingData.length} cases and 662 columns`);
         }
+
+        // Hàm export dữ liệu test với 662 cột
+        function exportTestData() {
+            const nodeValue = document.getElementById('nodeInput').value.trim();
+            if (nodeValue === '') {
+                alert('Vui lòng nhập 651 node IDs trước khi export!');
+                return;
+            }
+
+            const nodeOrder = nodeValue.split(',').map(item => item.trim()).filter(item => item !== '');
+            if (nodeOrder.length !== 651) {
+                alert(`Cần đúng 651 nodes để tạo 662-column CSV. Hiện tại có ${nodeOrder.length} nodes.`);
+                return;
+            }
+
+            if (csvDataArr.length === 0) {
+                alert('Không có dữ liệu CSV để export test data!');
+                return;
+            }
+
+            // Sử dụng CSV file đầu tiên làm test data
+            const testDataArr = csvDataArr[0];
+            const filteredData = [];
+            sortAndFilterData(testDataArr, filteredData);
+
+            // Tạo test row
+            let testRow = [0]; // Case 0 for test
+
+            // Thêm U1-U651
+            const eigenvectorValues = filteredData.map(item => item.eigenvector);
+            while (eigenvectorValues.length < 651) {
+                eigenvectorValues.push(0);
+            }
+            eigenvectorValues.splice(651);
+            testRow.push(...eigenvectorValues);
+
+            // Thêm DI1-DI10 - giả định có damage ở element 3 với 30%
+            const damageIndices = new Array(10).fill(0);
+            damageIndices[2] = 0.3; // Element 3 damaged 30%
+            testRow.push(...damageIndices);
+
+            // Tạo header
+            const headers = [
+                'Case',
+                ...Array.from({length: 651}, (_, i) => `U${i + 1}`),
+                ...Array.from({length: 10}, (_, i) => `DI${i + 1}`)
+            ];
+
+            // Tạo CSV content
+            let csvContent = headers.join(',') + '\n';
+            csvContent += testRow.join(',') + '\n';
+
+            // Export file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'TEST_651_features.csv';
+            link.click();
+
+            console.log('Exported TEST.csv with 662 columns');
+        }
+
+        // Hàm đồng bộ dấu giữa các file CSV (sign synchronization)
+        function syncSigns(referenceData, targetData) {
+            if (!referenceData || !targetData || referenceData.length === 0 || targetData.length === 0) {
+                return;
+            }
+
+            // Tạo map từ node ID để dễ dàng so sánh
+            const refMap = {};
+            referenceData.forEach(item => {
+                refMap[item.node] = item.eigenvector;
+            });
+
+            // Đồng bộ dấu cho targetData dựa trên referenceData
+            targetData.forEach(item => {
+                const refValue = refMap[item.node];
+                if (refValue !== undefined) {
+                    const currentValue = parseFloat(item.eigenvector);
+                    const refValueFloat = parseFloat(refValue);
+
+                    // Nếu dấu khác nhau, đổi dấu
+                    if (Math.sign(currentValue) !== Math.sign(refValueFloat) && refValueFloat !== 0) {
+                        item.eigenvector = (-currentValue).toString();
+                    }
+                }
+            });
+        }
+
+        // Hàm validation cho 651 nodes input
+        function validateNodeInput() {
+            const nodeValue = document.getElementById('nodeInput').value.trim();
+            if (nodeValue === '') {
+                return { valid: false, message: 'Vui lòng nhập node IDs' };
+            }
+
+            const nodeOrder = nodeValue.split(',').map(item => item.trim()).filter(item => item !== '');
+
+            if (nodeOrder.length !== 651) {
+                return {
+                    valid: false,
+                    message: `Cần đúng 651 nodes, hiện tại có ${nodeOrder.length} nodes`
+                };
+            }
+
+            // Kiểm tra duplicate nodes
+            const uniqueNodes = new Set(nodeOrder);
+            if (uniqueNodes.size !== nodeOrder.length) {
+                return {
+                    valid: false,
+                    message: 'Có node IDs bị trùng lặp'
+                };
+            }
+
+            // Kiểm tra tất cả đều là số
+            const invalidNodes = nodeOrder.filter(node => isNaN(parseInt(node)));
+            if (invalidNodes.length > 0) {
+                return {
+                    valid: false,
+                    message: `Các node IDs không hợp lệ: ${invalidNodes.slice(0, 5).join(', ')}${invalidNodes.length > 5 ? '...' : ''}`
+                };
+            }
+
+            return { valid: true, message: 'Node input hợp lệ' };
+        }
+
+        // Thêm event listener để validate input real-time
+        document.addEventListener('DOMContentLoaded', function() {
+            const nodeInput = document.getElementById('nodeInput');
+            let validationTimeout;
+
+            nodeInput.addEventListener('input', function() {
+                clearTimeout(validationTimeout);
+                validationTimeout = setTimeout(() => {
+                    const validation = validateNodeInput();
+
+                    // Tạo hoặc cập nhật validation message
+                    let validationMsg = document.getElementById('validation-message');
+                    if (!validationMsg) {
+                        validationMsg = document.createElement('div');
+                        validationMsg.id = 'validation-message';
+                        validationMsg.style.marginTop = '10px';
+                        nodeInput.parentNode.appendChild(validationMsg);
+                    }
+
+                    if (validation.valid) {
+                        validationMsg.innerHTML = `<span style="color: green;">✓ ${validation.message}</span>`;
+                    } else {
+                        validationMsg.innerHTML = `<span style="color: red;">✗ ${validation.message}</span>`;
+                    }
+                }, 1000); // Validate sau 1 giây không typing
+            });
+        });
     </script>
 </body>
 

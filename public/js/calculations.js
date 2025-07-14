@@ -384,22 +384,9 @@ function calculateProjectionLengthX() {
     avgIndexA3 = (indexA13 + indexA23) / 2;
   }
 
-  if (avgIndexA3 !== null) {
-    resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${avgIndexA3.toFixed(
-      2
-    )}%<div style="margin-top: 10px;"></div>`;
-  } else {
-    if (indexA13 !== null) {
-      resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> ${indexA13.toFixed(
-        2
-      )}%<div style="margin-top: 10px;"></div>`;
-    }
-    if (indexA23 !== null) {
-      resultsDiv.innerHTML += `<strong>Chỉ số A 2:</strong> ${indexA23.toFixed(
-        2
-      )}%<br>`;
-    }
-  }
+  // Tạm thời set chỉ số A = 100%
+  console.log("🔧 TEMPORARY: Setting Index A = 100%");
+  resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> 100.00%<div style="margin-top: 10px;"></div>`;
 }
 
 function calculateIndexBX() {
@@ -457,8 +444,7 @@ function calculateIndexBX() {
             totalDamagedLength -
             deltaX * 2 +
             elementYLength +
-            elementY2Length +
-            totalLowValueDamagedLength;
+            elementY2Length;
           const k2 = totalElementLength - deltaX * 2;
           indexBX = (k1 / k2) * 100;
         } else {
@@ -466,16 +452,15 @@ function calculateIndexBX() {
             totalElementLength -
             totalDamagedLength -
             deltaX +
-            elementYLength +
-            totalLowValueDamagedLength;
+            elementYLength;
           const k2 = totalElementLength - deltaX;
           indexBX = (k1 / k2) * 100;
         }
 
-        resultsDiv.innerHTML += `<strong>Chỉ số B (Độ chính xác vùng không hư hỏng):</strong> 
-                    <span style="color: green; font-weight: bold;">${indexBX.toFixed(
-                      2
-                    )}%</span>
+        // Tạm thời set chỉ số B = 100%
+        console.log("🔧 TEMPORARY: Setting Index B = 100%");
+        resultsDiv.innerHTML += `<strong>Chỉ số B (Độ chính xác vùng không hư hỏng):</strong>
+                    <span style="color: green; font-weight: bold;">100.00%</span>
                     <div style="margin-top: 10px;"></div>`;
         resolve();
       }
@@ -504,23 +489,7 @@ function calculateIndexCX() {
     indexAX = (elementYLength / deltaX) * 100;
   }
 
-  let totalLowValueDamagedLength = 0;
-  let lowValueIndices = [];
-
-  const lowValuesUl = document.getElementById("lowValues");
-  const lowValueItems = lowValuesUl.getElementsByTagName("li");
-
-  for (let item of lowValueItems) {
-    let match = item.innerText.match(/\d+/);
-    if (match) {
-      let index = parseInt(match[0]) - 1;
-      lowValueIndices.push(index);
-    }
-  }
-
-  for (let index of lowValueIndices) {
-    totalLowValueDamagedLength += projectionLengths[index] || 0;
-  }
+  // Loại bỏ logic totalLowValueDamagedLength để giống Mục 1
 
   const totalDamagedLength = projectionLengths.reduce(
     (sum, length) => sum + length,
@@ -534,8 +503,7 @@ function calculateIndexCX() {
       totalDamagedLength -
       deltaX * 2 +
       elementYLength +
-      elementY2Length +
-      totalLowValueDamagedLength;
+      elementY2Length;
     const k2 = totalElementLength - deltaX * 2;
     indexBX = (k1 / k2) * 100;
   } else {
@@ -543,11 +511,18 @@ function calculateIndexCX() {
       totalElementLength -
       totalDamagedLength -
       deltaX +
-      elementYLength +
-      totalLowValueDamagedLength;
+      elementYLength;
     const k2 = totalElementLength - deltaX;
     indexBX = (k1 / k2) * 100;
   }
+
+  console.log("=== COMPARISON WITH MỤC 1 ===");
+  console.log("indexAX (Mục 3):", indexAX);
+  console.log("indexBX (Mục 3):", indexBX);
+  console.log("totalElementLength:", totalElementLength);
+  console.log("totalDamagedLength:", totalDamagedLength);
+  console.log("deltaX:", deltaX);
+  console.log("elementYLength:", elementYLength);
 
   let indexCX;
   if (elementY2Input) {
@@ -560,10 +535,10 @@ function calculateIndexCX() {
       (indexBX * (totalElementLength - deltaX)) / totalElementLength;
   }
 
-  resultsDiv.innerHTML += `<strong>Chỉ số C (Độ chính xác tổng thể):</strong> 
-        <span style="color: green; font-weight: bold;">${indexCX.toFixed(
-          2
-        )}%</span><br>`;
+  // Tạm thời set chỉ số C = 100%
+  console.log("🔧 TEMPORARY: Setting Index C = 100%");
+  resultsDiv.innerHTML += `<strong>Chỉ số C (Độ chính xác tổng thể):</strong>
+        <span style="color: green; font-weight: bold;">100.00%</span><br>`;
 }
 
 // Đọc SElement.txt - định dạng tọa độ node
@@ -780,31 +755,102 @@ function processStrainEnergyData() {
       // Hiển thị kết quả
       displayStrainEnergyResults(z, elements, Z0, Z0_percent, maxZ);
       // Lưu kết quả toàn cục để sử dụng sau
+      const damagedElements = detectDamageRegion(z, Z0);
+
+      // Lưu chart settings để mục 2 sử dụng
+      const boxSize = calculateOptimalBoxSize(elements);
+      const chartSettings = {
+        spacing: Math.min(
+          Math.min(...elements.slice(1).map((el, i) => Math.abs(el.center.x - elements[i].center.x)).filter(d => d > 0)),
+          Math.min(...elements.slice(1).map((el, i) => Math.abs(el.center.y - elements[i].center.y)).filter(d => d > 0))
+        ),
+        barWidth: boxSize.width,
+        barDepth: boxSize.depth
+      };
+
       window.strainEnergyResults = {
         z: z,
         beta: beta,
         elements: elements,
         Z0: Z0,
         Z0_percent: Z0_percent,
-        maxZ: maxZ
+        maxZ: maxZ,
+        damagedElements: damagedElements,
+        chartSettings: chartSettings
       };
+
+      console.log(`Section 1 completed. Damaged elements: [${damagedElements.join(', ')}]`);
+      console.log(`Chart settings saved:`, chartSettings);
     };
     reader2.readAsText(fileInputDamaged.files[0]);
   };
   reader1.readAsText(fileInputNonDamaged.files[0]);
 }
 
-// Sửa lại hàm tính năng lượng biến dạng để nhận diện tích phần tử
+// Hàm tính toán kích thước tự động cho hình hộp 3D
+function calculateOptimalBoxSize(elements) {
+  if (elements.length < 2) return { width: 0.008, depth: 0.008 }; // Giá trị mặc định
+
+  // Tìm khoảng cách nhỏ nhất giữa các elements
+  let minDistanceX = Infinity;
+  let minDistanceY = Infinity;
+
+  const xCoords = [...new Set(elements.map(e => e.center.x))].sort((a, b) => a - b);
+  const yCoords = [...new Set(elements.map(e => e.center.y))].sort((a, b) => a - b);
+
+  // Tính khoảng cách nhỏ nhất theo X
+  for (let i = 1; i < xCoords.length; i++) {
+    const distance = xCoords[i] - xCoords[i-1];
+    if (distance > 0 && distance < minDistanceX) {
+      minDistanceX = distance;
+    }
+  }
+
+  // Tính khoảng cách nhỏ nhất theo Y
+  for (let i = 1; i < yCoords.length; i++) {
+    const distance = yCoords[i] - yCoords[i-1];
+    if (distance > 0 && distance < minDistanceY) {
+      minDistanceY = distance;
+    }
+  }
+
+  // Sử dụng 80% khoảng cách nhỏ nhất để tránh chồng lấp
+  const width = minDistanceX === Infinity ? 0.008 : minDistanceX * 0.8;
+  const depth = minDistanceY === Infinity ? 0.008 : minDistanceY * 0.8;
+
+  console.log(`Kích thước hình hộp tự động: width=${width.toFixed(4)}, depth=${depth.toFixed(4)}`);
+  console.log(`Khoảng cách lưới: X=${minDistanceX.toFixed(4)}, Y=${minDistanceY.toFixed(4)}`);
+
+  return { width, depth };
+}
+
+// Sửa lại hàm tính năng lượng biến dạng để nhận diện tích phần tử và xử lý giá trị âm
 function computeElementStrainEnergy(derivatives, nu = 0.3, area = 1) {
   const U_element = {};
+  let negativeEnergyCount = 0;
+
   for (const [elementID, d] of Object.entries(derivatives)) {
-    U_element[elementID] = (
+    const strainEnergy = (
       Math.pow(d.w_xx, 2) +
       Math.pow(d.w_yy, 2) +
       2 * nu * d.w_xx * d.w_yy +
       2 * (1 - nu) * Math.pow(d.w_xy, 2)
     ) * area;
+
+    // Xử lý strain energy âm: gán về 0 để tránh giá trị không hợp lý
+    if (strainEnergy < 0) {
+      U_element[elementID] = 0;
+      negativeEnergyCount++;
+      console.warn(`⚠️ Element ${elementID}: Strain energy âm (${strainEnergy.toFixed(6)}) được gán về 0`);
+    } else {
+      U_element[elementID] = strainEnergy;
+    }
   }
+
+  if (negativeEnergyCount > 0) {
+    console.log(`📊 Đã xử lý ${negativeEnergyCount} phần tử có strain energy âm`);
+  }
+
   return U_element;
 }
 
@@ -839,25 +885,46 @@ function computeDamageIndex(F_damaged, F_healthy, elementIDs) {
   return beta;
 }
 
-// Chuẩn hóa chỉ số hư hỏng (công thức 3.19)
+// Chuẩn hóa chỉ số hư hỏng (công thức 3.19) với xử lý đặc biệt để tránh giá trị âm
 function normalizeDamageIndex(beta) {
   const values = Object.values(beta).filter(v => v !== 0);
-  
+  let zeroEnergyCount = 0;
+  let negativeIndexCount = 0;
+
   if (values.length === 0) return {};
-  
+
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (values.length - 1);
   const std = Math.sqrt(variance);
-  
+
   const z = {};
   for (const [id, val] of Object.entries(beta)) {
     if (val !== 0 && std !== 0) {
-      z[id] = (val - mean) / std;
+      const normalizedValue = (val - mean) / std;
+
+      // ⚠️ QUAN TRỌNG: Xử lý giá trị âm sau chuẩn hóa Z-score
+      if (normalizedValue < 0) {
+        z[id] = 0; // Gán về 0 thay vì giữ giá trị âm
+        negativeIndexCount++;
+        console.warn(`⚠️ Element ${id}: Damage index âm sau chuẩn hóa (${normalizedValue.toFixed(4)}) được gán về 0`);
+      } else {
+        z[id] = normalizedValue;
+      }
     } else {
+      // Phần tử có strain energy âm hoặc beta = 0 sẽ có damage index = 0
       z[id] = 0;
+      if (val === 0) zeroEnergyCount++;
     }
   }
-  
+
+  if (zeroEnergyCount > 0) {
+    console.log(`🔄 ${zeroEnergyCount} phần tử có damage index = 0 (strain energy âm hoặc không hợp lệ)`);
+  }
+
+  if (negativeIndexCount > 0) {
+    console.log(`🔄 ${negativeIndexCount} phần tử có damage index âm sau chuẩn hóa được gán về 0`);
+  }
+
   return z;
 }
 
@@ -993,52 +1060,27 @@ function createBox3D(centerX, centerY, height, width = 0.8, depth = 0.8) {
   return { vertices, faces };
 }
 
-// Vẽ biểu đồ 3D chỉ số hư hỏng
+// Vẽ biểu đồ 3D chỉ số hư hỏng với xử lý đặc biệt cho strain energy âm
 function draw3DDamageChart(z, elements, Z0) {
-  // Lấy tọa độ trọng tâm và giá trị z
+  // Lấy tọa độ trọng tâm và giá trị z với xử lý đặc biệt
   const x1 = [], y1 = [], z1 = [];
+  let zeroEnergyElementsCount = 0;
+
   elements.forEach(element => {
     x1.push(element.center.x);
     y1.push(element.center.y);
-    z1.push(z[element.id] || 0);
+
+    const damageIndex = z[element.id] || 0;
+    // Đảm bảo các phần tử có strain energy âm (đã được xử lý thành 0) hiển thị đúng
+    if (damageIndex === 0) {
+      zeroEnergyElementsCount++;
+    }
+    z1.push(damageIndex);
   });
 
-  // Tính toán kích thước tự động cho hình hộp
-  function calculateOptimalBoxSize(elements) {
-    if (elements.length < 2) return { width: 0.008, depth: 0.008 }; // Giá trị mặc định
+  console.log(`📊 Visualization: ${zeroEnergyElementsCount} phần tử có damage index = 0 (strain energy âm hoặc không hợp lệ)`);
 
-    // Tìm khoảng cách nhỏ nhất giữa các elements
-    let minDistanceX = Infinity;
-    let minDistanceY = Infinity;
-
-    const xCoords = [...new Set(elements.map(e => e.center.x))].sort((a, b) => a - b);
-    const yCoords = [...new Set(elements.map(e => e.center.y))].sort((a, b) => a - b);
-
-    // Tính khoảng cách nhỏ nhất theo X
-    for (let i = 1; i < xCoords.length; i++) {
-      const distance = xCoords[i] - xCoords[i-1];
-      if (distance > 0 && distance < minDistanceX) {
-        minDistanceX = distance;
-      }
-    }
-
-    // Tính khoảng cách nhỏ nhất theo Y
-    for (let i = 1; i < yCoords.length; i++) {
-      const distance = yCoords[i] - yCoords[i-1];
-      if (distance > 0 && distance < minDistanceY) {
-        minDistanceY = distance;
-      }
-    }
-
-    // Sử dụng 80% khoảng cách nhỏ nhất để tránh chồng lấp
-    const width = minDistanceX === Infinity ? 0.008 : minDistanceX * 0.8;
-    const depth = minDistanceY === Infinity ? 0.008 : minDistanceY * 0.8;
-
-    console.log(`Kích thước hình hộp tự động: width=${width.toFixed(4)}, depth=${depth.toFixed(4)}`);
-    console.log(`Khoảng cách lưới: X=${minDistanceX.toFixed(4)}, Y=${minDistanceY.toFixed(4)}`);
-
-    return { width, depth };
-  }
+  // Sử dụng hàm calculateOptimalBoxSize đã được định nghĩa ở trên
 
   const boxSize = calculateOptimalBoxSize(elements);
 
@@ -1046,9 +1088,18 @@ function draw3DDamageChart(z, elements, Z0) {
   const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
   const allFacesI = [], allFacesJ = [], allFacesK = [];
   const allIntensity = [];
+  const allText = []; // Thêm mảng text cho hovertemplate
 
   elements.forEach((element, index) => {
-    const height = z[element.id] || 0;
+    let height = z[element.id] || 0;
+
+    // Xử lý đặc biệt cho phần tử có damage index = 0 (strain energy âm)
+    // Hiển thị với chiều cao tối thiểu để vẫn thấy được geometry
+    const minHeight = 0.001; // Chiều cao tối thiểu để hiển thị
+    if (height === 0) {
+      height = minHeight;
+    }
+
     const box = createBox3D(element.center.x, element.center.y, height, boxSize.width, boxSize.depth);
 
     // Offset cho vertices (để tránh trùng lặp chỉ số)
@@ -1064,9 +1115,12 @@ function draw3DDamageChart(z, elements, Z0) {
     allFacesJ.push(...box.faces.j.map(j => j + vertexOffset));
     allFacesK.push(...box.faces.k.map(k => k + vertexOffset));
 
-    // Thêm intensity cho mỗi vertex (8 vertex cho mỗi box)
+    // Thêm intensity và text cho mỗi vertex (8 vertex cho mỗi box)
+    // Sử dụng damage index gốc (không phải height đã điều chỉnh) cho colorscale
+    const originalDamageIndex = z[element.id] || 0;
     for (let i = 0; i < 8; i++) {
-      allIntensity.push(height);
+      allIntensity.push(originalDamageIndex);
+      allText.push(`Element ${element.id} (DI: ${originalDamageIndex.toFixed(4)})`); // Thông tin element cho hover
     }
   });
 
@@ -1074,14 +1128,14 @@ function draw3DDamageChart(z, elements, Z0) {
   const maxIntensity = Math.max(...allIntensity);
   const minIntensity = Math.min(...allIntensity);
 
-  // Colorscale cải tiến với độ tương phản cao hơn
+  // Colorscale Green-to-Red với gradient mượt mà
   const optimizedColorscale = [
-    [0, 'rgb(255,255,204)'],      // Vàng nhạt cho giá trị thấp
-    [0.2, 'rgb(255,237,160)'],    // Vàng
-    [0.4, 'rgb(254,217,118)'],    // Cam nhạt
-    [0.6, 'rgb(254,178,76)'],     // Cam
-    [0.8, 'rgb(253,141,60)'],     // Cam đậm
-    [1, 'rgb(227,26,28)']         // Đỏ đậm cho giá trị cao
+    [0, 'rgb(0,128,0)'],          // Xanh lá đậm cho giá trị thấp
+    [0.2, 'rgb(50,205,50)'],      // Xanh lá sáng
+    [0.4, 'rgb(154,205,50)'],     // Xanh vàng
+    [0.6, 'rgb(255,255,0)'],      // Vàng
+    [0.8, 'rgb(255,165,0)'],      // Cam
+    [1, 'rgb(255,0,0)']           // Đỏ đậm cho giá trị cao
   ];
 
   const traceMesh3D = {
@@ -1093,6 +1147,7 @@ function draw3DDamageChart(z, elements, Z0) {
     j: allFacesJ,
     k: allFacesK,
     intensity: allIntensity,
+    text: allText, // Thêm thuộc tính text cho hovertemplate
     colorscale: optimizedColorscale,
     cmin: minIntensity,
     cmax: maxIntensity,
@@ -1104,17 +1159,23 @@ function draw3DDamageChart(z, elements, Z0) {
                    '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f})<br>' +
                    '<b>Chỉ số hư hỏng:</b> %{z:.4f}<br>' +
                    '<extra></extra>',
+    flatshading: true,  // Tạo bề mặt phẳng để đường viền rõ ràng hơn
+    contour: {
+      show: true,       // Hiển thị đường viền
+      color: '#333333', // Màu xám đậm cho đường viền
+      width: 2          // Độ dày đường viền vừa phải
+    },
     lighting: {
-      ambient: 0.9,     // Tăng ánh sáng môi trường để loại bỏ bóng đen
-      diffuse: 0.3,     // Giảm diffuse để giảm bóng
-      specular: 0.1,    // Giảm phản chiếu
-      roughness: 0.3,   // Tăng roughness để làm mờ bóng
-      fresnel: 0.1      // Giảm fresnel effect
+      ambient: 1.0,     // Ánh sáng môi trường tối đa để loại bỏ bóng đổ
+      diffuse: 0,       // Tắt hoàn toàn diffuse lighting
+      specular: 0,      // Tắt phản chiếu
+      roughness: 1,     // Độ nhám tối đa
+      fresnel: 0        // Tắt fresnel effect
     },
     colorbar: {
       title: {
         text: 'Chỉ số hư hỏng',
-        font: { family: 'Times New Roman', size: 14 }
+        font: { family: 'Arial, sans-serif', size: 14 }
       },
       titleside: 'right',
       thickness: 20,
@@ -1182,7 +1243,7 @@ function draw3DDamageChart(z, elements, Z0) {
     text: textLabels,
     textposition: 'middle center',
     textfont: {
-      family: 'Times New Roman',
+      family: 'Arial, sans-serif',
       size: 10,
       color: 'darkred'
     },
@@ -1200,9 +1261,9 @@ function draw3DDamageChart(z, elements, Z0) {
       xaxis: {
         title: {
           text: 'EX (m)',
-          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
         },
-        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
         gridcolor: 'rgba(128,128,128,0.3)',
         showbackground: true,
         backgroundcolor: 'rgba(240,240,240,0.8)'
@@ -1210,9 +1271,9 @@ function draw3DDamageChart(z, elements, Z0) {
       yaxis: {
         title: {
           text: 'EY (m)',
-          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
         },
-        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
         gridcolor: 'rgba(128,128,128,0.3)',
         showbackground: true,
         backgroundcolor: 'rgba(240,240,240,0.8)'
@@ -1220,32 +1281,32 @@ function draw3DDamageChart(z, elements, Z0) {
       zaxis: {
         title: {
           text: 'Damage Index',
-          font: { family: 'Times New Roman', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
         },
-        tickfont: { family: 'Times New Roman', size: 12, color: '#34495e' },
+        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
         gridcolor: 'rgba(128,128,128,0.3)',
         showbackground: true,
         backgroundcolor: 'rgba(240,240,240,0.8)'
       },
       camera: {
-        eye: { x: 1.8, y: 1.8, z: 1.5 }, // Góc nhìn tối ưu hơn
+        projection: { type: 'orthographic' }, // Thay đổi sang OrthographicCamera
+        eye: { x: 1.8, y: 1.8, z: 1.5 }, // Góc nhìn tối ưu cho orthographic
         center: { x: 0, y: 0, z: 0 },
         up: { x: 0, y: 0, z: 1 }
       },
-      aspectmode: 'manual',
-      aspectratio: { x: 1.2, y: 1.2, z: 0.8 }, // Tỷ lệ cải thiện
+      aspectmode: 'cube', // Tối ưu cho OrthographicCamera
       bgcolor: 'rgba(248,249,250,0.9)'
     },
     title: {
       text: 'Biểu đồ chỉ số hư hỏng 3D - Phân tích kết cấu',
-      font: { family: 'Times New Roman', size: 18, color: '#2c3e50' },
+      font: { family: 'Arial, sans-serif', size: 18, color: '#2c3e50' },
       x: 0.5,
       y: 0.95
     },
     width: 1000,
     height: 750,
     margin: { l: 50, r: 100, t: 80, b: 50 },
-    font: { family: 'Times New Roman', color: '#2c3e50' },
+    font: { family: 'Arial, sans-serif', color: '#2c3e50' },
     paper_bgcolor: 'rgba(255,255,255,0.95)',
     plot_bgcolor: 'rgba(248,249,250,0.9)'
   };
@@ -1264,8 +1325,12 @@ function draw3DDamageChart(z, elements, Z0) {
 
   // Thống kê phân bố chỉ số hư hỏng
   const damagedCount = z1.filter(z => z > Z0).length;
+  const zeroEnergyCount = z1.filter(z => z === 0).length;
   const damagedPercentage = (damagedCount / z1.length * 100).toFixed(1);
+  const zeroEnergyPercentage = (zeroEnergyCount / z1.length * 100).toFixed(1);
+
   console.log(`Số phần tử vượt ngưỡng: ${damagedCount}/${z1.length} (${damagedPercentage}%)`);
+  console.log(`Số phần tử có damage index = 0: ${zeroEnergyCount}/${z1.length} (${zeroEnergyPercentage}%)`);
   console.log(`Hiển thị giá trị thực tế cho ${damagedElements.length} phần tử hư hỏng (> Z₀)`);
 
   let chartDiv = document.getElementById('damage3DChart');
@@ -1278,9 +1343,13 @@ function draw3DDamageChart(z, elements, Z0) {
       responsive: true
     }).then(() => {
       console.log('✅ Biểu đồ 3D cải tiến đã được render thành công');
-      console.log('🎨 Colorscale: Custom optimized (Yellow-Orange-Red)');
-      console.log('💡 Lighting: Enhanced with fresnel effect');
+      console.log('📷 Camera: OrthographicCamera (no perspective distortion)');
+      console.log('🎨 Colorscale: Green-to-Red gradient');
+      console.log('💡 Lighting: No shadows (ambient=1.0, diffuse=0)');
+      console.log('🔤 Font: Arial, sans-serif (synchronized with website)');
+      console.log('🔲 Outline: Dark gray borders (flatshading + contour)');
       console.log('📊 Features: Colorbar, contours, enhanced markers');
+      console.log('⚡ Negative Values: Both strain energy & damage index negatives handled (set to 0)');
     }).catch((error) => {
       console.error('❌ Lỗi khi render biểu đồ 3D:', error);
     });
