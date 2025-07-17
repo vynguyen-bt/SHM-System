@@ -397,8 +397,10 @@ function createDefaultSection1Data() {
     damagedElements: [284, 285, 286],
     chartSettings: {
       spacing: 0.01,
-      barWidth: 0.008,
-      barDepth: 0.008
+      barWidth: 0.0095,  // 95% của 0.01m grid spacing
+      barDepth: 0.0095,  // 95% của 0.01m grid spacing (square elements)
+      gridSpacingX: 0.01,
+      gridSpacingY: 0.01
     }
   };
 

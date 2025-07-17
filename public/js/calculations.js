@@ -758,14 +758,20 @@ function processStrainEnergyData() {
       const damagedElements = detectDamageRegion(z, Z0);
 
       // Lưu chart settings để mục 2 sử dụng
-      const boxSize = calculateOptimalBoxSize(elements);
+      const elementSize = calculateRealElementSize(elements);
+
+      // So sánh kích thước cũ vs mới (chỉ hiển thị 1 lần)
+      if (!window.elementSizeCompared) {
+        compareElementSizes(elements);
+        window.elementSizeCompared = true;
+      }
+
       const chartSettings = {
-        spacing: Math.min(
-          Math.min(...elements.slice(1).map((el, i) => Math.abs(el.center.x - elements[i].center.x)).filter(d => d > 0)),
-          Math.min(...elements.slice(1).map((el, i) => Math.abs(el.center.y - elements[i].center.y)).filter(d => d > 0))
-        ),
-        barWidth: boxSize.width,
-        barDepth: boxSize.depth
+        spacing: Math.min(elementSize.gridSpacingX, elementSize.gridSpacingY),
+        barWidth: elementSize.width,
+        barDepth: elementSize.depth,
+        gridSpacingX: elementSize.gridSpacingX,
+        gridSpacingY: elementSize.gridSpacingY
       };
 
       window.strainEnergyResults = {
@@ -787,41 +793,99 @@ function processStrainEnergyData() {
   reader1.readAsText(fileInputNonDamaged.files[0]);
 }
 
-// Hàm tính toán kích thước tự động cho hình hộp 3D
-function calculateOptimalBoxSize(elements) {
+// Hàm tính toán kích thước thực tế cho hình hộp 3D dựa trên kích thước element thực tế
+function calculateRealElementSize(elements) {
   if (elements.length < 2) return { width: 0.008, depth: 0.008 }; // Giá trị mặc định
 
-  // Tìm khoảng cách nhỏ nhất giữa các elements
-  let minDistanceX = Infinity;
-  let minDistanceY = Infinity;
-
+  // Tìm khoảng cách thực tế giữa các elements (grid spacing)
   const xCoords = [...new Set(elements.map(e => e.center.x))].sort((a, b) => a - b);
   const yCoords = [...new Set(elements.map(e => e.center.y))].sort((a, b) => a - b);
 
-  // Tính khoảng cách nhỏ nhất theo X
-  for (let i = 1; i < xCoords.length; i++) {
-    const distance = xCoords[i] - xCoords[i-1];
-    if (distance > 0 && distance < minDistanceX) {
-      minDistanceX = distance;
-    }
+  // Tính khoảng cách lưới thực tế (element spacing)
+  let gridSpacingX = 0.01; // Mặc định 1cm từ SElement.txt
+  let gridSpacingY = 0.01; // Mặc định 1cm từ SElement.txt
+
+  if (xCoords.length > 1) {
+    gridSpacingX = xCoords[1] - xCoords[0]; // Khoảng cách đều giữa các node
+  }
+  if (yCoords.length > 1) {
+    gridSpacingY = yCoords[1] - yCoords[0]; // Khoảng cách đều giữa các node
   }
 
-  // Tính khoảng cách nhỏ nhất theo Y
-  for (let i = 1; i < yCoords.length; i++) {
-    const distance = yCoords[i] - yCoords[i-1];
-    if (distance > 0 && distance < minDistanceY) {
-      minDistanceY = distance;
-    }
-  }
+  // Kích thước element thực tế = kích thước lưới (vì mỗi element chiếm 1 ô lưới)
+  // Sử dụng 95% để có khe hở nhỏ giữa các elements cho visualization rõ ràng
+  const realWidth = gridSpacingX * 0.95;
+  const realDepth = gridSpacingY * 0.95;
 
-  // Sử dụng 80% khoảng cách nhỏ nhất để tránh chồng lấp
-  const width = minDistanceX === Infinity ? 0.008 : minDistanceX * 0.8;
-  const depth = minDistanceY === Infinity ? 0.008 : minDistanceY * 0.8;
+  // Đảm bảo elements có hình vuông (width = depth) bằng cách lấy giá trị nhỏ hơn
+  const squareSize = Math.min(realWidth, realDepth);
 
-  console.log(`Kích thước hình hộp tự động: width=${width.toFixed(4)}, depth=${depth.toFixed(4)}`);
-  console.log(`Khoảng cách lưới: X=${minDistanceX.toFixed(4)}, Y=${minDistanceY.toFixed(4)}`);
+  console.log(`🔧 Kích thước element thực tế:`);
+  console.log(`   Grid spacing: X=${gridSpacingX.toFixed(4)}m, Y=${gridSpacingY.toFixed(4)}m`);
+  console.log(`   Element size: ${squareSize.toFixed(4)}m × ${squareSize.toFixed(4)}m (square)`);
+  console.log(`   Visualization ratio: 95% (5% gap for clarity)`);
 
-  return { width, depth };
+  return {
+    width: squareSize,
+    depth: squareSize,
+    gridSpacingX: gridSpacingX,
+    gridSpacingY: gridSpacingY
+  };
+}
+
+// Giữ lại hàm cũ để tương thích ngược (deprecated)
+function calculateOptimalBoxSize(elements) {
+  console.warn("⚠️ calculateOptimalBoxSize() is deprecated. Use calculateRealElementSize() instead.");
+  return calculateRealElementSize(elements);
+}
+
+// Hàm helper tính toán phạm vi tối ưu cho mặt phẳng ngưỡng
+function calculateOptimalPlaneRange(x1, y1, marginPercent = 0.05) {
+  const xMin = Math.min(...x1);
+  const xMax = Math.max(...x1);
+  const yMin = Math.min(...y1);
+  const yMax = Math.max(...y1);
+
+  const xMargin = (xMax - xMin) * marginPercent;
+  const yMargin = (yMax - yMin) * marginPercent;
+
+  return {
+    xMin, xMax, yMin, yMax,
+    xMargin, yMargin,
+    xRange: [xMin - xMargin, xMax + xMargin],
+    yRange: [yMin - yMargin, yMax + yMargin]
+  };
+}
+
+// Hàm demo để so sánh kích thước cũ vs mới
+function compareElementSizes(elements) {
+  console.log(`\n=== SO SÁNH KÍCH THƯỚC ELEMENT CŨ VS MỚI ===`);
+
+  // Tính theo phương pháp cũ (deprecated)
+  const oldMethod = calculateOptimalBoxSize(elements);
+
+  // Tính theo phương pháp mới
+  const newMethod = calculateRealElementSize(elements);
+
+  console.log(`📏 Phương pháp CŨ (deprecated):`);
+  console.log(`   - Width: ${oldMethod.width.toFixed(4)}m (${(oldMethod.width * 100).toFixed(1)}cm)`);
+  console.log(`   - Depth: ${oldMethod.depth.toFixed(4)}m (${(oldMethod.depth * 100).toFixed(1)}cm)`);
+
+  console.log(`📐 Phương pháp MỚI (real size):`);
+  console.log(`   - Width: ${newMethod.width.toFixed(4)}m (${(newMethod.width * 100).toFixed(1)}cm)`);
+  console.log(`   - Depth: ${newMethod.depth.toFixed(4)}m (${(newMethod.depth * 100).toFixed(1)}cm)`);
+  console.log(`   - Grid spacing X: ${newMethod.gridSpacingX.toFixed(4)}m (${(newMethod.gridSpacingX * 100).toFixed(1)}cm)`);
+  console.log(`   - Grid spacing Y: ${newMethod.gridSpacingY.toFixed(4)}m (${(newMethod.gridSpacingY * 100).toFixed(1)}cm)`);
+
+  const improvementX = ((newMethod.width / oldMethod.width) * 100).toFixed(1);
+  const improvementY = ((newMethod.depth / oldMethod.depth) * 100).toFixed(1);
+
+  console.log(`📊 Cải thiện kích thước:`);
+  console.log(`   - Width: ${improvementX}% so với phương pháp cũ`);
+  console.log(`   - Depth: ${improvementY}% so với phương pháp cũ`);
+  console.log(`   - Tỷ lệ thực tế: 95% grid spacing (5% gap cho visualization)`);
+
+  return { oldMethod, newMethod };
 }
 
 // Sửa lại hàm tính năng lượng biến dạng để nhận diện tích phần tử và xử lý giá trị âm
@@ -906,7 +970,6 @@ function normalizeDamageIndex(beta) {
       if (normalizedValue < 0) {
         z[id] = 0; // Gán về 0 thay vì giữ giá trị âm
         negativeIndexCount++;
-        console.warn(`⚠️ Element ${id}: Damage index âm sau chuẩn hóa (${normalizedValue.toFixed(4)}) được gán về 0`);
       } else {
         z[id] = normalizedValue;
       }
@@ -921,9 +984,7 @@ function normalizeDamageIndex(beta) {
     console.log(`🔄 ${zeroEnergyCount} phần tử có damage index = 0 (strain energy âm hoặc không hợp lệ)`);
   }
 
-  if (negativeIndexCount > 0) {
-    console.log(`🔄 ${negativeIndexCount} phần tử có damage index âm sau chuẩn hóa được gán về 0`);
-  }
+
 
   return z;
 }
@@ -1080,9 +1141,8 @@ function draw3DDamageChart(z, elements, Z0) {
 
   console.log(`📊 Visualization: ${zeroEnergyElementsCount} phần tử có damage index = 0 (strain energy âm hoặc không hợp lệ)`);
 
-  // Sử dụng hàm calculateOptimalBoxSize đã được định nghĩa ở trên
-
-  const boxSize = calculateOptimalBoxSize(elements);
+  // Sử dụng kích thước element thực tế dựa trên grid spacing
+  const elementSize = calculateRealElementSize(elements);
 
   // Tạo mesh3d cho các hình hộp 3D (bar3d style)
   const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
@@ -1100,7 +1160,7 @@ function draw3DDamageChart(z, elements, Z0) {
       height = minHeight;
     }
 
-    const box = createBox3D(element.center.x, element.center.y, height, boxSize.width, boxSize.depth);
+    const box = createBox3D(element.center.x, element.center.y, height, elementSize.width, elementSize.depth);
 
     // Offset cho vertices (để tránh trùng lặp chỉ số)
     const vertexOffset = allVerticesX.length;
@@ -1184,36 +1244,72 @@ function draw3DDamageChart(z, elements, Z0) {
     }
   };
 
-  // Mặt phẳng ngưỡng cải tiến
+  // Mặt phẳng ngưỡng cải tiến - phù hợp với phạm vi thực tế của elements
   const xUnique = [...new Set(x1)].sort((a, b) => a - b);
   const yUnique = [...new Set(y1)].sort((a, b) => a - b);
-  const zPlane = Array(yUnique.length).fill().map(() => Array(xUnique.length).fill(Z0));
 
-  // Tạo hiệu ứng gradient cho mặt phẳng ngưỡng
+  // Tính phạm vi thực tế của elements với margin nhỏ
+  const xMin = Math.min(...x1);
+  const xMax = Math.max(...x1);
+  const yMin = Math.min(...y1);
+  const yMax = Math.max(...y1);
+
+  // Thêm margin 5% để mặt phẳng bao phủ vừa đủ
+  const xMargin = (xMax - xMin) * 0.05;
+  const yMargin = (yMax - yMin) * 0.05;
+
+  // Tạo lưới mặt phẳng với độ phân giải cao hơn để mượt mà
+  const planeResolution = 20; // Tăng độ phân giải
+  const xPlane = [];
+  const yPlane = [];
+
+  for (let i = 0; i <= planeResolution; i++) {
+    xPlane.push(xMin - xMargin + (xMax - xMin + 2 * xMargin) * i / planeResolution);
+    yPlane.push(yMin - yMargin + (yMax - yMin + 2 * yMargin) * i / planeResolution);
+  }
+
+  const zPlane = Array(yPlane.length).fill().map(() => Array(xPlane.length).fill(Z0));
+
+  // Debug thông tin mặt phẳng ngưỡng
+  console.log(`🎯 Mặt phẳng ngưỡng cải tiến:`);
+  console.log(`   - Phạm vi X: ${(xMin - xMargin).toFixed(4)}m - ${(xMax + xMargin).toFixed(4)}m`);
+  console.log(`   - Phạm vi Y: ${(yMin - yMargin).toFixed(4)}m - ${(yMax + yMargin).toFixed(4)}m`);
+  console.log(`   - Độ phân giải: ${planeResolution}x${planeResolution} points`);
+  console.log(`   - Margin: 5% (X=${xMargin.toFixed(4)}m, Y=${yMargin.toFixed(4)}m)`);
+  console.log(`   - Opacity: 0.7, Contour width: 8px`);
+
+  // Mặt phẳng ngưỡng với hiệu ứng visual cải tiến
   const tracePlane = {
-    x: xUnique,
-    y: yUnique,
+    x: xPlane,
+    y: yPlane,
     z: zPlane,
     type: 'surface',
-    opacity: 0.6, // Tăng opacity để mặt phẳng rõ ràng hơn
+    opacity: 0.7, // Tăng opacity để rõ ràng hơn
     showscale: false,
     name: 'Ngưỡng Z₀',
     colorscale: [
-      [0, 'rgba(255,0,0,0.6)'],   // Đỏ đậm hơn
-      [1, 'rgba(255,0,0,0.6)']    // Đỏ đậm hơn
+      [0, 'rgba(220,20,60,0.7)'],   // Crimson với alpha cao hơn
+      [1, 'rgba(220,20,60,0.7)']    // Crimson với alpha cao hơn
     ],
     contours: {
       z: {
         show: true,
         usecolormap: false,
-        color: 'red',
-        width: 6,                    // Tăng độ dày đường viền
-        highlightcolor: 'darkred'
+        color: 'darkred',
+        width: 8,                    // Tăng độ dày đường viền để nổi bật hơn
+        highlightcolor: 'red'
       }
     },
-    hovertemplate: '<b>Mặt phẳng ngưỡng</b><br>' +
-                   '<b>Z₀:</b> %{z:.4f}<br>' +
-                   '<extra></extra>'
+    hovertemplate: '<b>Mặt phẳng ngưỡng Z₀</b><br>' +
+                   '<b>Giá trị:</b> %{z:.4f}<br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f})<br>' +
+                   '<extra></extra>',
+    lighting: {
+      ambient: 0.8,
+      diffuse: 0.2,
+      specular: 0.1,
+      roughness: 0.8
+    }
   };
 
   // Tìm giá trị chỉ số hư hỏng cao nhất để tính phần trăm
@@ -1261,32 +1357,50 @@ function draw3DDamageChart(z, elements, Z0) {
       xaxis: {
         title: {
           text: 'EX (m)',
-          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
         },
-        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
-        gridcolor: 'rgba(128,128,128,0.3)',
+        tickfont: { family: 'Arial, sans-serif', size: 14, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',     // Grid đậm hơn
+        gridwidth: 2,                        // Độ dày grid line
+        zerolinecolor: 'rgba(0,0,0,0.8)',    // Đường zero line đậm
+        zerolinewidth: 3,                    // Độ dày zero line
         showbackground: true,
-        backgroundcolor: 'rgba(240,240,240,0.8)'
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,                   // Tắt spike lines để gọn gàng
+        tickmode: 'auto',                    // Tự động điều chỉnh tick
+        nticks: 8                            // Số lượng tick marks
       },
       yaxis: {
         title: {
           text: 'EY (m)',
-          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
         },
-        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
-        gridcolor: 'rgba(128,128,128,0.3)',
+        tickfont: { family: 'Arial, sans-serif', size: 14, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',     // Grid đậm hơn
+        gridwidth: 2,                        // Độ dày grid line
+        zerolinecolor: 'rgba(0,0,0,0.8)',    // Đường zero line đậm
+        zerolinewidth: 3,                    // Độ dày zero line
         showbackground: true,
-        backgroundcolor: 'rgba(240,240,240,0.8)'
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,                   // Tắt spike lines để gọn gàng
+        tickmode: 'auto',                    // Tự động điều chỉnh tick
+        nticks: 8                            // Số lượng tick marks
       },
       zaxis: {
         title: {
           text: 'Damage Index',
-          font: { family: 'Arial, sans-serif', size: 16, color: '#2c3e50' }
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
         },
-        tickfont: { family: 'Arial, sans-serif', size: 12, color: '#34495e' },
-        gridcolor: 'rgba(128,128,128,0.3)',
+        tickfont: { family: 'Arial, sans-serif', size: 14, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',     // Grid đậm hơn
+        gridwidth: 2,                        // Độ dày grid line
+        zerolinecolor: 'rgba(0,0,0,0.8)',    // Đường zero line đậm
+        zerolinewidth: 3,                    // Độ dày zero line
         showbackground: true,
-        backgroundcolor: 'rgba(240,240,240,0.8)'
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,                   // Tắt spike lines để gọn gàng
+        tickmode: 'auto',                    // Tự động điều chỉnh tick
+        nticks: 6                            // Số lượng tick marks cho trục Z
       },
       camera: {
         projection: { type: 'orthographic' }, // Thay đổi sang OrthographicCamera
@@ -1311,17 +1425,20 @@ function draw3DDamageChart(z, elements, Z0) {
     plot_bgcolor: 'rgba(248,249,250,0.9)'
   };
 
-  // Thông tin debug và thống kê
-  console.log(`=== Thông tin biểu đồ 3D cải tiến ===`);
-  console.log(`Số lượng elements: ${elements.length}`);
-  console.log(`Số lượng vertices: ${allVerticesX.length}`);
-  console.log(`Số lượng faces: ${allFacesI.length}`);
-  console.log(`Phạm vi X: ${Math.min(...x1).toFixed(4)} - ${Math.max(...x1).toFixed(4)}`);
-  console.log(`Phạm vi Y: ${Math.min(...y1).toFixed(4)} - ${Math.max(...y1).toFixed(4)}`);
-  console.log(`Phạm vi Z: ${Math.min(...z1).toFixed(4)} - ${Math.max(...z1).toFixed(4)}`);
-  console.log(`Kích thước hình hộp: ${boxSize.width.toFixed(4)} x ${boxSize.depth.toFixed(4)}`);
-  console.log(`Ngưỡng Z₀: ${Z0.toFixed(4)}`);
-  console.log(`Chỉ số hư hỏng cao nhất: ${maxZ.toFixed(4)}`);
+  // Thông tin debug và thống kê với kích thước thực tế
+  console.log(`=== Thông tin biểu đồ 3D với kích thước thực tế ===`);
+  console.log(`📐 Kích thước kết cấu thực tế:`);
+  console.log(`   - Phạm vi X: ${Math.min(...x1).toFixed(4)}m - ${Math.max(...x1).toFixed(4)}m (${((Math.max(...x1) - Math.min(...x1)) * 100).toFixed(1)}cm)`);
+  console.log(`   - Phạm vi Y: ${Math.min(...y1).toFixed(4)}m - ${Math.max(...y1).toFixed(4)}m (${((Math.max(...y1) - Math.min(...y1)) * 100).toFixed(1)}cm)`);
+  console.log(`   - Grid spacing: ${elementSize.gridSpacingX.toFixed(4)}m × ${elementSize.gridSpacingY.toFixed(4)}m (${(elementSize.gridSpacingX * 100).toFixed(1)}cm × ${(elementSize.gridSpacingY * 100).toFixed(1)}cm)`);
+  console.log(`   - Element size: ${elementSize.width.toFixed(4)}m × ${elementSize.depth.toFixed(4)}m (${(elementSize.width * 100).toFixed(1)}cm × ${(elementSize.depth * 100).toFixed(1)}cm)`);
+  console.log(`📊 Thống kê 3D:`);
+  console.log(`   - Số lượng elements: ${elements.length}`);
+  console.log(`   - Số lượng vertices: ${allVerticesX.length}`);
+  console.log(`   - Số lượng faces: ${allFacesI.length}`);
+  console.log(`   - Phạm vi damage index: ${Math.min(...z1).toFixed(4)} - ${Math.max(...z1).toFixed(4)}`);
+  console.log(`   - Ngưỡng Z₀: ${Z0.toFixed(4)}`);
+  console.log(`   - Chỉ số hư hỏng cao nhất: ${maxZ.toFixed(4)}`);
 
   // Thống kê phân bố chỉ số hư hỏng
   const damagedCount = z1.filter(z => z > Z0).length;
@@ -1342,13 +1459,15 @@ function draw3DDamageChart(z, elements, Z0) {
       displaylogo: false,
       responsive: true
     }).then(() => {
-      console.log('✅ Biểu đồ 3D cải tiến đã được render thành công');
+      console.log('✅ Biểu đồ 3D với visualization cải tiến đã được render thành công');
       console.log('📷 Camera: OrthographicCamera (no perspective distortion)');
       console.log('🎨 Colorscale: Green-to-Red gradient');
       console.log('💡 Lighting: No shadows (ambient=1.0, diffuse=0)');
-      console.log('🔤 Font: Arial, sans-serif (synchronized with website)');
+      console.log('🔤 Font: Arial, sans-serif (bold, size 18/14)');
       console.log('🔲 Outline: Dark gray borders (flatshading + contour)');
-      console.log('📊 Features: Colorbar, contours, enhanced markers');
+      console.log('📊 Features: Enhanced colorbar, contours, improved markers');
+      console.log('🎯 Threshold Plane: Optimized size with 5% margin, 20x20 resolution');
+      console.log('📐 Grid Lines: Enhanced visibility (width=2, darker color)');
       console.log('⚡ Negative Values: Both strain energy & damage index negatives handled (set to 0)');
     }).catch((error) => {
       console.error('❌ Lỗi khi render biểu đồ 3D:', error);
