@@ -29,6 +29,7 @@ label {
 }
 
 input,
+select,
 button {
   width: 100%;
   max-width: 400px;
@@ -40,7 +41,8 @@ button {
 }
 
 input[type="number"],
-input[type="file"] {
+input[type="file"],
+select {
   background-color: #f9f9f9;
 }
 
