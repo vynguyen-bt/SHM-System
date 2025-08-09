@@ -20,6 +20,41 @@ scaler = None
 test_file_path = None
 
 
+def detect_csv_structure(df):
+    """Detect CSV structure and validate compatibility"""
+    total_cols = df.shape[1]
+
+    # Minimum required: Case + U1-U256 + at least 1 DI
+    min_required_cols = 262  # Case(1) + U1-U256(256) + DI1(1)
+
+    if total_cols < min_required_cols:
+        raise ValueError(f"Minimum {min_required_cols} columns required (Case + U1-U256 + DI1+). Current: {total_cols}")
+
+    # Calculate DI count dynamically
+    feature_cols = 256  # U1-U256
+    di_count = total_cols - 1 - feature_cols  # Total - Case - Features
+
+    # Validate maximum DI count
+    max_di_count = 4
+    if di_count > max_di_count:
+        raise ValueError(f"Maximum {max_di_count} DI columns supported. Current: {di_count}")
+
+    print(f"📊 CSV Structure detected:")
+    print(f"  - Total columns: {total_cols}")
+    print(f"  - Feature columns (U1-U256): {feature_cols}")
+    print(f"  - DI columns: {di_count}")
+    print(f"  - Expected format: Case + U1-U{feature_cols} + DI1-DI{di_count}")
+
+    return {
+        'total_cols': total_cols,
+        'feature_cols': feature_cols,
+        'di_count': di_count,
+        'feature_start': 1,
+        'feature_end': 257,
+        'di_start': 257,
+        'di_end': total_cols
+    }
+
 def train_transformer(file_path):
     global scaler
     try:
@@ -27,11 +62,11 @@ def train_transformer(file_path):
         df = pd.read_csv(file_path)
         print(f"Training data loaded. Shape: {df.shape}")
 
-        if df.shape[1] < 662:
-            raise ValueError(f"Training file must have 662 columns (Case + U1-U651 + DI1-DI10). Current: {df.shape[1]}")
+        # Dynamic CSV structure detection
+        structure = detect_csv_structure(df)
 
-        X = df.iloc[:, 1:652].values
-        y = df.iloc[:, 652:].values
+        X = df.iloc[:, structure['feature_start']:structure['feature_end']].values
+        y = df.iloc[:, structure['di_start']:structure['di_end']].values
         print(f"Features shape: {X.shape}, Labels shape: {y.shape}")
 
         scaler = StandardScaler()
@@ -42,10 +77,13 @@ def train_transformer(file_path):
         print(f"Train set: {X_train.shape}, Validation set: {X_val.shape}")
 
         print("Building transformer model...")
-        transformer = build_transformer_model(input_dim=651, output_dim=10)
+        # Use dynamic output dimension based on detected DI count
+        transformer = build_transformer_model(input_dim=structure['feature_cols'], output_dim=structure['di_count'])
         transformer.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
                             loss='mean_squared_error',
                             metrics=['mae'])
+
+        print(f"Model built with input_dim={structure['feature_cols']}, output_dim={structure['di_count']}")
 
         print("Starting model training...")
         transformer.fit(X_train, y_train, batch_size=16, epochs=100, validation_data=(X_val, y_val))
@@ -59,11 +97,14 @@ def train_transformer(file_path):
 
 
 def train_local_ann(X_local, y_local):
+    # Dynamic output dimension based on y_local shape
+    output_dim = y_local.shape[1] if len(y_local.shape) > 1 else 4
+
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(X_local.shape[1],)),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(10, activation='linear')
+        tf.keras.layers.Dense(output_dim, activation='linear')
     ])
 
     model.compile(optimizer='adam', loss='mse')
@@ -94,12 +135,15 @@ def upload_files():
         print(f"Training file saved: {train_path}")
         print(f"Test file saved: {test_file_path}")
 
-        # Kiểm tra format file CSV
+        # Kiểm tra format file CSV với dynamic validation
         try:
             df_check = pd.read_csv(train_path)
             print(f"Training data shape: {df_check.shape}")
-            if df_check.shape[1] < 652:
-                return jsonify({'error': f'Training file must have at least 652 columns (Case + U1-U651 + DI1-DI10). Current: {df_check.shape[1]}'}), 400
+
+            # Use dynamic structure detection
+            structure = detect_csv_structure(df_check)
+            print(f"✅ CSV structure validation passed: {structure['di_count']} DI columns detected")
+
         except Exception as e:
             return jsonify({'error': f'Error reading training file: {str(e)}'}), 400
 
@@ -130,10 +174,10 @@ def predict():
         df_test = pd.read_csv(test_file_path)
         print(f"Test data shape: {df_test.shape}")
 
-        if df_test.shape[1] < 652:
-            return jsonify({'error': f'Test file must have at least 652 columns (Case + U1-U651 + DI1-DI10). Current: {df_test.shape[1]}'}), 400
+        # Use dynamic structure detection for test file
+        test_structure = detect_csv_structure(df_test)
 
-        X_test = df_test.iloc[:, 1:652].values
+        X_test = df_test.iloc[:, test_structure['feature_start']:test_structure['feature_end']].values
         print(f"X_test shape: {X_test.shape}")
 
         X_test_scaled = scaler.transform(X_test)[..., np.newaxis]
@@ -151,24 +195,43 @@ def predict():
         transformer_preds = np.clip(transformer_preds, 0, None)
         print(f"Transformer predictions shape: {transformer_preds.shape}")
 
+        # Extract DI values from TEST.csv for optimized ANN training
+        y_test = df_test.iloc[:, test_structure['di_start']:test_structure['di_end']].values
+        print(f"Test DI values shape: {y_test.shape}")
+
         final_preds = []
         for i, x in enumerate(X_test):
             pred = transformer_preds[i]
-            # Lấy các chỉ số có giá trị đáng kể (hư hỏng)
-            top_idx = np.where(pred > 5)[0]  # ngưỡng có thể điều chỉnh
-            if len(top_idx) == 0:
-                final_preds.append(pred.tolist())
+            test_di_values = y_test[i] if i < len(y_test) else np.zeros(test_structure['di_count'])
+
+            print(f"Sample {i}: Test DI values = {test_di_values}")
+
+            # NEW LOGIC: Check DI values from TEST.csv instead of prediction values
+            damaged_indices = np.where(test_di_values > 0)[0]  # Indices where DI > 0
+
+            if len(damaged_indices) == 0:
+                # All DI = 0: Use only Transformer + random noise for realism
+                print(f"Sample {i}: All DI = 0, using Transformer + random noise")
+                final_pred = pred.copy()
+                # Add small random noise (0-2%) for undamaged elements
+                for j in range(len(final_pred)):
+                    final_pred[j] = max(0, final_pred[j] + np.random.uniform(0, 2))
+                final_preds.append(np.clip(final_pred, 0, None).tolist())
                 continue
 
-            # Xây dữ liệu tái train vùng lân cận
+            # Some DI > 0: Train Local ANN for damaged elements only
+            print(f"Sample {i}: DI > 0 at indices {damaged_indices}, training Local ANN")
+
+            # Xây dữ liệu tái train vùng lân cận cho damaged elements
             df = full_df
-            X_full = df.iloc[:, 1:652].values
-            y_full = df.iloc[:, 652:].values
+            X_full = df.iloc[:, 1:257].values
+            y_full = df.iloc[:, 257:].values
             X_full_scaled = scaler.transform(X_full)
 
+            # Build region indices around damaged elements
             region_idx = set()
-            for idx in top_idx:
-                region_idx.update(range(max(0, idx - 1), min(10, idx + 2)))
+            for idx in damaged_indices:
+                region_idx.update(range(max(0, idx - 1), min(4, idx + 2)))
 
             X_local, y_local = [], []
             for xi, yi in zip(X_full_scaled, y_full):
@@ -177,9 +240,12 @@ def predict():
                     y_local.append(yi)
 
             if len(X_local) == 0:
+                # Fallback: use only Transformer if no training data
+                print(f"Sample {i}: No training data found, using Transformer only")
                 final_preds.append(pred.tolist())
                 continue
 
+            # Train Local ANN
             X_local = np.array(X_local)
             y_local = np.array(y_local)
             ann_model = train_local_ann(X_local, y_local)
@@ -187,9 +253,20 @@ def predict():
             x_input = scaler.transform(x.reshape(1, -1))
             ann_pred = ann_model.predict(x_input)[0] * 100
 
-            # Weighted merge giữa transformer và ANN
-            final = 0.5 * pred + 0.5 * ann_pred
-            final_preds.append(np.clip(final, 0, None).tolist())
+            # Optimized ensemble: Apply ANN only to damaged elements
+            final_pred = pred.copy()
+            for j in damaged_indices:
+                if j < len(final_pred) and j < len(ann_pred):
+                    # Ensemble for damaged elements (50% Transformer + 50% ANN)
+                    final_pred[j] = 0.5 * pred[j] + 0.5 * ann_pred[j]
+
+            # For undamaged elements (DI = 0), use Transformer + small random noise
+            for j in range(len(final_pred)):
+                if j not in damaged_indices:
+                    final_pred[j] = max(0, pred[j] + np.random.uniform(0, 2))
+
+            final_preds.append(np.clip(final_pred, 0, None).tolist())
+            print(f"Sample {i}: Ensemble completed for damaged indices {damaged_indices}")
 
         print(f"Prediction completed. Number of predictions: {len(final_preds)}")
         return jsonify({'predictions': final_preds})

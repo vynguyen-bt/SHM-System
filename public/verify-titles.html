@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Verify Titles - SHM-BIM-FEM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .title {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .button {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .button.danger {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+        }
+        .status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+            display: inline-block;
+        }
+        .correct { background: rgba(40, 167, 69, 0.8); }
+        .incorrect { background: rgba(220, 53, 69, 0.8); }
+        .results {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 30px;">🔍 VERIFY SECTION TITLES</h1>
+        
+        <h2>📋 Expected Titles (UPDATED FORMAT):</h2>
+        <div class="title">✅ Section 0: "0. Mô phỏng hư hỏng"</div>
+        <div class="title">✅ Section 1: "1. Chẩn đoán vị trí hư hỏng kết cấu"</div>
+        <div class="title">🔄 Section 2: "2. Chẩn đoán mức độ hư hỏng kết cấu" <strong>(UPDATED)</strong></div>
+        <div class="title">🔄 Section 3: "3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu" <strong>(UPDATED)</strong></div>
+        <div class="title">✅ Section 4: "4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán"</div>
+        
+        <h2>❌ OLD FORMAT (Should NOT appear):</h2>
+        <div style="text-decoration: line-through; opacity: 0.6; background: rgba(220,53,69,0.3); padding: 10px; border-radius: 5px;">
+            <div>"2. Chẩn đoán mức độ hư hỏng - ANNs"</div>
+            <div>"3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu - ANNs"</div>
+        </div>
+        
+        <h2>🧪 Test Actions:</h2>
+        <div style="text-align: center;">
+            <button class="button" onclick="openMainPage()">🏠 Open Main Page</button>
+            <button class="button" onclick="checkTitlesInMainPage()">🔍 Check Main Page Titles</button>
+            <button class="button danger" onclick="forceRefreshMainPage()">🚀 Force Refresh Main Page</button>
+            <button class="button" onclick="openIncognito()">🕵️ Incognito Instructions</button>
+        </div>
+        
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        function openMainPage() {
+            window.open('index.html', '_blank');
+        }
+        
+        function checkTitlesInMainPage() {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = '<h3>🔍 Checking main page titles...</h3><p>Opening main page to check titles...</p>';
+            
+            // Open main page and check
+            const mainWindow = window.open('index.html', 'mainpage');
+            
+            setTimeout(() => {
+                try {
+                    // Try to access the main page content
+                    const expectedTitles = [
+                        { id: 0, expected: '0. Mô phỏng hư hỏng' },
+                        { id: 1, expected: '1. Chẩn đoán vị trí hư hỏng kết cấu' },
+                        { id: 2, expected: '2. Chẩn đoán mức độ hư hỏng kết cấu' },
+                        { id: 3, expected: '3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu' },
+                        { id: 4, expected: '4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán' }
+                    ];
+                    
+                    let resultHTML = '<h3>📊 Title Check Results:</h3>';
+                    resultHTML += '<p><strong>Note:</strong> Check the opened main page manually to verify titles.</p>';
+                    
+                    expectedTitles.forEach(section => {
+                        resultHTML += `<div>Section ${section.id}: Expected "${section.expected}"</div>`;
+                    });
+                    
+                    resultHTML += '<br><p><strong>Manual Check:</strong></p>';
+                    resultHTML += '<p>1. Look at the button texts on the main page</p>';
+                    resultHTML += '<p>2. Click each section and check the h1 titles</p>';
+                    resultHTML += '<p>3. Ensure NO "- ANNs" appears anywhere</p>';
+                    
+                    results.innerHTML = resultHTML;
+                } catch (error) {
+                    results.innerHTML = `<div style="color: #ff6b6b;">❌ Could not automatically check: ${error.message}</div><p>Please manually verify the titles in the opened window.</p>`;
+                }
+            }, 2000);
+        }
+        
+        function forceRefreshMainPage() {
+            const timestamp = new Date().getTime();
+            const url = `index.html?nocache=${timestamp}&force=true`;
+            
+            alert('🚀 Opening main page with force refresh...');
+            window.open(url, '_blank');
+        }
+        
+        function openIncognito() {
+            const instructions = `🕵️ INCOGNITO/PRIVATE MODE INSTRUCTIONS:
+
+Windows/Linux:
+• Chrome: Ctrl + Shift + N
+• Firefox: Ctrl + Shift + P  
+• Edge: Ctrl + Shift + N
+
+Mac:
+• Chrome: Cmd + Shift + N
+• Firefox: Cmd + Shift + P
+• Safari: Cmd + Shift + N
+
+Then navigate to:
+${window.location.origin}/index.html
+
+This will bypass ALL cache and show the true current content.`;
+            
+            alert(instructions);
+        }
+        
+        // Auto-display current URL info
+        window.onload = function() {
+            console.log('🔍 Verify titles page loaded');
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🌐 Server URL should be: http://127.0.0.1:3000');
+            
+            if (window.location.protocol === 'file:') {
+                alert('⚠️ WARNING: You are viewing this from file system. Please use server URL: http://127.0.0.1:3000/verify-titles.html');
+            }
+        };
+    </script>
+</body>
+</html>

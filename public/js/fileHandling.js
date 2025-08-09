@@ -112,6 +112,11 @@ function readDeltaX2() {
     const fileContent = event.target.result;
     
     // Parse SElement.txt với định dạng mới (tọa độ node)
+    if (typeof parseSElementFile === 'undefined') {
+      console.error('❌ parseSElementFile function not found. Make sure calculations.js is loaded first.');
+      alert('Error: parseSElementFile function not found. Please refresh the page.');
+      return;
+    }
     const { nodes, elements } = parseSElementFile(fileContent);
     
     // Lưu thông tin lưới toàn cục
@@ -140,48 +145,194 @@ function readDeltaX2() {
 }
 
 function exportValue() {
-  const index1 = parseInt(document.getElementById("survey-index").value);
-  const damageValue1 = document.getElementById("damage-value").value;
-  const index2 = parseInt(document.getElementById("survey-index2").value);
-  const damageValue2 = document.getElementById("damage-value2").value;
+  console.log('🚀 === SECTION 0: EXPORTING SIMULATION DATA (NEW FORMAT) ===');
 
+  // Get input values
+  const index1 = parseInt(document.getElementById("survey-index").value);
+  const damageValue1 = parseFloat(document.getElementById("damage-value").value);
+  const index2 = parseInt(document.getElementById("survey-index2").value);
+  const damageValue2 = parseFloat(document.getElementById("damage-value2").value);
+  const index3 = parseInt(document.getElementById("survey-index3").value);
+  const damageValue3 = parseFloat(document.getElementById("damage-value3").value);
+
+  console.log(`📊 Input values: Element1=${index1}, Damage1=${damageValue1}%, Element2=${index2}, Damage2=${damageValue2}%, Element3=${index3}, Damage3=${damageValue3}%`);
+
+  // Validation for Element 1 (required)
   if (isNaN(index1)) {
     alert("Phần tử khảo sát 1 không hợp lệ! Giá trị nhập vào không phải số.");
     return;
   }
-  if (index1 < 1 || index1 > dataLines.length) {
-    alert(`Phần tử khảo sát 1 phải nằm trong khoảng 1 đến ${dataLines.length}`);
+  if (index1 < 1 || (dataLines.length > 0 && index1 > dataLines.length)) {
+    alert(`Phần tử khảo sát 1 phải nằm trong khoảng 1 đến ${dataLines.length || 'N/A'}`);
     return;
   }
   if (
-    damageValue1 === "" ||
     isNaN(damageValue1) ||
     damageValue1 < 0 ||
-    damageValue1 > 100
+    damageValue1 > 100 ||
+    !Number.isInteger(damageValue1)
   ) {
-    alert("Vui lòng nhập mức độ hư hỏng hợp lệ cho phần tử 1 (từ 0 đến 100)!");
+    alert("Vui lòng nhập mức độ hư hỏng hợp lệ cho phần tử 1 (số nguyên từ 0 đến 100)!");
     return;
   }
 
-  let value = `${dataLines[index1 - 1][0]} ${damageValue1}`;
+  // Helper function to format damage level to 2 digits
+  function formatDamageLevel(damage) {
+    return damage.toString().padStart(2, '0');
+  }
 
+  // Helper function to get element ID
+  function getElementId(index) {
+    if (dataLines.length > 0 && index <= dataLines.length) {
+      return dataLines[index - 1][0];
+    }
+    return index; // Fallback to use index as ID if no dataLines
+  }
+
+  // Build output content in new format
+  let outputLines = [];
+
+  // Element 1 (required)
+  const elementId1 = getElementId(index1);
+  const formattedDamage1 = formatDamageLevel(damageValue1);
+  outputLines.push(`ID: ${elementId1}`);
+  outputLines.push(`MATERIAL: CONCRETE_DI_${formattedDamage1}`);
+
+  console.log(`✅ Element 1: ID=${elementId1}, MATERIAL=CONCRETE_DI_${formattedDamage1}`);
+
+  // Element 2 (optional)
   if (
     !isNaN(index2) &&
     index2 >= 1 &&
-    index2 <= dataLines.length &&
-    damageValue2 !== "" &&
+    (dataLines.length === 0 || index2 <= dataLines.length) &&
     !isNaN(damageValue2) &&
     damageValue2 >= 0 &&
-    damageValue2 <= 100
+    damageValue2 <= 100 &&
+    Number.isInteger(damageValue2)
   ) {
-    value += ` ${dataLines[index2 - 1][0]} ${damageValue2}`;
+    const elementId2 = getElementId(index2);
+    const formattedDamage2 = formatDamageLevel(damageValue2);
+    outputLines.push(`ID: ${elementId2}`);
+    outputLines.push(`MATERIAL: CONCRETE_DI_${formattedDamage2}`);
+
+    console.log(`✅ Element 2: ID=${elementId2}, MATERIAL=CONCRETE_DI_${formattedDamage2}`);
   }
 
-  const blob = new Blob([value], { type: "text/plain" });
+  // Element 3 (optional)
+  if (
+    !isNaN(index3) &&
+    index3 >= 1 &&
+    (dataLines.length === 0 || index3 <= dataLines.length) &&
+    !isNaN(damageValue3) &&
+    damageValue3 >= 0 &&
+    damageValue3 <= 100 &&
+    Number.isInteger(damageValue3)
+  ) {
+    const elementId3 = getElementId(index3);
+    const formattedDamage3 = formatDamageLevel(damageValue3);
+    outputLines.push(`ID: ${elementId3}`);
+    outputLines.push(`MATERIAL: CONCRETE_DI_${formattedDamage3}`);
+
+    console.log(`✅ Element 3: ID=${elementId3}, MATERIAL=CONCRETE_DI_${formattedDamage3}`);
+  }
+
+  // Join all lines with newlines
+  const outputContent = outputLines.join('\n');
+
+  console.log('📄 Final output content:');
+  console.log(outputContent);
+  console.log(`📊 Total elements exported: ${outputLines.length / 2}`);
+
+  // Create and download file
+  const blob = new Blob([outputContent], { type: "text/plain" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "Simulation.txt";
   link.click();
+
+  console.log('✅ Simulation.txt exported successfully with new format!');
+  alert(`Đã xuất thành công ${outputLines.length / 2} phần tử mô phỏng vào file Simulation.txt với format mới!`);
+}
+
+// TEST FUNCTION: Test new export format for Section 0
+function testSection0NewFormat() {
+  console.log('🧪 === TESTING SECTION 0 NEW EXPORT FORMAT ===');
+
+  // Test scenarios
+  const testCases = [
+    {
+      name: 'Single Element',
+      elementId: 2083,
+      damageLevel: 5,
+      expected: 'ID: 2083\nMATERIAL: CONCRETE_DI_05'
+    },
+    {
+      name: 'Two Elements',
+      elements: [
+        { id: 2083, damage: 5 },
+        { id: 2084, damage: 12 }
+      ],
+      expected: 'ID: 2083\nMATERIAL: CONCRETE_DI_05\nID: 2084\nMATERIAL: CONCRETE_DI_12'
+    },
+    {
+      name: 'Three Elements',
+      elements: [
+        { id: 2083, damage: 5 },
+        { id: 2084, damage: 12 },
+        { id: 2085, damage: 25 }
+      ],
+      expected: 'ID: 2083\nMATERIAL: CONCRETE_DI_05\nID: 2084\nMATERIAL: CONCRETE_DI_12\nID: 2085\nMATERIAL: CONCRETE_DI_25'
+    }
+  ];
+
+  // Test damage level formatting
+  console.log('📊 Testing damage level formatting:');
+  const testDamages = [0, 5, 10, 15, 25, 50, 100];
+  testDamages.forEach(damage => {
+    const formatted = damage.toString().padStart(2, '0');
+    console.log(`   ${damage}% → CONCRETE_DI_${formatted}`);
+  });
+
+  // Test validation logic
+  console.log('\n🔍 Testing validation logic:');
+  const validationTests = [
+    { damage: 5.5, valid: false, reason: 'Not integer' },
+    { damage: -1, valid: false, reason: 'Below 0' },
+    { damage: 101, valid: false, reason: 'Above 100' },
+    { damage: 0, valid: true, reason: 'Valid minimum' },
+    { damage: 100, valid: true, reason: 'Valid maximum' },
+    { damage: 25, valid: true, reason: 'Valid middle value' }
+  ];
+
+  validationTests.forEach(test => {
+    const isValid = !isNaN(test.damage) &&
+                   test.damage >= 0 &&
+                   test.damage <= 100 &&
+                   Number.isInteger(test.damage);
+    const status = isValid === test.valid ? '✅' : '❌';
+    console.log(`   ${status} ${test.damage}% → ${test.reason}`);
+  });
+
+  console.log('\n🎯 Expected output examples:');
+  console.log('Example 1 (Element 2083, 5% damage):');
+  console.log('ID: 2083');
+  console.log('MATERIAL: CONCRETE_DI_05');
+
+  console.log('\nExample 2 (Two elements):');
+  console.log('ID: 2083');
+  console.log('MATERIAL: CONCRETE_DI_05');
+  console.log('ID: 2084');
+  console.log('MATERIAL: CONCRETE_DI_12');
+
+  console.log('\n✅ Section 0 new format testing completed!');
+  console.log('📋 Key features:');
+  console.log('- ID: [ElementID] format');
+  console.log('- MATERIAL: CONCRETE_DI_[XX] format');
+  console.log('- 2-digit damage level padding');
+  console.log('- Integer validation (0-100)');
+  console.log('- Support for 1-3 elements');
+
+  return testCases;
 }
 
 document

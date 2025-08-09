@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Direct Title Test - SHM-BIM-FEM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .title {
+            color: #0056b3;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: right;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #0056b3;
+        }
+        .button-test {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .button-test:hover { background: #0056b3; }
+        .status { padding: 5px 10px; border-radius: 4px; font-weight: bold; margin-left: 10px; }
+        .correct { background: #d4edda; color: #155724; }
+        .incorrect { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        iframe {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Direct Title Test - SHM-BIM-FEM</h1>
+        
+        <h2>📋 Expected Section Titles:</h2>
+        <div class="title">0. Mô phỏng hư hỏng</div>
+        <div class="title">1. Chẩn đoán vị trí hư hỏng kết cấu</div>
+        <div class="title">2. Chẩn đoán mức độ hư hỏng kết cấu</div>
+        <div class="title">3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu</div>
+        <div class="title">4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán</div>
+        
+        <h2>🧪 Test Actions:</h2>
+        <button class="button-test" onclick="openMainPage()">🏠 Open Main Page</button>
+        <button class="button-test" onclick="openMainPageNewTab()">🔗 Open in New Tab</button>
+        <button class="button-test" onclick="openMainPageIncognito()">🕵️ Open Incognito Instructions</button>
+        <button class="button-test" onclick="checkFileContent()">📄 Check File Content</button>
+        <button class="button-test" onclick="testWithTimestamp()">⏰ Test with Timestamp</button>
+        
+        <div id="results" style="margin-top: 20px;"></div>
+        
+        <h2>📊 File Content Verification:</h2>
+        <div id="file-check" style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0;">
+            <p>Click "📄 Check File Content" to verify the HTML file contains correct titles.</p>
+        </div>
+        
+        <h2>🔧 Troubleshooting Steps:</h2>
+        <ol>
+            <li><strong>Hard Refresh:</strong> Ctrl + Shift + R (Windows) or Cmd + Shift + R (Mac)</li>
+            <li><strong>Clear Browser Cache:</strong> Ctrl + Shift + Delete</li>
+            <li><strong>Disable Cache:</strong> F12 → Network tab → Check "Disable cache"</li>
+            <li><strong>Incognito Mode:</strong> Ctrl + Shift + N (Windows) or Cmd + Shift + N (Mac)</li>
+            <li><strong>Different Browser:</strong> Try Chrome, Firefox, Edge</li>
+            <li><strong>Server Restart:</strong> Stop and restart your local server</li>
+        </ol>
+    </div>
+
+    <script>
+        function openMainPage() {
+            window.location.href = 'index.html';
+        }
+        
+        function openMainPageNewTab() {
+            window.open('index.html', '_blank');
+        }
+        
+        function openMainPageIncognito() {
+            alert(`🕵️ To test in Incognito/Private mode:
+            
+Windows/Linux:
+- Chrome: Ctrl + Shift + N
+- Firefox: Ctrl + Shift + P
+- Edge: Ctrl + Shift + N
+
+Mac:
+- Chrome: Cmd + Shift + N
+- Firefox: Cmd + Shift + P
+- Safari: Cmd + Shift + N
+
+Then navigate to: ${window.location.origin}/index.html`);
+        }
+        
+        function testWithTimestamp() {
+            const timestamp = new Date().getTime();
+            const url = `index.html?nocache=${timestamp}&test=true`;
+            window.open(url, '_blank');
+        }
+        
+        function checkFileContent() {
+            const results = document.getElementById('results');
+            const fileCheck = document.getElementById('file-check');
+            
+            results.innerHTML = '<h3>🔍 Checking file content...</h3>';
+            
+            // Simulate file content check
+            fetch('index.html')
+                .then(response => response.text())
+                .then(html => {
+                    const expectedTitles = [
+                        '0. Mô phỏng hư hỏng',
+                        '1. Chẩn đoán vị trí hư hỏng kết cấu',
+                        '2. Chẩn đoán mức độ hư hỏng kết cấu',
+                        '3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu',
+                        '4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán'
+                    ];
+                    
+                    let checkResults = '<h3>📊 File Content Check Results:</h3>';
+                    let allCorrect = true;
+                    
+                    expectedTitles.forEach((title, index) => {
+                        const found = html.includes(title);
+                        const status = found ? 'correct' : 'incorrect';
+                        allCorrect = allCorrect && found;
+                        
+                        checkResults += `<div>Section ${index}: <span class="status ${status}">${found ? '✅ FOUND' : '❌ NOT FOUND'}</span> "${title}"</div>`;
+                    });
+                    
+                    // Check for old format
+                    const oldFormatFound = html.includes('- ANNs');
+                    if (oldFormatFound) {
+                        allCorrect = false;
+                        checkResults += '<div>Old Format: <span class="status incorrect">❌ FOUND "- ANNs"</span></div>';
+                    } else {
+                        checkResults += '<div>Old Format: <span class="status correct">✅ NO "- ANNs" FOUND</span></div>';
+                    }
+                    
+                    checkResults += `<div style="margin-top: 15px;"><strong>Overall: <span class="status ${allCorrect ? 'correct' : 'incorrect'}">${allCorrect ? '✅ ALL CORRECT' : '❌ ISSUES FOUND'}</span></strong></div>`;
+                    
+                    results.innerHTML = checkResults;
+                    
+                    if (allCorrect) {
+                        fileCheck.innerHTML = '<p style="color: #155724;"><strong>✅ File content is correct!</strong> If website still shows old titles, this is a browser cache issue.</p>';
+                    } else {
+                        fileCheck.innerHTML = '<p style="color: #721c24;"><strong>❌ File content has issues!</strong> The HTML file needs to be updated.</p>';
+                    }
+                })
+                .catch(error => {
+                    results.innerHTML = `<div style="color: #721c24;">❌ Error checking file: ${error.message}</div>`;
+                });
+        }
+        
+        // Auto-check on page load
+        window.onload = function() {
+            console.log('🔍 Direct title test page loaded');
+            setTimeout(checkFileContent, 1000);
+        };
+    </script>
+</body>
+</html>

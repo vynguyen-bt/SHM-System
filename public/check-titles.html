@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Section Titles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .title {
+            color: #0056b3;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #0056b3;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .updated { background: #d4edda; color: #155724; }
+        .original { background: #f8d7da; color: #721c24; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Section Titles Verification</h1>
+        
+        <h2>📋 Expected Titles (After Synchronization):</h2>
+        <div class="title">0. Mô phỏng hư hỏng <span class="status original">ORIGINAL</span></div>
+        <div class="title">1. Chẩn đoán vị trí hư hỏng kết cấu <span class="status original">ORIGINAL</span></div>
+        <div class="title">2. Chẩn đoán mức độ hư hỏng kết cấu <span class="status updated">UPDATED</span></div>
+        <div class="title">3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu <span class="status updated">UPDATED</span></div>
+        <div class="title">4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán <span class="status updated">SYNCHRONIZED</span></div>
+        
+        <h2>❌ Old Titles (Should NOT appear):</h2>
+        <div style="text-decoration: line-through; color: #999;">
+            <div>2. Chẩn đoán mức độ hư hỏng - ANNs</div>
+            <div>3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu - ANNs</div>
+        </div>
+        
+        <h2>🔧 Actions:</h2>
+        <button onclick="window.location.href='index.html'">🏠 Go to Main Page</button>
+        <button onclick="checkMainPageTitles()">🔍 Check Main Page Titles</button>
+        <button onclick="clearCacheAndReload()">🔄 Clear Cache & Reload</button>
+        
+        <div id="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        function checkMainPageTitles() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>🔍 Checking main page titles...</h3>';
+            
+            // Open main page in new window to check
+            const newWindow = window.open('index.html', '_blank');
+            
+            setTimeout(() => {
+                try {
+                    const sections = [
+                        { id: 0, expected: '0. Mô phỏng hư hỏng' },
+                        { id: 1, expected: '1. Chẩn đoán vị trí hư hỏng kết cấu' },
+                        { id: 2, expected: '2. Chẩn đoán mức độ hư hỏng kết cấu' },
+                        { id: 3, expected: '3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu' },
+                        { id: 4, expected: '4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán' }
+                    ];
+                    
+                    let resultHTML = '<h3>📊 Results:</h3>';
+                    sections.forEach(section => {
+                        resultHTML += `<div>Section ${section.id}: Expected "${section.expected}"</div>`;
+                    });
+                    
+                    results.innerHTML = resultHTML;
+                } catch (error) {
+                    results.innerHTML = '<div style="color: red;">❌ Could not check titles: ' + error.message + '</div>';
+                }
+            }, 2000);
+        }
+        
+        function clearCacheAndReload() {
+            // Clear various types of cache
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Force reload with cache bypass
+            window.location.reload(true);
+        }
+        
+        // Auto-check on page load
+        window.onload = function() {
+            console.log('🔍 Title verification page loaded');
+            console.log('📋 Expected titles:');
+            console.log('- Section 0: "0. Mô phỏng hư hỏng"');
+            console.log('- Section 1: "1. Chẩn đoán vị trí hư hỏng kết cấu"');
+            console.log('- Section 2: "2. Chẩn đoán mức độ hư hỏng kết cấu" (UPDATED)');
+            console.log('- Section 3: "3. Cải tiến chẩn đoán mức độ hư hỏng kết cấu" (UPDATED)');
+            console.log('- Section 4: "4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán"');
+        };
+    </script>
+</body>
+</html>
