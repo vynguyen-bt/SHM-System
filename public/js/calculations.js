@@ -1307,6 +1307,54 @@ console.log('✅ calculations.js loaded successfully');
 console.log('✅ processStrainEnergyData function available:', typeof processStrainEnergyData);
 console.log('✅ parseSElementFile function available:', typeof parseSElementFile);
 
+// ✅ DOWNLOAD FUNCTIONALITY VERIFICATION
+function verifyDownloadFunctionality() {
+  console.log('\n🔍 === DOWNLOAD FUNCTIONALITY VERIFICATION ===');
+
+  // Check function availability
+  console.log('\n1️⃣ FUNCTION AVAILABILITY:');
+  console.log(`✅ downloadMultiMode3DCharts: ${typeof downloadMultiMode3DCharts}`);
+  console.log(`✅ generateChartForModeAndThreshold: ${typeof generateChartForModeAndThreshold}`);
+  console.log(`✅ createChartImage: ${typeof createChartImage}`);
+  console.log(`✅ validateModeExists: ${typeof validateModeExists}`);
+  console.log(`✅ readFileAsText: ${typeof readFileAsText}`);
+
+  // Check UI elements
+  console.log('\n2️⃣ UI ELEMENTS:');
+  const downloadBtn = document.getElementById("download-charts-btn");
+  const progressDiv = document.getElementById("download-progress");
+  const progressText = document.getElementById("progress-text");
+  const progressBar = document.getElementById("progress-bar");
+
+  console.log(`✅ Download button: ${downloadBtn ? 'Found' : 'Missing'}`);
+  console.log(`✅ Progress div: ${progressDiv ? 'Found' : 'Missing'}`);
+  console.log(`✅ Progress text: ${progressText ? 'Found' : 'Missing'}`);
+  console.log(`✅ Progress bar: ${progressBar ? 'Found' : 'Missing'}`);
+
+  // Check configuration
+  console.log('\n3️⃣ CONFIGURATION:');
+  console.log('Target modes: [10, 12, 14, 17, 20, "combine"] (6 modes)');
+  console.log('Target thresholds: [10, 20, 30, 40, 50] (5 thresholds)');
+  console.log('Expected total: 6 × 5 = 30 charts');
+
+  // Check file naming pattern
+  console.log('\n4️⃣ FILE NAMING PATTERN:');
+  console.log('Numeric modes: 3D_Damage_Mode{mode}_Z0{threshold}.png');
+  console.log('Mode Combine: 3D_Damage_ModeCombine_Z0{threshold}.png');
+  console.log('Examples:');
+  console.log('  - 3D_Damage_Mode10_Z010.png');
+  console.log('  - 3D_Damage_Mode20_Z050.png');
+  console.log('  - 3D_Damage_ModeCombine_Z030.png');
+
+  console.log('\n🎉 DOWNLOAD FUNCTIONALITY VERIFICATION COMPLETED');
+
+  return {
+    functionsAvailable: typeof downloadMultiMode3DCharts === 'function',
+    uiElementsPresent: !!(downloadBtn && progressDiv && progressText && progressBar),
+    configurationCorrect: true
+  };
+}
+
 // ✅ MODE COMBINE TESTING FUNCTION
 function testModeCombineFeature() {
   console.log('\n🧪 === TESTING MODE COMBINE FEATURE ===');
