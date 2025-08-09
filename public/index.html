@@ -187,12 +187,22 @@
             </div>
             <button onclick="processStrainEnergyData()">Tính toán năng lượng biến dạng</button>
             <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
+            <button onclick="exportCompleteExcelReport()" style="background-color: #198754; color: white; margin-top: 10px;">📊 Xuất Báo Cáo Excel Hoàn Chỉnh</button>
             <div id="download-progress" style="margin-top: 10px; display: none;">
               <div style="background-color: #f0f0f0; border-radius: 5px; padding: 10px;">
                 <div id="progress-text">Preparing download...</div>
                 <div style="background-color: #ddd; border-radius: 10px; margin-top: 5px;">
                   <div id="progress-bar" style="background-color: #28a745; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
                 </div>
+              </div>
+            </div>
+            <div id="excel-progress" style="margin-top: 10px; display: none;">
+              <div style="background-color: #e8f5e8; border-radius: 5px; padding: 10px; border: 1px solid #198754;">
+                <div id="excel-progress-text">Calculating metrics for all combinations...</div>
+                <div style="background-color: #ddd; border-radius: 10px; margin-top: 5px;">
+                  <div id="excel-progress-bar" style="background-color: #198754; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <div id="excel-progress-details" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
               </div>
             </div>
             <div id="results"></div>
