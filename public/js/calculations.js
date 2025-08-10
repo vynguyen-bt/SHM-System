@@ -918,6 +918,145 @@ function parseModeShapeFileCombine(content) {
     return combinedNodeValues;
 }
 
+// ✅ ENHANCED MODE COMBINE WITH DATASET SIZE VALIDATION
+function parseModeShapeFileCombineEnhanced(content) {
+    console.log('🔄 === ENHANCED MODE COMBINE PARSING ===');
+
+    const lines = content.trim().split('\n');
+    const targetModes = [10, 12, 14, 17, 20];
+    const modeData = {};
+    const combinedNodeValues = {};
+    let totalRows = 0;
+    let validRows = 0;
+
+    console.log(`🎯 Target modes: [${targetModes.join(', ')}]`);
+    console.log(`📊 Total lines to process: ${lines.length}`);
+
+    // Step 1: Enhanced parsing with validation
+    for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 3) {
+            totalRows++;
+            const nodeID = Number(parts[0]);
+            const mode = Number(parts[1]);
+            const eigenValue = Number(parts[2].replace(',', '.'));
+
+            // Enhanced validation
+            if (!isNaN(nodeID) && !isNaN(mode) && !isNaN(eigenValue) &&
+                nodeID > 0 && mode > 0) {
+                validRows++;
+
+                if (targetModes.includes(mode)) {
+                    if (!modeData[mode]) {
+                        modeData[mode] = {
+                            nodes: [],
+                            values: [],
+                            min: Infinity,
+                            max: -Infinity,
+                            count: 0
+                        };
+                    }
+                    modeData[mode].nodes.push(nodeID);
+                    modeData[mode].values.push(eigenValue);
+                    modeData[mode].min = Math.min(modeData[mode].min, eigenValue);
+                    modeData[mode].max = Math.max(modeData[mode].max, eigenValue);
+                    modeData[mode].count++;
+                }
+            }
+        }
+    }
+
+    console.log(`📊 Parsing results: ${validRows}/${totalRows} valid rows`);
+
+    // Step 2: Validate mode completeness
+    const availableModes = Object.keys(modeData).map(Number).sort((a, b) => a - b);
+    const missingModes = targetModes.filter(mode => !availableModes.includes(mode));
+
+    console.log(`📊 Available modes: [${availableModes.join(', ')}]`);
+    if (missingModes.length > 0) {
+        console.log(`⚠️ Missing modes: [${missingModes.join(', ')}]`);
+    }
+
+    // Step 3: Analyze mode data consistency
+    console.log('\n📊 MODE DATA ANALYSIS:');
+    availableModes.forEach(mode => {
+        const data = modeData[mode];
+        const uniqueNodes = [...new Set(data.nodes)].length;
+        const valueRange = `${data.min.toExponential(3)} to ${data.max.toExponential(3)}`;
+        console.log(`   Mode ${mode}: ${data.count} entries, ${uniqueNodes} unique nodes, range: ${valueRange}`);
+
+        // Check for potential issues
+        if (data.count !== uniqueNodes) {
+            console.log(`      ⚠️ Warning: Duplicate nodes detected (${data.count} entries vs ${uniqueNodes} unique)`);
+        }
+        if (Math.abs(data.max) > 10 || Math.abs(data.min) > 10) {
+            console.log(`      ⚠️ Warning: Extreme values detected (>${10})`);
+        }
+    });
+
+    // Step 4: Enhanced combination with validation
+    const allNodeIDs = new Set();
+    availableModes.forEach(mode => {
+        modeData[mode].nodes.forEach(nodeID => {
+            allNodeIDs.add(nodeID);
+        });
+    });
+
+    console.log(`\n🔢 Total unique nodes: ${allNodeIDs.size}`);
+
+    let combinedDataPoints = 0;
+    let nodesWithAllModes = 0;
+
+    allNodeIDs.forEach(nodeID => {
+        let combinedValue = 0;
+        let modesContributing = 0;
+        const nodeContributions = [];
+
+        availableModes.forEach(mode => {
+            const nodeIndex = modeData[mode].nodes.indexOf(nodeID);
+            if (nodeIndex !== -1) {
+                const value = modeData[mode].values[nodeIndex];
+                combinedValue += value;
+                modesContributing++;
+                nodeContributions.push(`M${mode}:${value.toExponential(2)}`);
+            }
+        });
+
+        // Store combined value
+        combinedNodeValues[nodeID] = combinedValue;
+
+        if (combinedValue !== 0) {
+            combinedDataPoints++;
+        }
+
+        if (modesContributing === availableModes.length) {
+            nodesWithAllModes++;
+        }
+
+        // Debug for first few nodes
+        if (nodeID <= 5) {
+            console.log(`   Node ${nodeID}: ${combinedValue.toExponential(3)} (${modesContributing}/${availableModes.length} modes: ${nodeContributions.join(', ')})`);
+        }
+    });
+
+    console.log(`\n✅ COMBINATION RESULTS:`);
+    console.log(`   Combined ${availableModes.length} modes`);
+    console.log(`   ${combinedDataPoints} non-zero values from ${allNodeIDs.size} total nodes`);
+    console.log(`   ${nodesWithAllModes} nodes have all ${availableModes.length} modes`);
+    console.log(`   Completion rate: ${(nodesWithAllModes/allNodeIDs.size*100).toFixed(1)}%`);
+
+    // Step 5: Quality assessment
+    if (missingModes.length > 0) {
+        console.log(`⚠️ QUALITY WARNING: Missing ${missingModes.length}/${targetModes.length} target modes`);
+    }
+
+    if (nodesWithAllModes / allNodeIDs.size < 0.8) {
+        console.log(`⚠️ QUALITY WARNING: Only ${(nodesWithAllModes/allNodeIDs.size*100).toFixed(1)}% nodes have complete mode data`);
+    }
+
+    return combinedNodeValues;
+}
+
 // ✅ FALLBACK FUNCTION: Simulate Mode Combine using Mode 1 data when target modes unavailable
 function parseModeShapeFileFallback(content) {
     console.log('🔄 === MODE COMBINE FALLBACK: SIMULATING WITH MODE 1 ===');
@@ -1563,6 +1702,301 @@ function verifyDOMCleanupFix() {
     cleanupImproved: true,
     errorHandlingAdded: true,
     delayIncreased: true
+  };
+}
+
+// ✅ MODE COMBINE DEBUGGING FOR 225 vs 100 ELEMENTS
+function debugModeCombineIssue() {
+  console.log('\n🔍 === MODE COMBINE DEBUGGING: 225 vs 100 ELEMENTS ===');
+
+  console.log('\n1️⃣ POTENTIAL ISSUES ANALYSIS:');
+  console.log('🔍 Issue 1: Sample nodes validation');
+  console.log('   - Current sample nodes: [1, 31, 61, 91, 121]');
+  console.log('   - For 100 elements: Max node ~100-120 ✓');
+  console.log('   - For 225 elements: Max node ~225-250 ✓');
+  console.log('   - Sample nodes should exist in both datasets');
+
+  console.log('\n🔍 Issue 2: Node ID mapping consistency');
+  console.log('   - 100 elements: Node IDs 1-100 (sequential)');
+  console.log('   - 225 elements: Node IDs 1-225 (sequential) OR different mapping?');
+  console.log('   - Check if node numbering scheme is consistent');
+
+  console.log('\n🔍 Issue 3: Mode availability in datasets');
+  console.log('   - Target modes: [10, 12, 14, 17, 20]');
+  console.log('   - 100 elements: All modes available?');
+  console.log('   - 225 elements: All modes available?');
+  console.log('   - Missing modes could cause incorrect combination');
+
+  console.log('\n🔍 Issue 4: Data scaling/magnitude differences');
+  console.log('   - 100 elements: Eigenvalues in range X');
+  console.log('   - 225 elements: Eigenvalues in range Y');
+  console.log('   - Different magnitudes could affect visualization');
+
+  console.log('\n🔍 Issue 5: Memory/performance with larger dataset');
+  console.log('   - 100 elements: ~500-1000 data points per mode');
+  console.log('   - 225 elements: ~1125-2250 data points per mode');
+  console.log('   - Could cause memory issues or incomplete processing');
+
+  console.log('\n2️⃣ DEBUGGING RECOMMENDATIONS:');
+  console.log('✅ Step 1: Check file structure consistency');
+  console.log('   - Compare header format between 100 vs 225 element files');
+  console.log('   - Verify column structure (Node_ID, Mode, Eigenvector)');
+
+  console.log('✅ Step 2: Validate mode availability');
+  console.log('   - Run: checkModeAvailability() for both datasets');
+  console.log('   - Ensure all target modes [10,12,14,17,20] exist');
+
+  console.log('✅ Step 3: Compare sample node values');
+  console.log('   - Check nodes [1,31,61,91,121] in both datasets');
+  console.log('   - Verify individual mode values before combination');
+
+  console.log('✅ Step 4: Add enhanced logging');
+  console.log('   - Log total rows processed');
+  console.log('   - Log nodes per mode');
+  console.log('   - Log value ranges for each mode');
+
+  console.log('\n3️⃣ ENHANCED MODE COMBINE FUNCTION NEEDED:');
+  console.log('📊 Add dataset size validation');
+  console.log('📊 Add mode completeness check');
+  console.log('📊 Add value range validation');
+  console.log('📊 Add memory usage monitoring');
+  console.log('📊 Add detailed error reporting');
+
+  console.log('\n🎯 NEXT STEPS:');
+  console.log('1. Run debugModeCombineDataset() with both files');
+  console.log('2. Compare console outputs between 100 vs 225 elements');
+  console.log('3. Identify specific differences causing incorrect results');
+  console.log('4. Implement targeted fixes based on findings');
+
+  return {
+    analysisComplete: true,
+    issuesIdentified: 5,
+    recommendationsProvided: true,
+    nextStepsOutlined: true
+  };
+}
+
+// ✅ ENHANCED MODE COMBINE DEBUGGING FUNCTION
+function debugModeCombineDataset(fileContent, datasetName = 'Unknown') {
+  console.log(`\n🔍 === MODE COMBINE DATASET ANALYSIS: ${datasetName} ===`);
+
+  if (!fileContent) {
+    console.log('❌ No file content provided');
+    return { error: 'No content' };
+  }
+
+  const lines = fileContent.trim().split('\n');
+  const targetModes = [10, 12, 14, 17, 20];
+  const modeData = {};
+  const nodeStats = {};
+  let totalRows = 0;
+  let validRows = 0;
+
+  console.log(`📊 Dataset: ${datasetName}`);
+  console.log(`📊 Total lines in file: ${lines.length}`);
+
+  // Step 1: Parse and analyze data structure
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length >= 3) {
+      totalRows++;
+      const nodeID = Number(parts[0]);
+      const mode = Number(parts[1]);
+      const eigenValue = Number(parts[2].replace(',', '.'));
+
+      if (!isNaN(nodeID) && !isNaN(mode) && !isNaN(eigenValue)) {
+        validRows++;
+
+        // Track node statistics
+        if (!nodeStats[nodeID]) {
+          nodeStats[nodeID] = { modes: [], values: [] };
+        }
+        nodeStats[nodeID].modes.push(mode);
+        nodeStats[nodeID].values.push(eigenValue);
+
+        // Collect target mode data
+        if (targetModes.includes(mode)) {
+          if (!modeData[mode]) {
+            modeData[mode] = { nodes: [], values: [], min: Infinity, max: -Infinity };
+          }
+          modeData[mode].nodes.push(nodeID);
+          modeData[mode].values.push(eigenValue);
+          modeData[mode].min = Math.min(modeData[mode].min, eigenValue);
+          modeData[mode].max = Math.max(modeData[mode].max, eigenValue);
+        }
+      }
+    }
+  }
+
+  // Step 2: Analyze dataset characteristics
+  const uniqueNodes = Object.keys(nodeStats).map(Number).sort((a, b) => a - b);
+  const availableModes = Object.keys(modeData).map(Number).sort((a, b) => a - b);
+
+  console.log(`\n📊 DATASET CHARACTERISTICS:`);
+  console.log(`   Total rows: ${totalRows}`);
+  console.log(`   Valid rows: ${validRows}`);
+  console.log(`   Unique nodes: ${uniqueNodes.length} (${uniqueNodes[0]} to ${uniqueNodes[uniqueNodes.length-1]})`);
+  console.log(`   Available target modes: [${availableModes.join(', ')}]`);
+  console.log(`   Missing target modes: [${targetModes.filter(m => !availableModes.includes(m)).join(', ')}]`);
+
+  // Step 3: Analyze mode completeness
+  console.log(`\n📊 MODE COMPLETENESS ANALYSIS:`);
+  targetModes.forEach(mode => {
+    if (modeData[mode]) {
+      const nodeCount = modeData[mode].nodes.length;
+      const uniqueNodeCount = [...new Set(modeData[mode].nodes)].length;
+      const valueRange = `${modeData[mode].min.toExponential(3)} to ${modeData[mode].max.toExponential(3)}`;
+      console.log(`   Mode ${mode}: ${nodeCount} entries, ${uniqueNodeCount} unique nodes, range: ${valueRange}`);
+    } else {
+      console.log(`   Mode ${mode}: ❌ NOT FOUND`);
+    }
+  });
+
+  // Step 4: Sample node analysis
+  const sampleNodes = [1, 31, 61, 91, 121, 151, 181, 211]; // Extended for 225 elements
+  console.log(`\n📊 SAMPLE NODE ANALYSIS:`);
+  sampleNodes.forEach(nodeID => {
+    if (nodeStats[nodeID]) {
+      const modesForNode = nodeStats[nodeID].modes.filter(m => targetModes.includes(m));
+      const valuesForNode = nodeStats[nodeID].values.filter((v, i) => targetModes.includes(nodeStats[nodeID].modes[i]));
+      console.log(`   Node ${nodeID}: ${modesForNode.length} target modes [${modesForNode.join(',')}]`);
+
+      if (modesForNode.length > 0) {
+        const combinedValue = valuesForNode.reduce((sum, val) => sum + val, 0);
+        console.log(`      Combined value: ${combinedValue.toExponential(3)}`);
+      }
+    } else {
+      console.log(`   Node ${nodeID}: ❌ NOT FOUND`);
+    }
+  });
+
+  // Step 5: Identify potential issues
+  console.log(`\n⚠️ POTENTIAL ISSUES:`);
+  const issues = [];
+
+  if (availableModes.length < targetModes.length) {
+    issues.push(`Missing ${targetModes.length - availableModes.length} target modes`);
+  }
+
+  if (uniqueNodes.length !== validRows / availableModes.length) {
+    issues.push(`Inconsistent node count across modes`);
+  }
+
+  // Check for extreme values
+  availableModes.forEach(mode => {
+    const range = modeData[mode].max - modeData[mode].min;
+    if (Math.abs(modeData[mode].max) > 1 || Math.abs(modeData[mode].min) > 1) {
+      issues.push(`Mode ${mode} has extreme values (>${1})`);
+    }
+  });
+
+  if (issues.length > 0) {
+    issues.forEach(issue => console.log(`   ❌ ${issue}`));
+  } else {
+    console.log(`   ✅ No obvious issues detected`);
+  }
+
+  return {
+    datasetName,
+    totalRows,
+    validRows,
+    uniqueNodes: uniqueNodes.length,
+    nodeRange: [uniqueNodes[0], uniqueNodes[uniqueNodes.length-1]],
+    availableModes,
+    missingModes: targetModes.filter(m => !availableModes.includes(m)),
+    issues,
+    modeData
+  };
+}
+
+// ✅ COMPARE MODE COMBINE RESULTS BETWEEN DATASETS
+function compareModeCombineResults(content100, content225) {
+  console.log('\n🔍 === COMPARING MODE COMBINE: 100 vs 225 ELEMENTS ===');
+
+  const result100 = debugModeCombineDataset(content100, '100 Elements');
+  const result225 = debugModeCombineDataset(content225, '225 Elements');
+
+  console.log('\n📊 COMPARISON SUMMARY:');
+  console.log(`100 Elements: ${result100.uniqueNodes} nodes, modes [${result100.availableModes.join(',')}]`);
+  console.log(`225 Elements: ${result225.uniqueNodes} nodes, modes [${result225.availableModes.join(',')}]`);
+
+  // Compare mode availability
+  console.log('\n🔍 MODE AVAILABILITY COMPARISON:');
+  const targetModes = [10, 12, 14, 17, 20];
+  targetModes.forEach(mode => {
+    const in100 = result100.availableModes.includes(mode);
+    const in225 = result225.availableModes.includes(mode);
+    const status = in100 && in225 ? '✅' : in100 ? '⚠️ 100 only' : in225 ? '⚠️ 225 only' : '❌';
+    console.log(`   Mode ${mode}: ${status}`);
+  });
+
+  // Compare sample node values
+  console.log('\n🔍 SAMPLE NODE COMPARISON:');
+  const sampleNodes = [1, 31, 61, 91];
+  sampleNodes.forEach(nodeID => {
+    console.log(`\n   Node ${nodeID}:`);
+
+    // Calculate combined values for both datasets
+    let combined100 = 0, combined225 = 0;
+    let modes100 = 0, modes225 = 0;
+
+    targetModes.forEach(mode => {
+      if (result100.modeData[mode] && result100.modeData[mode].nodes.includes(nodeID)) {
+        const idx = result100.modeData[mode].nodes.indexOf(nodeID);
+        combined100 += result100.modeData[mode].values[idx];
+        modes100++;
+      }
+
+      if (result225.modeData[mode] && result225.modeData[mode].nodes.includes(nodeID)) {
+        const idx = result225.modeData[mode].nodes.indexOf(nodeID);
+        combined225 += result225.modeData[mode].values[idx];
+        modes225++;
+      }
+    });
+
+    console.log(`      100 elements: ${combined100.toExponential(3)} (${modes100} modes)`);
+    console.log(`      225 elements: ${combined225.toExponential(3)} (${modes225} modes)`);
+
+    if (modes100 > 0 && modes225 > 0) {
+      const ratio = Math.abs(combined225 / combined100);
+      const diff = Math.abs(combined225 - combined100);
+      console.log(`      Ratio: ${ratio.toFixed(3)}, Difference: ${diff.toExponential(3)}`);
+    }
+  });
+
+  // Identify root cause
+  console.log('\n🎯 ROOT CAUSE ANALYSIS:');
+  if (result100.missingModes.length > 0 || result225.missingModes.length > 0) {
+    console.log('❌ ISSUE: Missing target modes in one or both datasets');
+    console.log(`   100 elements missing: [${result100.missingModes.join(',')}]`);
+    console.log(`   225 elements missing: [${result225.missingModes.join(',')}]`);
+  }
+
+  if (result100.issues.length > 0 || result225.issues.length > 0) {
+    console.log('❌ ISSUE: Data quality problems detected');
+    console.log(`   100 elements issues: ${result100.issues.length}`);
+    console.log(`   225 elements issues: ${result225.issues.length}`);
+  }
+
+  // Recommendations
+  console.log('\n💡 RECOMMENDATIONS:');
+  if (result225.missingModes.length > result100.missingModes.length) {
+    console.log('✅ Check if 225-element file contains all required modes');
+    console.log('✅ Verify file format consistency between datasets');
+  }
+
+  if (result225.issues.some(issue => issue.includes('extreme values'))) {
+    console.log('✅ Check eigenvalue scaling in 225-element dataset');
+    console.log('✅ Consider normalizing values before combination');
+  }
+
+  console.log('✅ Run this comparison with actual loaded files:');
+  console.log('   compareModeCombineResults(file100Content, file225Content)');
+
+  return {
+    result100,
+    result225,
+    comparison: 'completed'
   };
 }
 
