@@ -7,8 +7,8 @@
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="css/main.css" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <!-- Unified CSS for consistent design system -->
+    <link rel="stylesheet" href="css/unified.css" />
     <style>
       /* Tối ưu hiệu suất canvas cho Plotly */
       canvas {
@@ -30,8 +30,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.0.0"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+    <!-- Three.js updated to latest version with ES modules -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
@@ -120,6 +127,19 @@
               accept=".txt"
               style="display: none"
             />
+            <input
+              type="file"
+              id="txt-file-simulation"
+              accept=".txt"
+              style="display: none"
+            />
+            <input
+              type="file"
+              id="txt-file-training"
+              accept=".txt"
+              multiple
+              style="display: none"
+            />
             <h2>Thông số chẩn đoán</h2>
             <label for="mode-number"
               ><strong>Chọn Mode khảo sát:</strong></label
@@ -188,6 +208,12 @@
             <button onclick="processStrainEnergyData()">Tính toán năng lượng biến dạng</button>
             <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
             <button onclick="exportCompleteExcelReport()" style="background-color: #198754; color: white; margin-top: 10px;">📊 Xuất Báo Cáo Excel Hoàn Chỉnh</button>
+
+
+
+
+
+
             <div id="download-progress" style="margin-top: 10px; display: none;">
               <div style="background-color: #f0f0f0; border-radius: 5px; padding: 10px;">
                 <div id="progress-text">Preparing download...</div>
@@ -213,8 +239,9 @@
     </div>
     <div class="main-part">
       <button
-        onclick="switchToPartB(); processFilestrain(); processFileTest();"
+        onclick="switchToPartB();"
         class="button-open"
+        title="Click để mở Section 2"
       >
         2. Chẩn đoán mức độ hư hỏng kết cấu
       </button>
@@ -264,12 +291,8 @@
                 style="display: none"
               />
             </div>
-            <input
-              type="file"
-              id="fileInputTest"
-              accept=".txt"
-              style="display: none"
-            />
+            <!-- ✅ REMOVED: fileInputTest - Section 2 now uses txt-file-damaged directly -->
+            <!-- TEST.txt input no longer needed as Section 2 uses Damage.txt from Section 1 -->
             <button
               class="btn btn-primary"
               id="trainButton"
@@ -324,32 +347,42 @@
       </div>
     </div>
     <div class="main-part">
-      <button onclick="switchToPartB3();processDataX();" class="button-open">
-        3. Cải thiện kết quả chẩn đoán bước 1
-      </button>
-      <div class="body-part">
-        <div id="partB3" class="body-part">
-          <div class="container">
-            <h1>3. Cải thiện kết quả chẩn đoán bước 1</h1>
-            <button
-              onclick="processDataX()"
-              style="visibility: hidden; position: absolute"
-            >
-              Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
-            </button>
-            <div id="resultsX"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-part">
       <button onclick="switchToPartB4();processDataX();" class="button-open">
-        4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
+        3. Cải thiện độ chính xác chẩn đoán kết cấu
       </button>
       <div class="body-part">
         <div id="partB4" class="body-part">
           <div class="container">
-            <h1>4. Cải thiện chỉ số đánh giá độ chính xác chẩn đoán</h1>
+            <h1>3. Cải thiện độ chính xác chẩn đoán kết cấu</h1>
+            <p>Sử dụng giá trị thickness từ Simulation.txt để dự đoán mức độ hư hỏng</p>
+
+            <button onclick="trainAndPredictSection3()" class="btn btn-primary">
+              Dự đoán mức độ hư hỏng kết cấu
+            </button>
+
+            <div class="progress-container" style="margin-top: 20px;">
+              <div class="progress-bar" id="progressSection3"></div>
+            </div>
+
+            <!-- Dedicated Section 3 elements -->
+            <table class="table table-bordered mt-4" id="resultsTableSection3" style="display: none">
+              <thead>
+                <tr></tr>
+              </thead>
+              <tbody id="resultsBodySection3"></tbody>
+            </table>
+
+            <div class="chart-container">
+              <canvas id="predictionChartSection3"></canvas>
+            </div>
+
+            <div id="prediction3DChartSection3" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+
+            <div id="lowValuesListSection3" hidden>
+              <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
+              <ul id="lowValuesSection3"></ul>
+            </div>
+
             <button
               onclick="processDataX()"
               style="visibility: hidden; position: absolute"
@@ -361,11 +394,86 @@
         </div>
       </div>
     </div>
+    <div class="main-part">
+      <button onclick="switchToPartB3();processDataX();" class="button-open">
+        4. Cải thiện kết quả chẩn đoán kết cấu
+      </button>
+      <div class="body-part">
+        <div id="partB3" class="body-part">
+          <div class="container">
+            <h1>4. Cải thiện kết quả chẩn đoán kết cấu</h1>
+            <button
+              onclick="processDataX()"
+              style="visibility: hidden; position: absolute"
+            >
+              Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
+            </button>
+            <div id="resultsX"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="js/switch.js"></script>
     <script src="js/calculations.js"></script>
     <script src="js/fileHandling.js"></script>
     <script src="js/chartProcessing.js"></script>
     <script src="js/trainPredict.js"></script>
     <script src="js/TestShm.js"></script>
+    <script src="js/di_values_fix.js"></script>
+    <script src="js/silent_csv_fix.js"></script>
+    <script src="js/train_csv_generator.js"></script>
+    <script src="js/test_train_csv.js"></script>
+    <script src="js/integrated_csv_generator.js"></script>
+    <script src="js/safe_csv_wrapper.js"></script>
+
+
+
+
+
+    <script src="js/enhanced_train_csv.js"></script>
+    <script src="js/integrated_dynamic_csv.js"></script>
+    <script src="js/fallback_csv_generator.js"></script>
+
+    <script src="js/test_training_case_detection.js"></script>
+    <script src="js/dynamic_csv_interface.js"></script>
+    <script src="js/immediate_toggle_test.js"></script>
+    <script src="js/test_section_layout.js"></script>
+    <script src="js/test_text_alignment.js"></script>
+    <script src="js/debug_mode_combine_225.js"></script>
+    <script src="js/test_damage_txt_integration.js"></script>
+    <script src="js/analyze_section2_data_requirements.js"></script>
+    <script src="js/show_test_csv_format.js"></script>
+    <script src="js/simulation_parser.js"></script>
+    <script src="js/test_dynamic_csv_format.js"></script>
+    <script src="js/debug_section2_button.js"></script>
+    <script src="js/verify_section2_fixes.js"></script>
+    <script src="js/force_function_reload.js"></script>
+    <script src="js/debug_damage_txt_parsing.js"></script>
+    <script src="js/test_improved_scaling.js"></script>
+    <script src="js/test_damage_txt_parsing.js"></script>
+    <script src="js/verify_csv_values.js"></script>
+    <script src="js/debug_csv_data_flow.js"></script>
+    <script src="js/fix_csv_generation.js"></script>
+    <script src="js/test_csv_fix.js"></script>
+    <script src="js/trace_csv_generation.js"></script>
+    <script src="js/emergency_csv_fix.js"></script>
+    <script src="js/raw_values_csv_fix.js"></script>
+    <script src="js/test_raw_values.js"></script>
+    <script src="js/immediate_raw_fix.js"></script>
+    <script src="js/apply_immediate_fix.js"></script>
+    <script src="js/quick_fix.js"></script>
+    <script src="js/test_di_calculation.js"></script>
+
+    <!-- Debug tools available in console if needed -->
+    <script>
+      window.addEventListener('load', function() {
+        // Debug tools are loaded and available in console:
+        // - createImmediateFixReport() - Test toggle functions
+        // - createLayoutTestReport() - Test section layout
+        // - createTextAlignmentReport() - Test text alignment
+        console.log('✅ SHM-BIM-FEM loaded successfully');
+        console.log('💡 Debug tools available: createImmediateFixReport(), createLayoutTestReport(), createTextAlignmentReport()');
+      });
+    </script>
   </body>
 </html>

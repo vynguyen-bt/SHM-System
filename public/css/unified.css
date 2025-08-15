@@ -1,0 +1,649 @@
+/* ===== SHM-BIM-FEM UNIFIED CSS - CONSISTENT DESIGN SYSTEM ===== */
+
+/* ===== CSS VARIABLES FOR CONSISTENCY ===== */
+:root {
+  /* Color Palette */
+  --primary-blue: #007BFF;
+  --primary-blue-dark: #0056b3;
+  --primary-blue-light: #e3f2fd;
+  --secondary-gray: #495057;
+  --light-gray: #6c757d;
+  --background-light: #f4f7fa;
+  --background-white: #fff;
+  --background-section: #f8f9fa;
+  --border-color: #ccc;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --warning-yellow: #ffc117;
+  --success-green: #28a745;
+  --danger-red: #dc3545;
+  
+  /* Typography Scale */
+  --font-size-xl: 32px;      /* Main title */
+  --font-size-lg: 26px;      /* Section titles */
+  --font-size-md: 20px;      /* H2 titles */
+  --font-size-sm: 16px;      /* H3, buttons, labels */
+  --font-size-xs: 14px;      /* Body text, inputs */
+  --font-size-xxs: 12px;     /* Notes, small text */
+  
+  /* Font Weights */
+  --font-weight-bold: 700;
+  --font-weight-semibold: 600;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  
+  /* Spacing Scale */
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --spacing-xl: 25px;
+  --spacing-xxl: 30px;
+  
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px var(--shadow-color);
+  --shadow-md: 0 4px 6px var(--shadow-color);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== BASE STYLES ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif;
+  background-color: var(--background-light);
+  color: #333;
+  margin: 0;
+  padding: var(--spacing-lg);
+  line-height: 1.6;
+  font-size: var(--font-size-xs);
+}
+
+/* ===== TYPOGRAPHY SYSTEM ===== */
+
+/* Main Page Title */
+h1 {
+  text-align: center;
+  color: var(--primary-blue);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+
+/* Section Titles - Restored from backup */
+.container h1 {
+  text-align: right;
+  color: #0056b3;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 25px 0;
+  padding: 0;
+}
+
+/* Subsection Titles - Restored from backup */
+.container h2 {
+  color: #495057;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 20px 0 15px 0;
+  padding: 10px 0;
+  border-bottom: 2px solid #dee2e6;
+}
+
+/* Sub-subsection Titles - Restored from backup */
+.container h3 {
+  color: #6c757d;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 15px 0 10px 0;
+}
+
+/* ===== LAYOUT SYSTEM ===== */
+.container {
+  max-width: 1200px;
+  width: 95%;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow-x: auto; /* Handle horizontal overflow */
+}
+
+/* Body parts - Layout styling only (no display control) */
+.body-part {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  margin-bottom: 30px;
+  padding: 0 10px;
+  /* Display controlled by ID selectors below, not by class */
+}
+
+/* Specific section containers - Hidden by default (allow JavaScript override) */
+#partA, #partB, #partB1, #partB3, #partB3New, #partB4 {
+  display: none; /* Hidden by default - JavaScript can override this */
+}
+
+/* ===== FORM ELEMENTS - RESTORED FROM BACKUP ===== */
+label {
+  font-size: 16px;
+  font-weight: 500;
+  display: block;
+  margin: 10px 0 5px;
+}
+
+input,
+select,
+button:not(.button-open) {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  display: block;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+input[type="number"],
+input[type="file"],
+select {
+  background-color: #f9f9f9;
+}
+
+/* Enhanced Select Styling - Restored from backup */
+select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+select:hover {
+  border-color: #007BFF;
+  background-color: #fff;
+}
+
+select:focus {
+  outline: none;
+  border-color: #007BFF;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  background-color: #fff;
+}
+
+/* Special styling for mode combine option */
+select option[value="combine"] {
+  background-color: #e3f2fd;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+/* ===== CHART STYLING - RESTORED FROM BACKUP ===== */
+#damage3DChart {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 600px !important;
+  margin: 20px 0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+  position: relative !important;
+}
+
+/* Chart containers */
+.chart-container {
+  width: 100%;
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  background-color: #fff;
+}
+
+table th,
+table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* ===== TEXT ALIGNMENT RESTORATION ===== */
+/* Ensure all content text is left-aligned like original version */
+.container p,
+.container div:not(.button-open),
+.container span,
+.container li,
+.container td,
+.container label,
+.container input,
+.container select,
+.container textarea {
+  text-align: left !important;
+}
+
+/* Section content should be left-aligned */
+#partA, #partB, #partB1, #partB3, #partB4 {
+  text-align: left !important;
+}
+
+/* All text content within sections */
+#partA *, #partB *, #partB1 *, #partB3 *, #partB4 * {
+  text-align: left !important;
+}
+
+/* Exception: Keep navigation buttons right-aligned */
+.button-open {
+  text-align: left !important; /* Text inside button left-aligned */
+  margin-left: auto !important; /* Button itself right-aligned */
+}
+
+/* Exception: Keep main title and section titles as designed */
+h1:not(.container h1) {
+  text-align: center !important; /* Main page title centered */
+}
+
+.container h1 {
+  text-align: right !important; /* Section titles right-aligned */
+}
+
+/* Chart containers can be centered */
+.chart-container {
+  text-align: center;
+}
+
+/* Notes can be centered */
+.note {
+  text-align: center;
+}
+
+/* Special Mode Combine Option */
+select option[value="combine"] {
+  background-color: var(--primary-blue-light);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-blue-dark);
+}
+
+/* ===== BUTTON SYSTEM ===== */
+
+/* Base Button Styles */
+button {
+  background-color: var(--primary-blue);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+  text-align: center;
+  display: inline-block;
+  text-decoration: none;
+}
+
+button:hover {
+  background-color: var(--primary-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button:disabled {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Primary Navigation Buttons - COMPACT RIGHT-ALIGNED WITH PERFECT SPACING */
+.button-open {
+  /* SIZE PROPERTIES - COMPACT & CONSISTENT */
+  width: 320px !important;           /* Fixed width for perfect consistency */
+  height: 40px !important;           /* Reduced height for compact look */
+  min-width: 320px !important;
+  max-width: 320px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+
+  /* SPACING PROPERTIES - CONSISTENT VERTICAL SPACING */
+  padding: 0 16px !important;        /* Remove vertical padding for perfect centering */
+  margin: 15px 0 0 auto !important;  /* Consistent 15px spacing between buttons */
+
+  /* TYPOGRAPHY PROPERTIES */
+  font-size: var(--font-size-sm) !important;
+  line-height: 40px !important;      /* Line-height = height for perfect vertical centering */
+  font-weight: var(--font-weight-semibold) !important;
+
+  /* VISUAL PROPERTIES */
+  background-color: var(--primary-blue-dark) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--border-radius-sm) !important;
+  box-shadow: var(--shadow-sm) !important;
+
+  /* LAYOUT PROPERTIES - PERFECT CENTERING */
+  display: block !important;         /* Block for full width control */
+  text-align: center !important;     /* Horizontal centering */
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;       /* Prevent text overflow */
+  white-space: nowrap !important;    /* Keep text on single line */
+  text-overflow: ellipsis !important; /* Add ellipsis if text too long */
+
+  /* VERTICAL CENTERING WITH LEFT-ALIGNED TEXT */
+  display: flex !important;          /* Use flexbox for perfect centering */
+  align-items: center !important;    /* Vertical centering */
+  justify-content: flex-start !important; /* Left-aligned text */
+  text-align: left !important;       /* Left-aligned text */
+}
+
+/* First button - No top margin for consistent spacing */
+.button-open:first-of-type {
+  margin-top: 0 !important;          /* Remove top margin from first button */
+}
+
+/* Consistent spacing for all buttons after first */
+.button-open + .main-part .button-open,
+.main-part + .main-part .button-open {
+  margin-top: 15px !important;       /* Consistent 15px spacing between buttons */
+}
+
+/* Container alignment for navigation buttons - RIGHT ALIGNED BUTTONS ONLY */
+.main-part {
+  padding-left: 0 !important;       /* Remove left padding */
+  padding-right: 0 !important;      /* Remove right padding */
+  margin-left: 0 !important;        /* Remove left margin */
+  margin-right: 0 !important;       /* Remove right margin */
+  display: block !important;        /* Ensure block display */
+  /* NO text-align here - let content be left-aligned naturally */
+}
+
+/* Ensure buttons align to the right of their container */
+.main-part .button-open {
+  margin-left: auto !important;     /* Push buttons to right */
+  margin-right: 0 !important;       /* No right margin */
+  float: none !important;           /* Clear any float */
+}
+
+.button-open:hover {
+  background-color: #003d82;
+  box-shadow: var(--shadow-md);
+}
+
+/* Special Action Buttons - ONLY for internal buttons, NOT navigation buttons */
+button[onclick*="processDataX"]:not(.button-open) {
+  background-color: var(--warning-yellow);
+  color: #000;
+  font-weight: var(--font-weight-semibold);
+}
+
+button[onclick*="processDataX"]:not(.button-open):hover {
+  background-color: #e6ad00;
+}
+
+/* Ensure .button-open always uses consistent styling regardless of onclick content */
+.button-open {
+  background-color: var(--primary-blue-dark) !important;
+  color: white !important;
+}
+
+/* Specific overrides for navigation buttons to ensure consistency */
+button.button-open[onclick*="switchToPartB1"],
+button.button-open[onclick*="switchToPartA"],
+button.button-open[onclick*="switchToPartB()"],
+button.button-open[onclick*="switchToPartB3"],
+button.button-open[onclick*="switchToPartB4"],
+button.button-open[onclick*="processFilestrain"],
+button.button-open[onclick*="processFileTest"] {
+  background-color: var(--primary-blue-dark) !important;
+  color: white !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border-radius: var(--border-radius-md) !important;
+  border: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  min-width: 280px !important;
+  margin-top: var(--spacing-lg) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+button.button-open[onclick*="switchToPartB1"]:hover,
+button.button-open[onclick*="switchToPartA"]:hover,
+button.button-open[onclick*="switchToPartB()"]:hover,
+button.button-open[onclick*="switchToPartB3"]:hover,
+button.button-open[onclick*="switchToPartB4"]:hover,
+button.button-open[onclick*="processFilestrain"]:hover,
+button.button-open[onclick*="processFileTest"]:hover {
+  background-color: #003d82 !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ULTRA HIGH SPECIFICITY RULE for button mục 2 - Force consistency */
+button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onclick*="processFileTest"] {
+  background-color: var(--primary-blue-dark) !important;
+  color: white !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border-radius: var(--border-radius-md) !important;
+  border: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  min-width: 280px !important;
+  margin-top: var(--spacing-lg) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onclick*="processFileTest"]:hover {
+  background-color: #003d82 !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* NUCLEAR OPTION - Maximum specificity for button mục 2 - PERFECT SPACING & CENTERING */
+html body div.main-part button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onclick*="processFileTest"] {
+  /* SIZE PROPERTIES - COMPACT & CONSISTENT */
+  width: 320px !important;           /* Fixed width matching other buttons */
+  height: 40px !important;           /* Compact height */
+  min-width: 320px !important;
+  max-width: 320px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+
+  /* SPACING PROPERTIES - CONSISTENT WITH OTHER BUTTONS */
+  padding: 0 16px !important;        /* Remove vertical padding for perfect centering */
+  margin: 15px 0 0 auto !important;  /* Consistent 15px spacing */
+
+  /* TYPOGRAPHY PROPERTIES */
+  font-size: 16px !important;        /* Consistent font size */
+  line-height: 40px !important;      /* Line-height = height for perfect vertical centering */
+  font-weight: 600 !important;
+
+  /* VISUAL PROPERTIES */
+  background-color: #0056b3 !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+
+  /* LAYOUT PROPERTIES - VERTICAL CENTERING WITH LEFT-ALIGNED TEXT */
+  display: flex !important;          /* Use flexbox for perfect centering */
+  align-items: center !important;    /* Vertical centering */
+  justify-content: flex-start !important; /* Left-aligned text */
+  text-align: left !important;       /* Left-aligned text */
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;       /* Prevent text overflow */
+  white-space: nowrap !important;    /* Keep text on single line */
+  text-overflow: ellipsis !important; /* Add ellipsis if text too long */
+}
+
+html body div.main-part button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onclick*="processFileTest"]:hover {
+  background-color: #003d82 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Debug/Test Buttons */
+button[onclick*="debug"],
+button[onclick*="test"],
+button[onclick*="Debug"],
+button[onclick*="Test"] {
+  display: inline-block !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: var(--spacing-xs) var(--spacing-xs) !important;
+  padding: var(--spacing-xs) var(--spacing-md) !important;
+  font-size: var(--font-size-xs) !important;
+  border-radius: var(--border-radius-sm) !important;
+  background-color: var(--light-gray) !important;
+  color: white !important;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.results {
+  margin-top: var(--spacing-lg);
+  background-color: var(--background-section);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border-left: 4px solid var(--primary-blue);
+}
+
+.note {
+  font-size: var(--font-size-xs);
+  color: var(--light-gray);
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  font-style: italic;
+}
+
+/* Button Container for Better Layout */
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.button-container button {
+  flex: 0 0 auto;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  body {
+    padding: var(--spacing-sm);
+  }
+  
+  .container {
+    padding: var(--spacing-md);
+  }
+  
+  h1 {
+    font-size: calc(var(--font-size-xl) * 0.8);
+  }
+  
+  .container h1 {
+    font-size: calc(var(--font-size-lg) * 0.9);
+  }
+  
+  .button-open {
+    width: 280px !important;          /* Slightly smaller on tablet */
+    min-width: 280px !important;
+    max-width: 280px !important;
+    height: 38px !important;          /* Slightly smaller height */
+    font-size: var(--font-size-xs) !important;
+    line-height: 38px !important;     /* Line-height = height for vertical centering */
+    padding: 0 14px !important;       /* Remove vertical padding */
+    margin: 12px 0 0 auto !important; /* Consistent spacing on tablet */
+  }
+
+  .button-open:first-of-type {
+    margin-top: 0 !important;         /* First button no top margin on tablet */
+  }
+  
+  input, select, button {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: calc(var(--font-size-xl) * 0.7);
+  }
+  
+  .container h1 {
+    font-size: calc(var(--font-size-lg) * 0.8);
+  }
+  
+  .button-open {
+    width: 240px !important;          /* Smaller on mobile */
+    min-width: 240px !important;
+    max-width: 240px !important;
+    height: 36px !important;          /* Smaller height for mobile */
+    font-size: var(--font-size-xxs) !important;
+    line-height: 36px !important;     /* Line-height = height for vertical centering */
+    padding: 0 12px !important;       /* Remove vertical padding */
+    margin: 10px 0 0 auto !important; /* Consistent spacing on mobile */
+  }
+
+  .button-open:first-of-type {
+    margin-top: 0 !important;         /* First button no top margin on mobile */
+  }
+}
+
+/* ===== PLOTLY CHART OPTIMIZATIONS ===== */
+.plotly-chart-container {
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  background-color: var(--background-white) !important;
+  overflow: visible !important;
+  position: relative !important;
+  margin: var(--spacing-lg) 0 !important;
+}

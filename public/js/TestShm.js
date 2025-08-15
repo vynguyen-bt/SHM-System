@@ -569,18 +569,166 @@ function resetProgressBar() {
   document.getElementById('progress').style.width = '0%';
 }
 
-// Hàm được gọi khi chuyển sang mục 2 để cập nhật hiển thị
+// ✅ UPDATED: Hàm được gọi khi chuyển sang mục 2 để cập nhật hiển thị và tự động tạo CSV
 function initializeSection2() {
-  console.log('Initializing section 2 - loading damaged elements from section 1');
+  console.log('🚀 === INITIALIZING SECTION 2 WITH AUTO CSV GENERATION ===');
 
   // Kiểm tra dữ liệu có sẵn từ mục 1
   if (window.strainEnergyResults) {
-    console.log('Found strain energy results from section 1:', window.strainEnergyResults);
+    console.log('✅ Found strain energy results from section 1:', window.strainEnergyResults);
+
+    // Cập nhật hiển thị danh sách phần tử hư hỏng
+    getDamagedElementsList();
+
+    // Tự động tạo TEST.csv khi mở Section 2 - DISABLED (handled in switchToPartB instead)
+    // setTimeout(() => {
+    //   console.log('🔄 Auto-generating TEST.csv for Section 2...');
+    //   if (typeof createTestCsvContent === 'function') {
+    //     autoGenerateTestCsv();
+    //   }
+    // }, 1000);
+
   } else {
-    console.log('No strain energy results found from section 1');
+    console.log('⚠️ No strain energy results found from section 1');
+    console.log('📋 Please run Section 1 first to generate strain energy data');
+
+    // Hiển thị thông báo cho user
+    setTimeout(() => {
+      alert('⚠️ Vui lòng chạy Mục 1 trước để có dữ liệu strain energy!\n\nSection 2 cần kết quả từ Section 1 để tạo TEST.csv.');
+    }, 100);
+  }
+}
+
+// ✅ NEW FUNCTION: Tự động tạo TEST.csv khi mở Section 2
+function autoGenerateTestCsv() {
+  console.log('📄 === AUTO GENERATING TEST.CSV FOR SECTION 2 ===');
+
+  // 1. Kiểm tra prerequisites
+  const prerequisites = checkSection2Prerequisites();
+  if (!prerequisites.valid) {
+    console.error('❌ Prerequisites not met for CSV generation:', prerequisites.message);
+    alert(`❌ Không thể tạo TEST.csv:\n\n${prerequisites.message}\n\nVui lòng kiểm tra và thử lại.`);
+    return;
   }
 
-  getDamagedElementsList(); // Cập nhật hiển thị danh sách phần tử hư hỏng
+  console.log('✅ All prerequisites met, proceeding with CSV generation');
+
+  // 2. Tạo CSV với dynamic format
+  createTestCsvContent().then(csvContent => {
+    console.log('✅ CSV content generated successfully');
+
+    // 3. Tự động download CSV file
+    downloadCsvFile(csvContent, 'TEST.csv');
+
+    // 4. Hiển thị thông báo thành công
+    const lines = csvContent.split('\n');
+    const header = lines[0];
+    const columns = header.split(',');
+    const featureColumns = columns.filter(col => col.startsWith('U'));
+    const diColumns = columns.filter(col => col.startsWith('DI'));
+
+    console.log(`📊 CSV generated: ${featureColumns.length} features, ${diColumns.length} DI columns`);
+
+    setTimeout(() => {
+      alert(`✅ TEST.csv đã được tạo và tải xuống tự động!\n\n` +
+            `📊 Thông tin:\n` +
+            `- Features: ${featureColumns.length} (từ Damage.txt)\n` +
+            `- Damage Indices: ${diColumns.length} (từ Section 1)\n` +
+            `- Mode: ${window.strainEnergyResults?.modeUsed || 'N/A'}\n\n` +
+            `File đã sẵn sàng cho AI prediction.`);
+    }, 1000);
+
+  }).catch(error => {
+    console.error('❌ Error generating CSV:', error);
+    alert(`❌ Lỗi tạo TEST.csv: ${error.message}\n\nVui lòng kiểm tra console để biết chi tiết.`);
+  });
+}
+
+// ✅ NEW FUNCTION: Kiểm tra prerequisites cho Section 2
+function checkSection2Prerequisites() {
+  console.log('🔍 Checking Section 2 prerequisites...');
+
+  // 1. Kiểm tra Section 1 results
+  if (!window.strainEnergyResults || !window.strainEnergyResults.z) {
+    return {
+      valid: false,
+      message: 'Chưa có kết quả từ Section 1. Vui lòng chạy Section 1 trước.'
+    };
+  }
+
+  // 2. Kiểm tra Damage.txt file
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+  if (!fileInputDamaged || !fileInputDamaged.files[0]) {
+    return {
+      valid: false,
+      message: 'File Damage.txt chưa được load. Vui lòng load file Damage.txt.'
+    };
+  }
+
+  // 3. Kiểm tra mode
+  const modeUsed = window.strainEnergyResults.modeUsed;
+  if (!modeUsed) {
+    return {
+      valid: false,
+      message: 'Không xác định được mode từ Section 1. Vui lòng chạy lại Section 1.'
+    };
+  }
+
+  // 4. Kiểm tra damaged elements
+  const damagedElements = getDamagedElementsList();
+  if (!damagedElements || damagedElements.length === 0) {
+    return {
+      valid: false,
+      message: 'Không tìm thấy phần tử hư hỏng từ Section 1. Vui lòng kiểm tra kết quả Section 1.'
+    };
+  }
+
+  // 5. Kiểm tra mesh data
+  if (!window.meshData || !window.meshData.elements) {
+    return {
+      valid: false,
+      message: 'Chưa có dữ liệu mesh. Vui lòng load file SElement.txt.'
+    };
+  }
+
+  console.log('✅ All prerequisites satisfied');
+  return {
+    valid: true,
+    message: 'All prerequisites met',
+    details: {
+      modeUsed: modeUsed,
+      damagedElements: damagedElements,
+      damageFile: fileInputDamaged.files[0].name,
+      meshElements: Object.keys(window.meshData.elements).length
+    }
+  };
+}
+
+// ✅ NEW FUNCTION: Download CSV file
+function downloadCsvFile(csvContent, filename) {
+  console.log(`📁 Downloading ${filename}...`);
+
+  try {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log(`✅ ${filename} downloaded successfully`);
+    } else {
+      throw new Error('Browser does not support file download');
+    }
+  } catch (error) {
+    console.error(`❌ Error downloading ${filename}:`, error);
+    throw error;
+  }
 }
 
 // Hàm được gọi khi chuyển sang mục 3 mới để cập nhật hiển thị
@@ -5208,4 +5356,36 @@ function testSection3VisualizationFix() {
     console.error('❌ Section 3 visualization fix test failed:', error);
     return { error: error.message };
   }
+}
+
+// ✅ EXPLICIT GLOBAL EXPORTS: Ensure TestShm.js functions are available globally
+function exportTestShmFunctions() {
+  if (typeof window !== 'undefined') {
+    window.initializeSection2 = initializeSection2;
+    window.initializeSection3New = initializeSection3New;
+    window.autoGenerateTestCsv = autoGenerateTestCsv;
+    window.checkSection2Prerequisites = checkSection2Prerequisites;
+    window.downloadCsvFile = downloadCsvFile;
+    window.trainModel = trainModel;
+    window.trainModelNew = trainModelNew;
+    window.loadDefaultFiles = loadDefaultFiles;
+    window.loadDefaultFilesNew = loadDefaultFilesNew;
+    window.predict = predict;
+    window.predictNew = predictNew;
+    window.updateProgressBar = updateProgressBar;
+    window.updateProgressBarNew = updateProgressBarNew;
+    window.resetProgressBar = resetProgressBar;
+    window.resetProgressBarNew = resetProgressBarNew;
+
+    console.log('✅ TestShm.js functions exported to global scope');
+  }
+}
+
+// Export immediately and also on DOMContentLoaded
+exportTestShmFunctions();
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', exportTestShmFunctions);
+} else {
+  exportTestShmFunctions();
 }

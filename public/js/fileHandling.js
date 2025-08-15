@@ -30,11 +30,15 @@ document
       missingFiles.push("Damage.txt");
     }
 
-    if (fileMap["TEST.txt"]) {
-      loadFile(fileMap["TEST.txt"], "fileInputTest");
+    if (fileMap["Simulation.txt"]) {
+      loadFile(fileMap["Simulation.txt"], "txt-file-simulation");
     } else {
-      missingFiles.push("TEST.txt");
+      missingFiles.push("Simulation.txt");
     }
+
+    // ✅ REMOVED: TEST.txt dependency - Section 2 now uses Damage.txt
+    // TEST.txt is no longer needed as Section 2 uses Damage.txt directly
+    console.log('ℹ️ TEST.txt not required - Section 2 uses Damage.txt from Section 1');
 
     if (fileMap["TRAIN.csv"]) {
       loadFile(fileMap["TRAIN.csv"], "trainFile");

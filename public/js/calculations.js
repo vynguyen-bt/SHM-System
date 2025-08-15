@@ -830,7 +830,16 @@ function parseModeShapeFile(content, selectedMode) {
 function parseModeShapeFileCombine(content) {
     console.log('🔄 === PARSING MODE COMBINE DATA ===');
 
+    // ✅ DETECT DATASET SIZE FOR ADAPTIVE PROCESSING
     const lines = content.trim().split('\n');
+    const estimatedNodes = Math.floor(lines.length / 20); // Rough estimate
+    const is225ElementGrid = estimatedNodes > 200;
+
+    if (is225ElementGrid) {
+        console.log('🎯 Detected large dataset (likely 225 elements) - using enhanced processing');
+        return parseModeShapeFileCombineEnhanced(content);
+    }
+
     const targetModes = [10, 12, 14, 17, 20]; // Target modes for combination
     const modeData = {}; // Store data for each mode: {mode: {nodeID: value}}
     const combinedNodeValues = {}; // Final combined result
@@ -879,6 +888,8 @@ function parseModeShapeFileCombine(content) {
 
     // Step 4: Combine Uz values for each node
     let combinedDataPoints = 0;
+    let totalNodes = allNodeIDs.size;
+    console.log(`🔄 Combining values for ${totalNodes} nodes using ${availableModes.length} modes`);
 
     allNodeIDs.forEach(nodeID => {
         let combinedValue = 0;
@@ -896,15 +907,41 @@ function parseModeShapeFileCombine(content) {
         if (combinedValue !== 0) {
             combinedDataPoints++;
         }
+
+        // Debug for specific nodes to check combination
+        if (nodeID <= 5 || nodeID % 50 === 0) {
+            const contributions = availableModes.map(mode => {
+                const val = modeData[mode][nodeID] || 0;
+                return `M${mode}:${val.toExponential(2)}`;
+            }).join(', ');
+            console.log(`   Node ${nodeID}: ${combinedValue.toExponential(3)} (${modesContributing}/${availableModes.length} modes: ${contributions})`);
+        }
     });
 
     console.log(`✅ Mode Combine: Combined ${availableModes.length} modes`);
     console.log(`📊 Combined data points: ${combinedDataPoints} non-zero values from ${allNodeIDs.size} total nodes`);
     console.log(`🎵 Modes used: [${availableModes.join(', ')}]`);
 
-    // Step 5: Debug output for verification
-    const sampleNodes = [1, 31, 61, 91, 121]; // Sample nodes for verification
-    console.log('🔍 Sample combined values:');
+    // Step 5: Debug output for verification - ADAPTIVE SAMPLE NODES
+    // totalNodes already declared above
+    let sampleNodes;
+
+    if (totalNodes <= 150) {
+        // For smaller grids (100 elements): use original sample nodes
+        sampleNodes = [1, 31, 61, 91, 121];
+    } else {
+        // For larger grids (225+ elements): use adaptive sample nodes
+        const nodeArray = Array.from(allNodeIDs).sort((a, b) => a - b);
+        sampleNodes = [
+            nodeArray[0],                           // First node
+            nodeArray[Math.floor(nodeArray.length * 0.2)], // 20% position
+            nodeArray[Math.floor(nodeArray.length * 0.4)], // 40% position
+            nodeArray[Math.floor(nodeArray.length * 0.6)], // 60% position
+            nodeArray[Math.floor(nodeArray.length * 0.8)]  // 80% position
+        ];
+    }
+
+    console.log(`🔍 Sample combined values (${totalNodes} total nodes, sample: [${sampleNodes.join(', ')}]):`);
     sampleNodes.forEach(nodeID => {
         if (combinedNodeValues[nodeID] !== undefined) {
             const contributions = availableModes.map(mode => {
@@ -912,6 +949,8 @@ function parseModeShapeFileCombine(content) {
                 return `Mode${mode}=${value.toExponential(3)}`;
             }).join(', ');
             console.log(`   Node ${nodeID}: ${combinedNodeValues[nodeID].toExponential(3)} (${contributions})`);
+        } else {
+            console.log(`   Node ${nodeID}: ❌ NOT FOUND in combined data`);
         }
     });
 
@@ -1033,8 +1072,27 @@ function parseModeShapeFileCombineEnhanced(content) {
             nodesWithAllModes++;
         }
 
-        // Debug for first few nodes
-        if (nodeID <= 5) {
+        // Debug for sample nodes - adaptive selection
+        const totalNodesCount = allNodeIDs.size;
+        let shouldDebug = false;
+
+        if (totalNodesCount <= 150) {
+            // For smaller grids: debug first 5 nodes
+            shouldDebug = nodeID <= 5;
+        } else {
+            // For larger grids: debug specific sample nodes
+            const nodeArray = Array.from(allNodeIDs).sort((a, b) => a - b);
+            const sampleNodes = [
+                nodeArray[0],
+                nodeArray[Math.floor(nodeArray.length * 0.2)],
+                nodeArray[Math.floor(nodeArray.length * 0.4)],
+                nodeArray[Math.floor(nodeArray.length * 0.6)],
+                nodeArray[Math.floor(nodeArray.length * 0.8)]
+            ];
+            shouldDebug = sampleNodes.includes(nodeID);
+        }
+
+        if (shouldDebug) {
             console.log(`   Node ${nodeID}: ${combinedValue.toExponential(3)} (${modesContributing}/${availableModes.length} modes: ${nodeContributions.join(', ')})`);
         }
     });
@@ -1086,6 +1144,263 @@ function parseModeShapeFileFallback(content) {
     return simulatedCombined;
 }
 
+// ✅ DEBUG FUNCTION: Test Mode Combine calculation differences between grid sizes
+function debugModeCombineGridSizes() {
+  console.log('🧪 === DEBUG MODE COMBINE GRID SIZE DIFFERENCES ===');
+
+  if (!window.meshData) {
+    console.log('❌ No mesh data loaded. Please load SElement.txt first.');
+    return;
+  }
+
+  const { nodes, elements } = window.meshData;
+  const totalElements = elements.length;
+  const totalNodes = nodes.length;
+
+  // Calculate grid dimensions
+  const xCoords = [...new Set(nodes.map(n => n.x))].sort((a, b) => a - b);
+  const yCoords = [...new Set(nodes.map(n => n.y))].sort((a, b) => a - b);
+  const nx = xCoords.length; // Number of nodes in X
+  const ny = yCoords.length; // Number of nodes in Y
+  const elementsX = nx - 1; // Number of elements in X
+  const elementsY = ny - 1; // Number of elements in Y
+
+  console.log(`📊 GRID ANALYSIS:`);
+  console.log(`   Nodes: ${totalNodes} (${nx}×${ny})`);
+  console.log(`   Elements: ${totalElements} (${elementsX}×${elementsY})`);
+  console.log(`   Expected elements: ${elementsX * elementsY}`);
+
+  if (totalElements !== elementsX * elementsY) {
+    console.log(`⚠️ MISMATCH: Expected ${elementsX * elementsY} elements but got ${totalElements}`);
+  }
+
+  // Check derivative calculation coverage
+  const interiorNodesX = nx - 2; // Interior nodes in X (excluding boundaries)
+  const interiorNodesY = ny - 2; // Interior nodes in Y (excluding boundaries)
+  const interiorNodes = interiorNodesX * interiorNodesY;
+  const derivativeCoverage = (interiorNodes / totalNodes) * 100;
+
+  console.log(`📐 DERIVATIVE COVERAGE:`);
+  console.log(`   Interior nodes: ${interiorNodes} (${interiorNodesX}×${interiorNodesY})`);
+  console.log(`   Total nodes: ${totalNodes}`);
+  console.log(`   Coverage: ${derivativeCoverage.toFixed(1)}%`);
+
+  // Identify potential issues
+  console.log(`🔍 POTENTIAL ISSUES:`);
+  if (derivativeCoverage < 70) {
+    console.log(`   ⚠️ Low derivative coverage (${derivativeCoverage.toFixed(1)}%) may cause interpolation issues`);
+  }
+
+  if (totalElements === 100) {
+    console.log(`   ✅ 100-element grid (10×10): Well-tested configuration`);
+  } else if (totalElements === 225) {
+    console.log(`   ⚠️ 225-element grid (15×15): Larger grid may have boundary effects`);
+  }
+
+  // Check element ID calculation
+  console.log(`🔢 ELEMENT ID VERIFICATION:`);
+  const sampleElements = [1, elementsX, totalElements];
+  sampleElements.forEach(id => {
+    const element = elements.find(e => e.id === id);
+    if (element) {
+      console.log(`   Element ${id}: center(${element.center.x.toFixed(3)}, ${element.center.y.toFixed(3)})`);
+    } else {
+      console.log(`   ❌ Element ${id}: NOT FOUND`);
+    }
+  });
+
+  return {
+    totalNodes,
+    totalElements,
+    gridSize: `${nx}×${ny}`,
+    elementGrid: `${elementsX}×${elementsY}`,
+    derivativeCoverage,
+    interiorNodes,
+    potentialIssues: derivativeCoverage < 70 || totalElements === 225
+  };
+}
+
+// ✅ DEBUG FUNCTION: Compare Mode Combine vs individual modes
+function debugModeComparison() {
+  console.log('🧪 === DEBUG MODE COMPARISON ===');
+
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+
+  if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+    console.log('❌ Please load both Healthy and Damage files first.');
+    return;
+  }
+
+  if (!window.meshData) {
+    console.log('❌ Please load SElement.txt first.');
+    return;
+  }
+
+  const { nodes } = window.meshData;
+
+  // Test different modes
+  const testModes = [10, 12, 14, 17, 20, 'combine'];
+
+  console.log(`🎯 Testing modes: [${testModes.join(', ')}]`);
+
+  const reader1 = new FileReader();
+  reader1.onload = function(event1) {
+    const healthyContent = event1.target.result;
+
+    const reader2 = new FileReader();
+    reader2.onload = function(event2) {
+      const damagedContent = event2.target.result;
+
+      console.log('\n📊 MODE COMPARISON RESULTS:');
+
+      testModes.forEach(mode => {
+        try {
+          console.log(`\n🔍 Testing Mode ${mode}:`);
+
+          const healthyData = parseModeShapeFile(healthyContent, mode);
+          const damagedData = parseModeShapeFile(damagedContent, mode);
+
+          const healthyNodes = Object.keys(healthyData).length;
+          const damagedNodes = Object.keys(damagedData).length;
+
+          console.log(`   Healthy nodes: ${healthyNodes}`);
+          console.log(`   Damaged nodes: ${damagedNodes}`);
+
+          if (healthyNodes === 0 || damagedNodes === 0) {
+            console.log(`   ❌ No data found for Mode ${mode}`);
+            return;
+          }
+
+          // Calculate some basic statistics
+          const healthyValues = Object.values(healthyData);
+          const damagedValues = Object.values(damagedData);
+
+          const healthyRange = [Math.min(...healthyValues), Math.max(...healthyValues)];
+          const damagedRange = [Math.min(...damagedValues), Math.max(...damagedValues)];
+
+          console.log(`   Healthy range: [${healthyRange[0].toExponential(3)}, ${healthyRange[1].toExponential(3)}]`);
+          console.log(`   Damaged range: [${damagedRange[0].toExponential(3)}, ${damagedRange[1].toExponential(3)}]`);
+
+          // Check for potential issues
+          const healthyZeros = healthyValues.filter(v => v === 0).length;
+          const damagedZeros = damagedValues.filter(v => v === 0).length;
+
+          if (healthyZeros > healthyNodes * 0.5) {
+            console.log(`   ⚠️ High number of zero values in healthy data: ${healthyZeros}/${healthyNodes}`);
+          }
+
+          if (damagedZeros > damagedNodes * 0.5) {
+            console.log(`   ⚠️ High number of zero values in damaged data: ${damagedZeros}/${damagedNodes}`);
+          }
+
+          console.log(`   ✅ Mode ${mode} data looks valid`);
+
+        } catch (error) {
+          console.log(`   ❌ Error processing Mode ${mode}: ${error.message}`);
+        }
+      });
+    };
+    reader2.readAsText(fileInputDamaged.files[0]);
+  };
+  reader1.readAsText(fileInputNonDamaged.files[0]);
+}
+
+// ✅ MAIN DEBUG FUNCTION: Comprehensive check for 225-element grid issues
+function debug225ElementIssues() {
+  console.log('🚨 === DEBUGGING 225-ELEMENT GRID ISSUES ===');
+
+  // Step 1: Check mesh data
+  console.log('\n1️⃣ MESH DATA CHECK:');
+  const meshResult = debugModeCombineGridSizes();
+  if (meshResult && meshResult.potentialIssues) {
+    console.log('⚠️ Potential issues detected with current grid size');
+  }
+
+  // Step 2: Check mode data availability
+  console.log('\n2️⃣ MODE DATA CHECK:');
+  debugModeComparison();
+
+  // Step 3: Specific checks for 225-element grid
+  if (window.meshData) {
+    const { elements } = window.meshData;
+    if (elements.length === 225) {
+      console.log('\n3️⃣ 225-ELEMENT SPECIFIC CHECKS:');
+
+      // Check element ID distribution
+      const elementIDs = elements.map(e => e.id).sort((a, b) => a - b);
+      const expectedIDs = Array.from({length: 225}, (_, i) => i + 1);
+      const missingIDs = expectedIDs.filter(id => !elementIDs.includes(id));
+      const extraIDs = elementIDs.filter(id => !expectedIDs.includes(id));
+
+      console.log(`   Element IDs: ${elementIDs.length} total`);
+      console.log(`   Range: ${Math.min(...elementIDs)} to ${Math.max(...elementIDs)}`);
+
+      if (missingIDs.length > 0) {
+        console.log(`   ❌ Missing IDs: [${missingIDs.slice(0, 10).join(', ')}${missingIDs.length > 10 ? '...' : ''}]`);
+      }
+
+      if (extraIDs.length > 0) {
+        console.log(`   ❌ Extra IDs: [${extraIDs.slice(0, 10).join(', ')}${extraIDs.length > 10 ? '...' : ''}]`);
+      }
+
+      if (missingIDs.length === 0 && extraIDs.length === 0) {
+        console.log(`   ✅ Element IDs are sequential and complete`);
+      }
+
+      // Check element center distribution
+      const centerX = elements.map(e => e.center.x);
+      const centerY = elements.map(e => e.center.y);
+      const uniqueX = [...new Set(centerX)].sort((a, b) => a - b);
+      const uniqueY = [...new Set(centerY)].sort((a, b) => a - b);
+
+      console.log(`   Element centers: ${uniqueX.length}×${uniqueY.length} grid`);
+      console.log(`   Expected: 15×15 grid for 225 elements`);
+
+      if (uniqueX.length !== 15 || uniqueY.length !== 15) {
+        console.log(`   ❌ Incorrect grid dimensions: expected 15×15, got ${uniqueX.length}×${uniqueY.length}`);
+      } else {
+        console.log(`   ✅ Element grid dimensions are correct`);
+      }
+    }
+  }
+
+  console.log('\n🎯 RECOMMENDATIONS:');
+  console.log('1. Run debugModeCombineGridSizes() to check grid setup');
+  console.log('2. Run debugModeComparison() to verify mode data');
+  console.log('3. Check console output during strain energy calculation for detailed logs');
+  console.log('4. Compare results with 100-element grid to identify differences');
+}
+
+// ✅ QUICK TEST FUNCTION: Run all debug checks
+function quickDebugTest() {
+  console.log('🚀 === QUICK DEBUG TEST FOR MODE COMBINE ISSUES ===');
+
+  try {
+    console.log('\n1️⃣ Testing grid size analysis...');
+    const gridResult = debugModeCombineGridSizes();
+
+    if (gridResult) {
+      console.log(`✅ Grid analysis completed: ${gridResult.totalElements} elements, ${gridResult.derivativeCoverage.toFixed(1)}% derivative coverage`);
+
+      if (gridResult.potentialIssues) {
+        console.log('⚠️ Potential issues detected - see detailed output above');
+      }
+    }
+
+    console.log('\n2️⃣ Testing 225-element specific checks...');
+    debug225ElementIssues();
+
+    console.log('\n3️⃣ Testing mode comparison...');
+    debugModeComparison();
+
+    console.log('\n✅ Quick debug test completed. Check console output for detailed results.');
+
+  } catch (error) {
+    console.error('❌ Error during debug test:', error);
+  }
+}
+
 // Tính đạo hàm bậc 2 tại tất cả các node trên lưới
 function computeSecondDerivativesGrid(nodes, nodeValues, dx, dy, nx, ny) {
   // nodes: mảng node {id, x, y, z}, nodeValues: {nodeID: value}
@@ -1109,31 +1424,54 @@ function computeSecondDerivativesGrid(nodes, nodeValues, dx, dy, nx, ny) {
     w_grid[i][j] = nodeValues[node.id] || 0;
   });
   // Tính đạo hàm bậc 2 tại từng node (bên trong lưới)
+  console.log(`🔍 DERIVATIVE CALCULATION: Computing for interior nodes [1,${ny-2}] × [1,${nx-2}]`);
+  let derivativeCount = 0;
+
   for (let i = 1; i < ny-1; i++) {
     for (let j = 1; j < nx-1; j++) {
       w_xx_grid[i][j] = (w_grid[i][j+1] - 2*w_grid[i][j] + w_grid[i][j-1]) / (dx*dx);
       w_yy_grid[i][j] = (w_grid[i+1][j] - 2*w_grid[i][j] + w_grid[i-1][j]) / (dy*dy);
       w_xy_grid[i][j] = (w_grid[i+1][j+1] - w_grid[i+1][j-1] - w_grid[i-1][j+1] + w_grid[i-1][j-1]) / (4*dx*dy);
+      derivativeCount++;
     }
   }
+
+  console.log(`✅ Computed derivatives for ${derivativeCount} interior nodes out of ${nx*ny} total nodes`);
+  console.log(`📊 Derivative coverage: ${(derivativeCount/(nx*ny)*100).toFixed(1)}%`);
   return {w_xx_grid, w_yy_grid, w_xy_grid, xCoords, yCoords};
 }
 
 // Nội suy bilinear tại trọng tâm phần tử
 function interpolateDerivativesAtElementCenters(elements, w_xx_grid, w_yy_grid, w_xy_grid, xCoords, yCoords) {
   // Trả về {elementID: {w_xx, w_yy, w_xy}}
+  console.log(`🔍 INTERPOLATION DEBUG: Grid size ${w_xx_grid.length}×${w_xx_grid[0].length}, Coords ${xCoords.length}×${yCoords.length}`);
+
   function bilinearInterp(grid, xCoords, yCoords, xc, yc) {
     // Tìm chỉ số lưới gần nhất
     let i = 0, j = 0;
     while (i < xCoords.length - 1 && xCoords[i+1] <= xc) i++;
     while (j < yCoords.length - 1 && yCoords[j+1] <= yc) j++;
+
+    // ✅ BOUNDARY CHECK: Ensure indices are within derivative grid bounds
+    // Derivative grid only has values for interior nodes (1 to n-2)
+    const maxI = grid[0].length - 1;
+    const maxJ = grid.length - 1;
+
+    if (i >= maxI || j >= maxJ || i+1 >= grid[0].length || j+1 >= grid.length) {
+      // For boundary elements, use nearest interior derivative value
+      const safeI = Math.min(Math.max(1, i), maxI - 1);
+      const safeJ = Math.min(Math.max(1, j), maxJ - 1);
+      return grid[safeJ][safeI] || 0;
+    }
+
     // 4 điểm lưới
     const x1 = xCoords[i], x2 = xCoords[i+1];
     const y1 = yCoords[j], y2 = yCoords[j+1];
-    const Q11 = grid[j][i];
-    const Q21 = grid[j][i+1];
-    const Q12 = grid[j+1][i];
-    const Q22 = grid[j+1][i+1];
+    const Q11 = grid[j][i] || 0;
+    const Q21 = grid[j][i+1] || 0;
+    const Q12 = grid[j+1][i] || 0;
+    const Q22 = grid[j+1][i+1] || 0;
+
     // Trọng số
     const denom = (x2-x1)*(y2-y1);
     if (denom === 0) return Q11; // Trường hợp đặc biệt
@@ -1223,8 +1561,10 @@ function processStrainEnergyData() {
           console.log('🧮 Computing strain energy with mode-specific data...');
 
           // Tính đạo hàm bậc 2 tại tất cả các node
+          // ✅ FIX: nx, ny should be number of nodes, not elements
       const nx = [...new Set(nodes.map(n => n.x))].length;
       const ny = [...new Set(nodes.map(n => n.y))].length;
+      console.log(`🔧 Grid for derivatives: ${nx}×${ny} nodes (${nx-1}×${ny-1} elements)`);
       const healthyDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesHealthy, dx, dy, nx, ny);
       const damagedDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesDamaged, dx, dy, nx, ny);
       // Nội suy spline 2D về trọng tâm phần tử
@@ -2918,7 +3258,9 @@ async function downloadMultiMode3DCharts() {
 
   downloadBtn.disabled = true;
   downloadBtn.textContent = "Generating Charts...";
-  progressDiv.style.display = "block";
+  if (progressDiv && progressDiv.style) {
+    progressDiv.style.display = "block";
+  }
 
   try {
     // Initialize ZIP
@@ -2941,7 +3283,9 @@ async function downloadMultiMode3DCharts() {
         const progress = (chartCount / totalCharts) * 100;
 
         progressText.textContent = `Generating chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`;
-        progressBar.style.width = `${progress}%`;
+        if (progressBar && progressBar.style) {
+          progressBar.style.width = `${progress}%`;
+        }
 
         console.log(`📊 Generating chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`);
 
@@ -2975,7 +3319,9 @@ async function downloadMultiMode3DCharts() {
 
     // Generate and download ZIP
     progressText.textContent = "Creating ZIP file...";
-    progressBar.style.width = "100%";
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "100%";
+    }
 
     console.log('📦 Creating ZIP file...');
     const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -2996,8 +3342,12 @@ async function downloadMultiMode3DCharts() {
     // Reset UI
     downloadBtn.disabled = false;
     downloadBtn.textContent = "Download Multi-Mode 3D Charts";
-    progressDiv.style.display = "none";
-    progressBar.style.width = "0%";
+    if (progressDiv && progressDiv.style) {
+      progressDiv.style.display = "none";
+    }
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "0%";
+    }
   }
 }
 
@@ -3089,8 +3439,10 @@ async function generateChartForModeAndThreshold(mode, thresholdPercent) {
   console.log(`📊 Mode ${mode}: Healthy nodes=${Object.keys(nodeValuesHealthy).length}, Damaged nodes=${Object.keys(nodeValuesDamaged).length}`);
 
   // Calculate strain energy (same as main function)
+  // ✅ FIX: nx, ny should be number of nodes for derivatives calculation
   const nx = [...new Set(nodes.map(n => n.x))].length;
   const ny = [...new Set(nodes.map(n => n.y))].length;
+  console.log(`🔧 Batch processing grid: ${nx}×${ny} nodes (${nx-1}×${ny-1} elements)`);
 
   const healthyDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesHealthy, dx, dy, nx, ny);
   const damagedDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesDamaged, dx, dy, nx, ny);
@@ -3489,7 +3841,7 @@ async function createChartImage(chartData, mode, threshold) {
     try {
       if (tempDiv && document.body.contains(tempDiv)) {
         // Purge Plotly data and event listeners first
-        await Plotly.purge(tempDiv);
+        Plotly.purge(tempDiv);
         // Then remove from DOM
         document.body.removeChild(tempDiv);
       }
@@ -3989,36 +4341,46 @@ function calculateOptimalPlaneRange(x1, y1, marginPercent = 0.05) {
   };
 }
 
-// Hàm demo để so sánh kích thước cũ vs mới
+// Hàm demo để hiển thị kích thước element
 function compareElementSizes(elements) {
-  console.log(`\n=== SO SÁNH KÍCH THƯỚC ELEMENT CŨ VS MỚI ===`);
+  console.log(`\n=== THÔNG TIN KÍCH THƯỚC ELEMENT ===`);
 
-  // Tính theo phương pháp cũ (deprecated) - chỉ để so sánh
-  console.warn("⚠️ Using deprecated calculateOptimalBoxSize() for comparison only");
-  const oldMethod = calculateOptimalBoxSize(elements);
+  // Chỉ sử dụng phương pháp mới
+  const elementSize = calculateRealElementSize(elements);
 
-  // Tính theo phương pháp mới
-  const newMethod = calculateRealElementSize(elements);
+  console.log(`📐 Kích thước element thực tế:`);
+  console.log(`   - Width: ${elementSize.width.toFixed(4)}m (${(elementSize.width * 100).toFixed(1)}cm)`);
+  console.log(`   - Depth: ${elementSize.depth.toFixed(4)}m (${(elementSize.depth * 100).toFixed(1)}cm)`);
+  console.log(`   - Grid spacing X: ${elementSize.gridSpacingX.toFixed(4)}m (${(elementSize.gridSpacingX * 100).toFixed(1)}cm)`);
+  console.log(`   - Grid spacing Y: ${elementSize.gridSpacingY.toFixed(4)}m (${(elementSize.gridSpacingY * 100).toFixed(1)}cm)`);
 
-  console.log(`📏 Phương pháp CŨ (deprecated):`);
-  console.log(`   - Width: ${oldMethod.width.toFixed(4)}m (${(oldMethod.width * 100).toFixed(1)}cm)`);
-  console.log(`   - Depth: ${oldMethod.depth.toFixed(4)}m (${(oldMethod.depth * 100).toFixed(1)}cm)`);
+  // Thông tin grid
+  const xCoords = [...new Set(elements.map(e => e.center.x))].sort((a, b) => a - b);
+  const yCoords = [...new Set(elements.map(e => e.center.y))].sort((a, b) => a - b);
 
-  console.log(`📐 Phương pháp MỚI (real size):`);
-  console.log(`   - Width: ${newMethod.width.toFixed(4)}m (${(newMethod.width * 100).toFixed(1)}cm)`);
-  console.log(`   - Depth: ${newMethod.depth.toFixed(4)}m (${(newMethod.depth * 100).toFixed(1)}cm)`);
-  console.log(`   - Grid spacing X: ${newMethod.gridSpacingX.toFixed(4)}m (${(newMethod.gridSpacingX * 100).toFixed(1)}cm)`);
-  console.log(`   - Grid spacing Y: ${newMethod.gridSpacingY.toFixed(4)}m (${(newMethod.gridSpacingY * 100).toFixed(1)}cm)`);
+  console.log(`📊 Grid information:`);
+  console.log(`   - Elements: ${elements.length} total`);
+  console.log(`   - Grid dimensions: ${xCoords.length}×${yCoords.length} element centers`);
+  console.log(`   - Element size ratio: ${(elementSize.width/elementSize.depth).toFixed(3)} (width/depth)`);
 
-  const improvementX = ((newMethod.width / oldMethod.width) * 100).toFixed(1);
-  const improvementY = ((newMethod.depth / oldMethod.depth) * 100).toFixed(1);
+  if (Math.abs(elementSize.width - elementSize.depth) < 0.001) {
+    console.log(`   ✅ Perfect square elements (width ≈ depth)`);
+  } else {
+    console.log(`   ⚠️ Rectangular elements (width ≠ depth)`);
+  }
 
-  console.log(`📊 Cải thiện kích thước:`);
-  console.log(`   - Width: ${improvementX}% so với phương pháp cũ`);
-  console.log(`   - Depth: ${improvementY}% so với phương pháp cũ`);
-  console.log(`   - Tỷ lệ thực tế: 95% grid spacing (5% gap cho visualization)`);
+  // Debug cho 225 phần tử
+  if (elements.length === 225) {
+    console.log(`\n🔍 225-ELEMENT GRID ANALYSIS:`);
+    console.log(`   - Expected: 15×15 = 225 elements`);
+    console.log(`   - Actual: ${xCoords.length}×${yCoords.length} = ${elements.length} elements`);
 
-  return { oldMethod, newMethod };
+    if (xCoords.length === 15 && yCoords.length === 15) {
+      console.log(`   ✅ Grid dimensions correct for 225 elements`);
+    } else {
+      console.log(`   ❌ Grid dimensions incorrect: expected 15×15, got ${xCoords.length}×${yCoords.length}`);
+    }
+  }
 }
 
 // Sửa lại hàm tính năng lượng biến dạng để nhận diện tích phần tử và xử lý giá trị âm
@@ -5793,8 +6155,10 @@ function processStrainEnergyDataFixed() {
       console.log(`✅ Damaged data: ${Object.keys(nodeValuesDamaged).length} nodes`);
 
       // Continue with existing calculation logic...
+      // ✅ FIX: nx, ny should be number of nodes for derivatives calculation
       const nx = [...new Set(nodes.map(n => n.x))].length;
       const ny = [...new Set(nodes.map(n => n.y))].length;
+      console.log(`🔧 Mode-specific grid: ${nx}×${ny} nodes (${nx-1}×${ny-1} elements)`);
 
       console.log('🧮 Computing second derivatives...');
       const healthyDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesHealthy, dx, dy, nx, ny);
@@ -6636,7 +7000,7 @@ function calculateIndicesForCombination(z, elements, Z0, mode, threshold) {
  */
 function showExcelProgress(show) {
   const progressDiv = document.getElementById('excel-progress');
-  if (progressDiv) {
+  if (progressDiv && progressDiv.style) {
     progressDiv.style.display = show ? 'block' : 'none';
   }
 }
@@ -6649,7 +7013,7 @@ function updateExcelProgress(percent, mainText, detailText) {
   const progressText = document.getElementById('excel-progress-text');
   const progressDetails = document.getElementById('excel-progress-details');
 
-  if (progressBar) {
+  if (progressBar && progressBar.style) {
     progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
   }
 
