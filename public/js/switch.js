@@ -15,48 +15,249 @@ function switchToPartB() {
   // Tự động tạo và download TEST.csv và TRAIN.csv khi mở Section 2
   if (partB.style.display === "block") {
     setTimeout(() => {
-      // 1. Lấy element ID từ Section 1 input "Nhập phần tử khảo sát 1"
-      const elementYInput = document.getElementById('element-y');
-      let targetElementId = 2134; // Default
-      let targetDamageValue = 0.05; // Default
+      // ✅ NEW: Use Simulation.txt data to create TEST.csv with proper mapping
+      console.log('🎯 Creating TEST.csv using Simulation.txt data...');
 
-      if (elementYInput && elementYInput.value) {
-        targetElementId = parseInt(elementYInput.value);
-        // Calculate damage value based on element ID (you can customize this logic)
-        targetDamageValue = calculateDamageValueForElement(targetElementId);
+      // Check if Simulation.txt is available
+      const fileInputSimulation = document.getElementById("txt-file-simulation");
+      let simulationData = {};
+      let numDamageIndices = 2; // Default for 2 elements
+
+      if (fileInputSimulation && fileInputSimulation.files[0]) {
+        try {
+          // Parse simulation file synchronously if possible
+          const file = fileInputSimulation.files[0];
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              const simulationContent = event.target.result;
+              simulationData = parseSimulationFile(simulationContent);
+              numDamageIndices = Object.keys(simulationData).length;
+
+              console.log(`📊 Found ${numDamageIndices} elements in Simulation.txt: [${Object.keys(simulationData).join(', ')}]`);
+
+              // Create TEST.csv with simulation data
+              createTestCsvWithSimulationData(simulationData, numDamageIndices);
+
+            } catch (error) {
+              console.error('❌ Error parsing Simulation.txt:', error);
+              createDefaultTestCsv();
+            }
+          };
+          reader.readAsText(file);
+        } catch (error) {
+          console.error('❌ Error reading Simulation.txt:', error);
+          createDefaultTestCsv();
+        }
+      } else {
+        console.log('⚠️ No Simulation.txt file found, using default TEST.csv');
+        createDefaultTestCsv();
       }
 
-      console.log(`🎯 Creating TEST.csv for element ${targetElementId} with DI1=${targetDamageValue}`);
+      function createTestCsvWithSimulationData(simulationData, numDI) {
+        console.log(`🔧 Creating TEST.csv with ${numDI} DI columns from Simulation.txt`);
 
-      // 2. Tạo TEST.csv đúng format cho element được chọn
-      let testCsvContent = "Case";
+        let testCsvContent = "Case";
 
-      // Add 121 feature columns
-      for (let i = 1; i <= 121; i++) {
-        testCsvContent += ",U" + i;
+        // Add 121 feature columns
+        for (let i = 1; i <= 121; i++) {
+          testCsvContent += ",U" + i;
+        }
+
+        // Add DI columns based on simulation data
+        for (let i = 1; i <= numDI; i++) {
+          testCsvContent += ",DI" + i;
+        }
+        testCsvContent += "\n";
+
+        // Add data row
+        testCsvContent += "0"; // Case number
+
+        // ✅ FIXED: Add feature values from real Damage.txt data instead of random
+        console.log('🔧 Generating features from real Damage.txt data...');
+
+        // Get Damage.txt file and parse it
+        const fileInputDamaged = document.getElementById("txt-file-damaged");
+        if (fileInputDamaged && fileInputDamaged.files[0]) {
+          const file = fileInputDamaged.files[0];
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const damageContent = event.target.result;
+
+            // Get mode from Section 1 results
+            const modeUsed = window.strainEnergyResults?.modeUsed || 12;
+            console.log(`📊 Using Mode ${modeUsed} from Section 1 results`);
+
+            try {
+              // Parse real damage data
+              const damageData = parseModeShapeFile(damageContent, modeUsed);
+              const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
+
+              console.log(`✅ Parsed ${nodeIDs.length} nodes from Damage.txt for Mode ${modeUsed}`);
+
+              // Generate features from real data
+              for (let i = 1; i <= 121; i++) {
+                let featureValue = 0; // Default zero value
+
+                if (i <= nodeIDs.length) {
+                  const nodeID = nodeIDs[i - 1]; // U1=nodeIDs[0], U2=nodeIDs[1], etc.
+                  const rawValue = damageData[nodeID];
+
+                  if (rawValue !== undefined && !isNaN(rawValue)) {
+                    featureValue = rawValue;
+
+                    // Log first 10 for verification
+                    if (i <= 10) {
+                      console.log(`   U${i} (Node ${nodeID}): ${rawValue} (real data)`);
+                    }
+                  }
+                }
+
+                testCsvContent += "," + featureValue.toFixed(6);
+              }
+
+              // Continue with DI values and download
+              finishTestCsvGeneration();
+
+            } catch (error) {
+              console.error('❌ Error parsing Damage.txt, using fallback:', error);
+              generateFallbackFeatures();
+            }
+          };
+          reader.readAsText(file);
+        } else {
+          console.log('⚠️ Damage.txt not found, using fallback values');
+          generateFallbackFeatures();
+        }
+
+        function generateFallbackFeatures() {
+          console.log('🔧 Generating fallback random features...');
+          for (let i = 1; i <= 121; i++) {
+            const value = (Math.random() * 0.001).toFixed(6);
+            testCsvContent += "," + value;
+          }
+          finishTestCsvGeneration();
+        }
+
+        function finishTestCsvGeneration() {
+          // Add DI values from simulation data
+          const simulationElements = Object.keys(simulationData).map(id => parseInt(id));
+          for (let i = 0; i < numDI; i++) {
+            const elementID = simulationElements[i];
+            const damageValue = simulationData[elementID] || 0;
+
+            // Apply mapping for logging
+            let displayElementID = elementID;
+            if (elementID === 2134) displayElementID = 55;
+            else if (elementID === 2174) displayElementID = 95;
+
+            console.log(`🎯 DI${i+1} (Simulation ID ${elementID} → Display Element ${displayElementID}): ${damageValue}`);
+            testCsvContent += "," + damageValue.toFixed(4);
+          }
+          testCsvContent += "\n";
+
+          // Download TEST.csv
+          const testBlob = new Blob([testCsvContent], { type: "text/csv" });
+          const testLink = document.createElement("a");
+          testLink.href = URL.createObjectURL(testBlob);
+          testLink.download = "TEST.csv";
+          testLink.click();
+
+          console.log(`✅ TEST.csv created with ${numDI} DI columns: ${simulationElements.map((id, i) => `DI${i+1}=${simulationData[id]}`).join(', ')}`);
+        }
       }
 
-      // Add only 1 DI column
-      testCsvContent += ",DI1\n";
+      function createDefaultTestCsv() {
+        console.log('🔧 Creating default TEST.csv with single DI');
 
-      // Add data row
-      testCsvContent += "0"; // Case number
+        let testCsvContent = "Case";
 
-      // Add feature values (small random values)
-      for (let i = 1; i <= 121; i++) {
-        const value = (Math.random() * 0.001).toFixed(6);
-        testCsvContent += "," + value;
+        // Add 121 feature columns
+        for (let i = 1; i <= 121; i++) {
+          testCsvContent += ",U" + i;
+        }
+
+        // Add single DI column
+        testCsvContent += ",DI1\n";
+
+        // Add data row
+        testCsvContent += "0"; // Case number
+
+        // ✅ FIXED: Try to use real Damage.txt data, fallback to random if not available
+        const fileInputDamaged = document.getElementById("txt-file-damaged");
+        if (fileInputDamaged && fileInputDamaged.files[0]) {
+          console.log('🔧 Using real Damage.txt data for default TEST.csv...');
+
+          const file = fileInputDamaged.files[0];
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const damageContent = event.target.result;
+            const modeUsed = window.strainEnergyResults?.modeUsed || 12;
+
+            try {
+              const damageData = parseModeShapeFile(damageContent, modeUsed);
+              const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
+
+              console.log(`✅ Using real data: ${nodeIDs.length} nodes from Mode ${modeUsed}`);
+
+              // Add real feature values
+              for (let i = 1; i <= 121; i++) {
+                let featureValue = 0;
+                if (i <= nodeIDs.length) {
+                  const nodeID = nodeIDs[i - 1];
+                  const rawValue = damageData[nodeID];
+                  if (rawValue !== undefined && !isNaN(rawValue)) {
+                    featureValue = rawValue;
+                  }
+                }
+                testCsvContent += "," + featureValue.toFixed(6);
+              }
+
+              // Add default DI1 value
+              const defaultDamageValue = 0.05;
+              testCsvContent += "," + defaultDamageValue.toFixed(4) + "\n";
+
+              // Download TEST.csv
+              const testBlob = new Blob([testCsvContent], { type: "text/csv" });
+              const testLink = document.createElement("a");
+              testLink.href = URL.createObjectURL(testBlob);
+              testLink.download = "TEST.csv";
+              testLink.click();
+
+              console.log(`✅ Default TEST.csv created with real data from Mode ${modeUsed}`);
+
+            } catch (error) {
+              console.error('❌ Error using real data, falling back to random:', error);
+              generateRandomFeatures();
+            }
+          };
+          reader.readAsText(file);
+        } else {
+          console.log('⚠️ Damage.txt not available, using random values');
+          generateRandomFeatures();
+        }
+
+        function generateRandomFeatures() {
+          // Add feature values (small random values)
+          for (let i = 1; i <= 121; i++) {
+            const value = (Math.random() * 0.001).toFixed(6);
+            testCsvContent += "," + value;
+          }
+
+          // Add default DI1 value
+          const defaultDamageValue = 0.05;
+          testCsvContent += "," + defaultDamageValue.toFixed(4) + "\n";
+
+          // Download TEST.csv
+          const testBlob = new Blob([testCsvContent], { type: "text/csv" });
+          const testLink = document.createElement("a");
+          testLink.href = URL.createObjectURL(testBlob);
+          testLink.download = "TEST.csv";
+          testLink.click();
+
+          console.log(`✅ Default TEST.csv created with random values`);
+        }
       }
-
-      // Add DI1 value for the target element
-      testCsvContent += "," + targetDamageValue.toFixed(4) + "\n";
-
-      // Download TEST.csv
-      const testBlob = new Blob([testCsvContent], { type: "text/csv" });
-      const testLink = document.createElement("a");
-      testLink.href = URL.createObjectURL(testBlob);
-      testLink.download = "TEST.csv";
-      testLink.click();
 
       // 3. Tạo TRAIN.csv từ các file training cases
       setTimeout(() => {
@@ -272,7 +473,7 @@ function createSampleTrainCsv() {
 
 window.onload = function () {
   // ✅ SAFE ELEMENT HIDING: Check if elements exist before accessing
-  const elementsToHide = ["partB4", "partB3", "partB3New", "partB1", "partA", "partB"];
+  const elementsToHide = ["partB4", "partB3", "partB1", "partA", "partB"];
 
   elementsToHide.forEach(elementId => {
     const element = document.getElementById(elementId);

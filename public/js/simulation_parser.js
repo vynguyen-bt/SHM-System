@@ -2,8 +2,34 @@
 
 function parseSimulationFile(simulationContent) {
   console.log('📄 === PARSING SIMULATION.TXT FOR DI VALUES ===');
-  
-  const lines = simulationContent.trim().split('\n');
+  console.log('🔍 simulationContent type:', typeof simulationContent);
+  console.log('🔍 simulationContent value:', simulationContent);
+
+  // Ensure simulationContent is a string
+  let contentString;
+  if (typeof simulationContent === 'string') {
+    contentString = simulationContent;
+  } else if (simulationContent && typeof simulationContent.toString === 'function') {
+    contentString = simulationContent.toString();
+    console.log('🔄 Converted to string using toString()');
+  } else if (simulationContent instanceof ArrayBuffer) {
+    contentString = new TextDecoder().decode(simulationContent);
+    console.log('🔄 Converted ArrayBuffer to string');
+  } else if (simulationContent === null || simulationContent === undefined) {
+    console.error('❌ simulationContent is null or undefined');
+    throw new Error('Simulation content is null or undefined');
+  } else {
+    console.error('❌ Invalid simulationContent type:', typeof simulationContent);
+    console.error('❌ simulationContent value:', simulationContent);
+    throw new Error(`Invalid simulationContent type: ${typeof simulationContent}. Expected string.`);
+  }
+
+  if (!contentString || contentString.length === 0) {
+    console.error('❌ Empty simulation content');
+    throw new Error('Simulation content is empty');
+  }
+
+  const lines = contentString.trim().split('\n');
   const simulationData = {};
   let currentElementID = null;
   
@@ -38,6 +64,23 @@ function parseSimulationFile(simulationContent) {
   
   console.log(`📊 Extracted DI values for ${Object.keys(simulationData).length} elements`);
   return simulationData;
+}
+
+// Test function for debugging
+function testSimulationParsing() {
+  const testContent = `ID: 2134
+THICKNESS: th0.2_2-05`;
+
+  try {
+    console.log('🧪 Testing simulation parsing...');
+    const result = parseSimulationFile(testContent);
+    console.log('✅ Test result:', result);
+    console.log('✅ Expected: {2134: 0.05}, Got:', JSON.stringify(result));
+    return result;
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return null;
+  }
 }
 
 function getDynamicFeatureCount(damageContent, mode) {
@@ -229,6 +272,7 @@ function readFileAsText(file) {
 // Export functions
 if (typeof window !== 'undefined') {
   window.parseSimulationFile = parseSimulationFile;
+  window.testSimulationParsing = testSimulationParsing;
   window.getDynamicFeatureCount = getDynamicFeatureCount;
   window.createDynamicTestCsvContent = createDynamicTestCsvContent;
   window.generateDynamicTestCsv = generateDynamicTestCsv;

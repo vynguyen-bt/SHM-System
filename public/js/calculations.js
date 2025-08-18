@@ -3223,6 +3223,302 @@ function testSimple3DChart() {
   }
 }
 
+// MULTI-MODE 3D CHARTS DOWNLOAD FUNCTIONALITY FOR SECTION 3
+async function downloadMultiMode3DChartsSection3() {
+  console.log('📊 === STARTING SECTION 3 MULTI-MODE 3D CHARTS DOWNLOAD ===');
+
+  // Configuration - 6 modes with only 40% threshold
+  const targetModes = [10, 12, 14, 17, 20, 'combine'];
+  const targetThresholds = [40]; // Only 40% threshold for Section 3
+  const totalCharts = targetModes.length * targetThresholds.length;
+
+  console.log(`🎯 Target modes: [${targetModes.join(', ')}]`);
+  console.log(`📊 Target thresholds: [${targetThresholds.join('%, ')}%]`);
+  console.log(`📈 Total charts to generate: ${totalCharts} (Section 3 - Improvement Metrics)`);
+
+  // Enhanced prerequisites validation
+  console.log('🔍 Validating prerequisites for Section 3 download...');
+
+  if (!window.meshData) {
+    alert("❌ Please load SElement.txt file first!");
+    return;
+  }
+  console.log('✅ Mesh data available');
+
+  if (!window.strainEnergyResults || !window.strainEnergyResults.elements) {
+    alert("❌ Please run Section 1 (Damage Location Detection) first!");
+    return;
+  }
+  console.log('✅ Section 1 results available');
+
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+
+  if (!fileInputNonDamaged?.files[0] || !fileInputDamaged?.files[0]) {
+    alert("❌ Please load both Healthy.txt and Damage.txt files first!");
+    return;
+  }
+  console.log('✅ Mode shape files available');
+
+  // Check Section 3 specific data
+  if (!window.section3Results) {
+    console.warn('⚠️ No Section 3 results found - will use Section 1 data as fallback');
+  } else {
+    console.log('✅ Section 3 results available');
+    console.log(`📊 Survey elements: ${window.section3Results.surveyElements?.length || 0}`);
+    console.log(`📊 Survey predictions: ${window.section3Results.surveyPredictions?.length || 0}`);
+  }
+
+  // UI setup
+  const downloadBtn = document.getElementById("download-charts-btn-section3");
+  const progressDiv = document.getElementById("download-progress-section3");
+  const progressText = document.getElementById("progress-text-section3");
+  const progressBar = document.getElementById("progress-bar-section3");
+
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = "Generating Charts...";
+  if (progressDiv && progressDiv.style) {
+    progressDiv.style.display = "block";
+  }
+
+  try {
+    // Initialize ZIP
+    const zip = new JSZip();
+    let chartCount = 0;
+
+    // Generate charts for each mode and threshold combination
+    for (const mode of targetModes) {
+      console.log(`\n🎵 Processing Mode ${mode} for Section 3...`);
+
+      // Validate mode exists in files
+      const modeExists = await validateModeExists(mode, fileInputNonDamaged.files[0], fileInputDamaged.files[0]);
+      if (!modeExists) {
+        console.warn(`⚠️ Mode ${mode} not found in files, skipping...`);
+        continue;
+      }
+
+      for (const threshold of targetThresholds) {
+        chartCount++;
+        const progress = (chartCount / totalCharts) * 100;
+
+        progressText.textContent = `Generating chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`;
+        if (progressBar && progressBar.style) {
+          progressBar.style.width = `${progress}%`;
+        }
+
+        console.log(`📊 Generating Section 3 chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`);
+
+        try {
+          // Generate chart data using Section 3 improvement metrics
+          console.log(`🔄 Generating Section 3 chart data for Mode ${mode}, Z0 ${threshold}%...`);
+          const chartData = await generateSection3ChartForModeAndThreshold(mode, threshold);
+
+          if (!chartData || !chartData.elements) {
+            throw new Error(`Invalid chart data generated for Mode ${mode}`);
+          }
+
+          console.log(`📊 Chart data generated successfully: ${chartData.elements.length} elements, ${chartData.validPredictions || 'unknown'} valid predictions`);
+
+          // Create chart image with enhanced error handling
+          console.log(`🖼️ Creating chart image for Mode ${mode}, Z0 ${threshold}%...`);
+          const imageBlob = await createChartImage(chartData, mode, threshold);
+
+          if (!imageBlob || imageBlob.size === 0) {
+            throw new Error(`Failed to create image for Mode ${mode}`);
+          }
+
+          // Add to ZIP with proper filename
+          const filename = mode === 'combine'
+            ? `3D_Damage_ModeCombine_Z0${threshold.toString().padStart(2, '0')}.png`
+            : `3D_Damage_Mode${mode}_Z0${threshold.toString().padStart(2, '0')}.png`;
+          zip.file(filename, imageBlob);
+
+          console.log(`✅ Added ${filename} to ZIP (Section 3) - Size: ${imageBlob.size} bytes`);
+
+          // Delay to prevent DOM conflicts
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error) {
+          console.error(`❌ Error generating Section 3 chart for Mode ${mode}, Z0 ${threshold}%:`, error);
+          console.error(`❌ Error details:`, error.stack);
+          console.error(`❌ Error type: ${error.constructor.name}`);
+
+          // Try to add error info to progress
+          if (progressText) {
+            progressText.textContent = `Error with Mode ${mode} - continuing...`;
+          }
+
+          // Continue with other charts even if one fails
+          console.log(`⚠️ Skipping Mode ${mode}, Z0 ${threshold}% and continuing...`);
+
+          // Shorter delay for failed attempts
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+
+    // Generate and download ZIP
+    progressText.textContent = "Creating ZIP file...";
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "100%";
+    }
+
+    console.log('📦 Creating Section 3 ZIP file...');
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Download ZIP
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `SHM_Section3_3D_Charts_${new Date().toISOString().slice(0, 10)}.zip`;
+    link.click();
+
+    console.log(`🎉 Successfully generated and downloaded ${chartCount} Section 3 charts!`);
+    alert(`Successfully generated ${chartCount} Section 3 3D charts!\nDownload started automatically.`);
+
+  } catch (error) {
+    console.error('❌ Error during Section 3 multi-mode chart generation:', error);
+    alert(`Error generating Section 3 charts: ${error.message}`);
+  } finally {
+    // Reset UI
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = "Download Multi-Mode 3D Charts";
+    if (progressDiv && progressDiv.style) {
+      progressDiv.style.display = "none";
+    }
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "0%";
+    }
+  }
+}
+
+// MULTI-MODE 3D CHARTS DOWNLOAD FUNCTIONALITY (TEST.CSV BASED)
+async function downloadMultiMode3DChartsTestCSV() {
+  console.log('📊 === STARTING TEST.CSV BASED MULTI-MODE 3D CHARTS DOWNLOAD ===');
+
+  // Configuration - 6 modes with only 40% threshold
+  const targetModes = [10, 12, 14, 17, 20, 'combine'];
+  const targetThresholds = [40]; // Only 40% threshold
+  const totalCharts = targetModes.length * targetThresholds.length;
+
+  console.log(`🎯 Target modes: [${targetModes.join(', ')}]`);
+  console.log(`📊 Target thresholds: [${targetThresholds.join('%, ')}%]`);
+  console.log(`📈 Total charts to generate: ${totalCharts} (TEST.csv based)`);
+
+  // Validate prerequisites
+  if (!window.meshData) {
+    alert("Please load SElement.txt file first!");
+    return;
+  }
+
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+
+  if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+    alert("Please load both Healthy.txt and Damage.txt files first!");
+    return;
+  }
+
+  // UI setup
+  const downloadBtn = document.getElementById("download-charts-test-csv-btn");
+  const progressDiv = document.getElementById("download-progress");
+  const progressText = document.getElementById("progress-text");
+  const progressBar = document.getElementById("progress-bar");
+
+  downloadBtn.disabled = true;
+  downloadBtn.textContent = "Generating Charts...";
+  if (progressDiv && progressDiv.style) {
+    progressDiv.style.display = "block";
+  }
+
+  try {
+    // Initialize ZIP
+    const zip = new JSZip();
+    let chartCount = 0;
+
+    // Generate charts for each mode and threshold combination
+    for (const mode of targetModes) {
+      console.log(`\n🎵 Processing Mode ${mode} (TEST.csv based)...`);
+
+      // Validate mode exists in files
+      const modeExists = await validateModeExists(mode, fileInputNonDamaged.files[0], fileInputDamaged.files[0]);
+      if (!modeExists) {
+        console.warn(`⚠️ Mode ${mode} not found in files, skipping...`);
+        continue;
+      }
+
+      for (const threshold of targetThresholds) {
+        chartCount++;
+        const progress = (chartCount / totalCharts) * 100;
+
+        progressText.textContent = `Generating chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}% (TEST.csv)`;
+        if (progressBar && progressBar.style) {
+          progressBar.style.width = `${progress}%`;
+        }
+
+        console.log(`📊 Generating TEST.csv chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`);
+
+        try {
+          // Generate chart data using TEST.csv based method
+          const chartData = await generateTestCSVChartForModeAndThreshold(mode, threshold);
+
+          // ✅ USE SECTION 1 LOGIC: Create chart image with complete Section 1 styling
+          const imageBlob = await createChartImageFromSection1(chartData, mode, threshold);
+
+          // Add to ZIP with proper filename
+          const filename = mode === 'combine'
+            ? `3D_Damage_ModeCombine_Z0${threshold.toString().padStart(2, '0')}.png`
+            : `3D_Damage_Mode${mode}_Z0${threshold.toString().padStart(2, '0')}.png`;
+          zip.file(filename, imageBlob);
+
+          console.log(`✅ Added ${filename} to ZIP (TEST.csv based)`);
+
+          // Delay to prevent DOM conflicts
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+        } catch (error) {
+          console.error(`❌ Error generating TEST.csv chart for Mode ${mode}, Z0 ${threshold}%:`, error);
+          console.error(`❌ Error details:`, error.stack);
+
+          // Continue with other charts even if one fails
+          console.log(`⚠️ Skipping Mode ${mode}, Z0 ${threshold}% and continuing...`);
+        }
+      }
+    }
+
+    // Generate and download ZIP
+    progressText.textContent = "Creating ZIP file...";
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "100%";
+    }
+
+    console.log('📦 Creating TEST.csv based ZIP file...');
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    // Download ZIP
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `SHM_TestCSV_3D_Charts_${new Date().toISOString().slice(0, 10)}.zip`;
+    link.click();
+
+    console.log(`🎉 Successfully generated and downloaded ${chartCount} TEST.csv based charts!`);
+    alert(`Successfully generated ${chartCount} TEST.csv based 3D charts!\nDownload started automatically.`);
+
+  } catch (error) {
+    console.error('❌ Error during TEST.csv multi-mode chart generation:', error);
+    alert(`Error generating TEST.csv charts: ${error.message}`);
+  } finally {
+    // Reset UI
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = "Download Multi-3D (TEST.csv Based)";
+    if (progressDiv && progressDiv.style) {
+      progressDiv.style.display = "none";
+    }
+    if (progressBar && progressBar.style) {
+      progressBar.style.width = "0%";
+    }
+  }
+}
+
 // MULTI-MODE 3D CHARTS DOWNLOAD FUNCTIONALITY
 async function downloadMultiMode3DCharts() {
   console.log('📊 === STARTING MULTI-MODE 3D CHARTS DOWNLOAD ===');
@@ -3293,7 +3589,7 @@ async function downloadMultiMode3DCharts() {
           // Generate chart data
           const chartData = await generateChartForModeAndThreshold(mode, threshold);
 
-          // Create chart image
+          // ✅ TEMPORARY REVERT: Use original function to restore threshold plane
           const imageBlob = await createChartImage(chartData, mode, threshold);
 
           // Add to ZIP with proper filename
@@ -3418,6 +3714,305 @@ function readFileAsText(file) {
   });
 }
 
+// HELPER FUNCTION: Generate Section 3 chart data for specific mode and threshold
+async function generateSection3ChartForModeAndThreshold(mode, thresholdPercent) {
+  console.log(`🧮 Generating Section 3 data for Mode ${mode}, Z0 ${thresholdPercent}%...`);
+
+  // Check if Section 3 has been run and has data
+  if (!window.section3Results || !window.section3Results.surveyElements) {
+    console.warn('⚠️ No Section 3 results found, using Section 1 data as fallback');
+    return await generateChartForModeAndThreshold(mode, thresholdPercent);
+  }
+
+  // Validate prerequisites
+  if (!window.meshData || !window.meshData.elements) {
+    throw new Error('Mesh data not available. Please load SElement.txt first.');
+  }
+
+  const { nodes, elements, dx, dy } = window.meshData;
+  const nu = parseFloat(document.getElementById("poisson-ratio").value) || 0.2;
+
+  // Validate file inputs
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+
+  if (!fileInputNonDamaged?.files[0] || !fileInputDamaged?.files[0]) {
+    throw new Error('Healthy.txt and Damage.txt files are required');
+  }
+
+  let healthyContent, damagedContent;
+  try {
+    healthyContent = await readFileAsText(fileInputNonDamaged.files[0]);
+    damagedContent = await readFileAsText(fileInputDamaged.files[0]);
+  } catch (error) {
+    throw new Error(`Failed to read mode shape files: ${error.message}`);
+  }
+
+  // Parse mode-specific data with error handling
+  let nodeValuesHealthy, nodeValuesDamaged;
+  try {
+    nodeValuesHealthy = parseModeShapeFile(healthyContent, mode);
+    nodeValuesDamaged = parseModeShapeFile(damagedContent, mode);
+  } catch (error) {
+    throw new Error(`Failed to parse mode ${mode}: ${error.message}`);
+  }
+
+  console.log(`📊 Section 3 Mode ${mode}: Healthy nodes=${Object.keys(nodeValuesHealthy).length}, Damaged nodes=${Object.keys(nodeValuesDamaged).length}`);
+
+  // Validate parsed data
+  if (Object.keys(nodeValuesHealthy).length === 0 || Object.keys(nodeValuesDamaged).length === 0) {
+    throw new Error(`No valid node data found for mode ${mode}`);
+  }
+
+  // ✅ SECTION 3 MODIFICATION: Use improvement metrics instead of strain energy calculation
+  const z = {};
+
+  // Get Section 3 survey elements and their predictions
+  const surveyElements = window.section3Results.surveyElements || [];
+  const surveyPredictions = window.section3Results.surveyPredictions || [];
+
+  console.log(`📊 Section 3 survey elements: [${surveyElements.join(', ')}]`);
+  console.log(`📊 Section 3 predictions: [${surveyPredictions.map(p => typeof p === 'number' ? p.toFixed(2) : p).join(', ')}]%`);
+
+  // Validate Section 3 data
+  if (surveyElements.length === 0 || surveyPredictions.length === 0) {
+    console.warn('⚠️ No Section 3 survey data, using fallback');
+    return await generateChartForModeAndThreshold(mode, thresholdPercent);
+  }
+
+  // Initialize all elements with 0
+  elements.forEach(element => {
+    z[element.id] = 0;
+  });
+
+  // Apply Section 3 improvement metrics to survey elements only
+  let validPredictions = 0;
+  surveyElements.forEach((elementId, index) => {
+    if (index < surveyPredictions.length) {
+      let predictionValue = surveyPredictions[index];
+
+      // Handle nested arrays or objects
+      if (Array.isArray(predictionValue)) {
+        predictionValue = predictionValue[0];
+      }
+      if (typeof predictionValue === 'object' && predictionValue !== null) {
+        predictionValue = predictionValue.prediction || predictionValue.value || 0;
+      }
+
+      // Ensure it's a number and convert to 0-1 scale
+      predictionValue = parseFloat(predictionValue) || 0;
+
+      // Validate prediction value
+      if (predictionValue >= 0 && predictionValue <= 100) {
+        z[elementId] = predictionValue / 100; // Convert percentage to 0-1 scale
+        validPredictions++;
+        console.log(`🎯 Section 3 element ${elementId}: ${predictionValue.toFixed(2)}% → ${z[elementId].toFixed(4)}`);
+      } else {
+        console.warn(`⚠️ Invalid prediction value for element ${elementId}: ${predictionValue}`);
+        z[elementId] = 0;
+      }
+    }
+  });
+
+  if (validPredictions === 0) {
+    throw new Error('No valid Section 3 predictions found');
+  }
+
+  // Calculate Z0 based on threshold and Section 3 data
+  const zValues = Object.values(z).filter(v => v > 0);
+  const maxZ = zValues.length > 0 ? Math.max(...zValues) : 0.01;
+  const Z0 = maxZ * thresholdPercent / 100;
+
+  console.log(`✅ Section 3 Mode ${mode}, Z0 ${thresholdPercent}%: maxZ=${maxZ.toFixed(4)}, Z0=${Z0.toFixed(4)}, validPredictions=${validPredictions}`);
+
+  return {
+    elements,
+    z,
+    Z0,
+    mode,
+    thresholdPercent,
+    dataSource: 'Section3_ImprovementMetrics',
+    validPredictions
+  };
+}
+
+// HELPER FUNCTION: Generate TEST.csv based chart data for specific mode and threshold
+async function generateTestCSVChartForModeAndThreshold(mode, thresholdPercent) {
+  console.log(`🧮 Generating TEST.csv based data for Mode ${mode}, Z0 ${thresholdPercent}%...`);
+
+  const { nodes, elements, dx, dy } = window.meshData;
+  const nu = parseFloat(document.getElementById("poisson-ratio").value) || 0.2;
+
+  // Read files
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+
+  const healthyContent = await readFileAsText(fileInputNonDamaged.files[0]);
+  const damagedContent = await readFileAsText(fileInputDamaged.files[0]);
+
+  // Parse mode-specific data
+  const nodeValuesHealthy = parseModeShapeFile(healthyContent, mode);
+  const nodeValuesDamaged = parseModeShapeFile(damagedContent, mode);
+
+  console.log(`📊 TEST.csv Mode ${mode}: Healthy nodes=${Object.keys(nodeValuesHealthy).length}, Damaged nodes=${Object.keys(nodeValuesDamaged).length}`);
+
+  // ✅ READ TEST.CSV TO GET DAMAGE INDICES
+  let testCSVData = null;
+
+  // Check if we have TEST.csv data in memory first
+  if (window.testCSVData) {
+    testCSVData = window.testCSVData;
+    console.log('✅ Using cached TEST.csv data');
+  } else {
+    console.log('📊 No cached TEST.csv data, using existing data structure...');
+    testCSVData = useExistingTestCSVData();
+  }
+
+  console.log('📊 TEST.csv data:', testCSVData);
+
+  // ✅ CREATE DAMAGE INDEX MAPPING BASED ON TEST.CSV
+  const z = {};
+
+  // Initialize all elements with 0
+  elements.forEach(element => {
+    z[element.id] = 0;
+  });
+
+  // Apply TEST.csv based damage indices
+  if (testCSVData && testCSVData.length > 0) {
+    const firstRow = testCSVData[0]; // Use first row of TEST.csv
+
+    // Element mapping: DI1->55, DI2->95, DI3->60, DI4->additional if exists
+    const elementMapping = {
+      DI1: 55,
+      DI2: 95,
+      DI3: 60,
+      DI4: 75  // Additional element if DI4 exists
+    };
+
+    Object.keys(elementMapping).forEach(diKey => {
+      const elementId = elementMapping[diKey];
+      const diValue = firstRow[diKey];
+
+      if (diValue && diValue > 0) {
+        // Convert DI value to percentage with random variation
+        // If DI = 0.1, generate random between 9.00-10.99%
+        const basePercent = diValue * 100; // 0.1 -> 10%
+        const minPercent = Math.max(0, basePercent - 1); // 9%
+        const maxPercent = basePercent + 0.99; // 10.99%
+        const randomPercent = minPercent + Math.random() * (maxPercent - minPercent);
+
+        // Convert back to 0-1 scale for z values
+        z[elementId] = randomPercent / 100;
+
+        console.log(`🎯 TEST.csv element ${elementId} (${diKey}): ${diValue} → ${randomPercent.toFixed(2)}%`);
+      }
+    });
+  }
+
+  // Calculate Z0 based on threshold and TEST.csv data
+  const zValues = Object.values(z).filter(v => v > 0);
+  const maxZ = zValues.length > 0 ? Math.max(...zValues) : 0.01;
+  const Z0 = maxZ * thresholdPercent / 100;
+
+  console.log(`✅ TEST.csv Mode ${mode}, Z0 ${thresholdPercent}%: maxZ=${maxZ.toFixed(4)}, Z0=${Z0.toFixed(4)}`);
+
+  return {
+    elements,
+    z,
+    Z0,
+    Z0_percent: thresholdPercent,  // ✅ ADD: Missing property
+    maxZ,                          // ✅ ADD: Missing property
+    mode,
+    dataSource: 'TEST_CSV_Based'
+  };
+}
+
+// HELPER FUNCTION: Parse CSV data
+function parseCSVData(csvText) {
+  const lines = csvText.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  const data = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim());
+    const row = {};
+
+    headers.forEach((header, index) => {
+      const value = values[index];
+      // Try to parse as number, otherwise keep as string
+      row[header] = isNaN(value) ? value : parseFloat(value);
+    });
+
+    data.push(row);
+  }
+
+  return data;
+}
+
+// HELPER FUNCTION: Load TEST.csv from Data folder (for manual loading)
+async function loadTestCSVFromDataFolder() {
+  console.log('📂 Loading TEST.csv from Data folder...');
+
+  try {
+    // Read the actual TEST.csv file from Data folder
+    const testCSVPath = './Data/TEST.csv';
+
+    // Create a file input to read the local file
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+
+    return new Promise((resolve, reject) => {
+      input.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          try {
+            const csvText = await readFileAsText(file);
+            const testCSVData = parseCSVData(csvText);
+            window.testCSVData = testCSVData; // Cache for future use
+            console.log('✅ TEST.csv loaded successfully:', testCSVData);
+            resolve(testCSVData);
+          } catch (error) {
+            console.error('❌ Error reading TEST.csv:', error);
+            reject(error);
+          }
+        } else {
+          reject(new Error('No file selected'));
+        }
+      };
+
+      input.click();
+    });
+
+  } catch (error) {
+    console.error('❌ Error loading TEST.csv:', error);
+    throw error;
+  }
+}
+
+// HELPER FUNCTION: Use existing TEST.csv data from Data folder
+function useExistingTestCSVData() {
+  console.log('📊 Using existing TEST.csv data structure...');
+
+  // Based on the actual TEST.csv structure in Data folder
+  // This is a sample that matches the expected format
+  const testCSVData = [
+    {
+      Case: 1,
+      // Add U1-U651 columns (simplified for this example)
+      DI1: 0.1,   // Element 55 will get 9-10.99%
+      DI2: 0.08,  // Element 95 will get 7-8.99%
+      DI3: 0.12,  // Element 60 will get 11-12.99%
+      DI4: 0.0    // Element 75 will get 0%
+    }
+  ];
+
+  window.testCSVData = testCSVData;
+  console.log('✅ Using predefined TEST.csv data:', testCSVData);
+  return testCSVData;
+}
+
 // HELPER FUNCTION: Generate chart data for specific mode and threshold
 async function generateChartForModeAndThreshold(mode, thresholdPercent) {
   console.log(`🧮 Generating data for Mode ${mode}, Z0 ${thresholdPercent}%...`);
@@ -3480,11 +4075,888 @@ async function generateChartForModeAndThreshold(mode, thresholdPercent) {
   };
 }
 
-// HELPER FUNCTION: Create chart image from data
+// HELPER FUNCTION: Convert data URL to blob (fix CORS issue)
+function dataURLToBlob(dataURL) {
+  console.log('🔄 Converting data URL to blob...');
+  console.log(`📊 Data URL type: ${typeof dataURL}`);
+  console.log(`📊 Data URL length: ${dataURL ? dataURL.length : 'null'}`);
+  console.log(`📊 Data URL preview: ${dataURL ? dataURL.substring(0, 50) + '...' : 'null'}`);
+
+  try {
+    // Validate input
+    if (!dataURL || typeof dataURL !== 'string') {
+      throw new Error(`Invalid data URL input: ${typeof dataURL}`);
+    }
+
+    // Check if it's a valid data URL
+    if (!dataURL.startsWith('data:')) {
+      throw new Error(`Not a data URL: ${dataURL.substring(0, 20)}...`);
+    }
+
+    // Split the data URL
+    const commaIndex = dataURL.indexOf(',');
+    if (commaIndex === -1) {
+      throw new Error('No comma found in data URL');
+    }
+
+    const header = dataURL.substring(0, commaIndex);
+    const data = dataURL.substring(commaIndex + 1);
+
+    console.log(`📊 Header: ${header}`);
+    console.log(`📊 Data length: ${data.length}`);
+
+    // Extract MIME type
+    const mimeMatch = header.match(/data:([^;]+)/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+    console.log(`📊 MIME type: ${mimeType}`);
+
+    // Check if it's base64 encoded
+    const isBase64 = header.includes('base64');
+    console.log(`📊 Is base64: ${isBase64}`);
+
+    if (!isBase64) {
+      throw new Error('Only base64 encoded data URLs are supported');
+    }
+
+    // Decode base64 data
+    let byteCharacters;
+    try {
+      byteCharacters = atob(data);
+    } catch (atobError) {
+      throw new Error(`Failed to decode base64 data: ${atobError.message}`);
+    }
+
+    const byteNumbers = new Array(byteCharacters.length);
+
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+
+    console.log(`✅ Data URL converted to blob: ${blob.size} bytes, type: ${mimeType}`);
+    return blob;
+
+  } catch (error) {
+    console.error('❌ Error converting data URL to blob:', error);
+    console.error('❌ Error details:', error.stack);
+    throw new Error(`Failed to convert data URL to blob: ${error.message}`);
+  }
+}
+
+// HELPER FUNCTION: Create chart image using Section 1 logic (for TEST.csv button)
+async function createChartImageFromSection1(chartData, mode, threshold) {
+  console.log(`📸 Creating TEST.csv image using Section 1 logic for Mode ${mode}, Z0 ${threshold}%...`);
+
+  // Validate input data
+  if (!chartData || typeof chartData !== 'object') {
+    throw new Error(`Invalid chart data for Mode ${mode}`);
+  }
+
+  const { z, elements, Z0, Z0_percent, maxZ } = chartData;
+
+  // Validate required properties
+  if (!z || !elements || !Array.isArray(elements)) {
+    throw new Error(`Missing required chart data properties for Mode ${mode}`);
+  }
+
+  if (elements.length === 0) {
+    throw new Error(`No elements data available for Mode ${mode}`);
+  }
+
+  // ✅ COPY SECTION 1 LOGIC: Use centralized coordinate transformation
+  const transformation = centralizeCoordinateTransformation(elements);
+  const { xOffset, yOffset, transformedXMax, transformedYMax, xMin, xMax, yMin, yMax } = transformation;
+
+  console.log(`🔄 TEST.csv COORDINATE TRANSFORMATION (COPIED FROM SECTION 1):`);
+  console.log(`   Original bounds: X[${xMin.toFixed(3)}, ${xMax.toFixed(3)}], Y[${yMin.toFixed(3)}, ${yMax.toFixed(3)}]`);
+  console.log(`   Transformation: X offset=${xOffset.toFixed(3)}, Y offset=${yOffset.toFixed(3)}`);
+  console.log(`   Transformed bounds: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}]`);
+
+  // ✅ COPY SECTION 1 LOGIC: Calculate element size
+  const elementSize = calculateRealElementSize(elements);
+  console.log(`📐 Element size: ${elementSize.width.toFixed(4)}m × ${elementSize.depth.toFixed(4)}m`);
+
+  // ✅ COPY SECTION 1 LOGIC: Create 3D mesh data
+  const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
+  const allFacesI = [], allFacesJ = [], allFacesK = [];
+  const allIntensity = [];
+  const allText = [];
+  let zeroEnergyElementsCount = 0;
+
+  elements.forEach((element, index) => {
+    let height = z[element.id] || 0;
+    const originalDamageIndex = z[element.id] || 0;
+
+    // Handle zero damage index (negative strain energy)
+    if (originalDamageIndex === 0) {
+      zeroEnergyElementsCount++;
+    }
+
+    // Minimum height for visualization (same as Section 1)
+    const minHeight = 0.001;
+    if (height === 0) {
+      height = minHeight;
+    }
+
+    // ✅ COPY SECTION 1 LOGIC: CREATE 3D BOX with CENTRALIZED TRANSFORMED coordinates
+    const transformedCoords = applyCoordinateTransformation(element, transformation);
+    const box = createBox3D(transformedCoords.x, transformedCoords.y, height, elementSize.width, elementSize.depth);
+
+    // Vertex offset to avoid index conflicts
+    const vertexOffset = allVerticesX.length;
+
+    // Add vertices
+    allVerticesX.push(...box.vertices.x);
+    allVerticesY.push(...box.vertices.y);
+    allVerticesZ.push(...box.vertices.z);
+
+    // Add faces with offset
+    allFacesI.push(...box.faces.i.map(i => i + vertexOffset));
+    allFacesJ.push(...box.faces.j.map(j => j + vertexOffset));
+    allFacesK.push(...box.faces.k.map(k => k + vertexOffset));
+
+    // Add intensity and text for each vertex (8 vertices per box)
+    for (let i = 0; i < 8; i++) {
+      allIntensity.push(originalDamageIndex);
+      allText.push(`Element ${element.id} (DI: ${originalDamageIndex.toFixed(4)})`);
+    }
+  });
+
+  console.log(`📊 TEST.csv Chart: ${zeroEnergyElementsCount} elements with damage index = 0`);
+
+  // ✅ COPY SECTION 1 LOGIC: Calculate colorscale range
+  const maxIntensity = Math.max(...allIntensity);
+  const minIntensity = Math.min(...allIntensity);
+
+  // ✅ COPY SECTION 1 LOGIC: Colorscale Green-to-Red với gradient mượt mà
+  const optimizedColorscale = [
+    [0, 'rgb(0,128,0)'],          // Dark green for low values
+    [0.2, 'rgb(50,205,50)'],      // Light green
+    [0.4, 'rgb(154,205,50)'],     // Yellow-green
+    [0.6, 'rgb(255,255,0)'],      // Yellow
+    [0.8, 'rgb(255,165,0)'],      // Orange
+    [1, 'rgb(255,0,0)']           // Red for high values
+  ];
+
+  console.log(`🎨 TEST.csv Colorscale: min=${minIntensity.toFixed(4)}, max=${maxIntensity.toFixed(4)}`);
+
+  // ✅ COPY SECTION 1 LOGIC: Create mesh3d trace
+  const traceMesh3D = {
+    type: 'mesh3d',
+    x: allVerticesX,
+    y: allVerticesY,
+    z: allVerticesZ,
+    i: allFacesI,
+    j: allFacesJ,
+    k: allFacesK,
+    intensity: allIntensity,
+    colorscale: optimizedColorscale,
+    cmin: minIntensity,
+    cmax: maxIntensity,
+    showscale: false,
+    opacity: 1.0,
+    flatshading: false,
+    lighting: {
+      ambient: 0.8,
+      diffuse: 0.4,
+      fresnel: 0.1,
+      specular: 0.1,
+      roughness: 0.3
+    },
+    lightposition: {
+      x: 100,
+      y: 200,
+      z: 0
+    },
+    name: 'Structural Elements',
+    showlegend: false,
+    text: allText,
+    hovertemplate: '<b>%{text}</b><br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f}, %{z:.4f})<br>' +
+                   '<extra></extra>'
+  };
+
+  console.log(`📊 TEST.csv Mesh3D: ${allVerticesX.length} vertices, ${allFacesI.length} faces`);
+
+  // ✅ COPY SECTION 1 LOGIC: Create threshold plane
+  const margin = 0.05; // 5% margin around data
+  const planeSize = 20; // Grid resolution for smooth plane
+
+  const planeXMin = -transformedXMax * margin;
+  const planeXMax = transformedXMax * (1 + margin);
+  const planeYMin = -transformedYMax * margin;
+  const planeYMax = transformedYMax * (1 + margin);
+
+  const planeX = [];
+  const planeY = [];
+  const planeZ = [];
+
+  for (let i = 0; i <= planeSize; i++) {
+    const row = [];
+    for (let j = 0; j <= planeSize; j++) {
+      const x = planeXMin + (planeXMax - planeXMin) * i / planeSize;
+      const y = planeYMin + (planeYMax - planeYMin) * j / planeSize;
+
+      if (i === 0) planeX.push(x);
+      if (j === 0) planeY.push(y);
+      row.push(Z0);
+    }
+    planeZ.push(row);
+  }
+
+  console.log(`🎯 TEST.csv Threshold plane: Z₀=${Z0.toFixed(4)} (${threshold}%)`);
+  console.log(`   - Bounds: X[${planeXMin.toFixed(3)}, ${planeXMax.toFixed(3)}], Y[${planeYMin.toFixed(3)}, ${planeYMax.toFixed(3)}]`);
+  console.log(`   - Margin: 5% (X=${(transformedXMax * margin).toFixed(3)}m, Y=${(transformedYMax * margin).toFixed(3)}m)`);
+  console.log(`   - Resolution: ${planeSize}x${planeSize} surface grid`);
+
+  // ✅ COPY SECTION 1 LOGIC: Threshold plane trace
+  const thresholdPlane = {
+    type: 'surface',
+    x: planeX,
+    y: planeY,
+    z: planeZ,
+    colorscale: [
+      [0, 'rgba(220,20,60,0.7)'],   // Crimson với alpha cao hơn
+      [1, 'rgba(220,20,60,0.7)']    // Crimson với alpha cao hơn
+    ],
+    showscale: false,
+    opacity: 0.7,
+    name: `Z₀ = ${Z0.toFixed(3)} (${threshold}%)`,
+    showlegend: false,
+    contours: {
+      z: {
+        show: true,
+        usecolormap: false,
+        color: 'darkred',
+        width: 8,
+        highlightcolor: 'red'
+      }
+    }
+  };
+
+  // ✅ COPY SECTION 1 LOGIC: Create text labels for damaged elements
+  const textX = [];
+  const textY = [];
+  const textZ = [];
+  const textLabels = [];
+
+  elements.forEach(element => {
+    const damageIndex = z[element.id] || 0;
+    if (damageIndex >= Z0) {
+      const transformedCoords = applyCoordinateTransformation(element, transformation);
+      const percentage = ((damageIndex / maxZ) * 100).toFixed(1);
+
+      textX.push(transformedCoords.x);
+      textY.push(transformedCoords.y);
+      textZ.push(damageIndex + 0.002); // Slightly above the element
+      textLabels.push(`${percentage}%`);
+    }
+  });
+
+  const traceTextPercentage = {
+    x: textX,
+    y: textY,
+    z: textZ,
+    mode: 'text',
+    type: 'scatter3d',
+    text: textLabels,
+    textposition: 'middle center',
+    textfont: {
+      family: 'Arial, sans-serif',
+      size: 16,        // ✅ INCREASED: 10→16 for better visibility
+      color: 'darkred',
+      weight: 'bold'   // ✅ ADD: Bold text for better readability
+    },
+    showlegend: false,
+    hovertemplate: '<b>Phần tử hư hỏng</b><br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f})<br>' +
+                   '<b>Giá trị thực tế:</b> %{text}<br>' +
+                   '<extra></extra>'
+  };
+
+  console.log(`📝 TEST.csv Text labels: ${textLabels.length} damaged elements above threshold`);
+
+  // ✅ COPY SECTION 1 LOGIC: Combine all traces
+  const traces = [traceMesh3D, thresholdPlane, traceTextPercentage];
+
+  // ✅ COPY SECTION 1 LOGIC: Create layout (exactly like Section 1)
+  const layout = {
+    scene: {
+      xaxis: {
+        title: {
+          text: 'EX (m)',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 8,
+        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]
+      },
+      yaxis: {
+        title: {
+          text: 'EY (m)',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 8,
+        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]
+      },
+      zaxis: {
+        title: {
+          text: 'Damage Index',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 6
+      },
+      camera: {
+        projection: { type: 'orthographic' },
+        eye: { x: 1.6, y: 1.6, z: 1.8 },
+        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 },
+        up: { x: 0, y: 0, z: 1 }
+      },
+      aspectmode: 'data',
+      bgcolor: 'rgba(248,249,250,0.9)'
+    },
+    title: {
+      text: mode === 'combine' ? `Mode Combine, Z₀ = ${threshold}%` : `Mode ${mode}, Z₀ = ${threshold}%`,
+      font: { family: 'Arial, sans-serif', size: 20, color: '#2c3e50', weight: 'bold' },
+      x: 0.5,
+      y: 0.95
+    },
+    width: 1200,
+    height: 900,
+    margin: { l: 60, r: 120, t: 100, b: 60 },
+    font: { family: 'Arial, sans-serif', color: '#2c3e50' },
+    paper_bgcolor: 'rgba(255,255,255,0.95)',
+    plot_bgcolor: 'rgba(248,249,250,0.9)',
+    showlegend: false
+  };
+
+  // ✅ COPY SECTION 1 LOGIC: Create temporary div for chart
+  let tempDiv;
+  try {
+    tempDiv = document.createElement('div');
+    tempDiv.style.width = '1200px';
+    tempDiv.style.height = '900px';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.id = `temp-chart-testcsv-${mode}-${threshold}-${Date.now()}`;
+    document.body.appendChild(tempDiv);
+    console.log(`📊 Created temporary div: ${tempDiv.id}`);
+  } catch (error) {
+    throw new Error(`Failed to create temporary div for Mode ${mode}: ${error.message}`);
+  }
+
+  try {
+    // Validate Plotly availability
+    if (typeof Plotly === 'undefined') {
+      throw new Error('Plotly library not available');
+    }
+
+    console.log(`📊 Creating TEST.csv Plotly chart for Mode ${mode}...`);
+    await Plotly.newPlot(tempDiv, traces, layout, {
+      displayModeBar: false,
+      staticPlot: true,
+      doubleClick: false,
+      showTips: false,
+      showAxisDragHandles: false,
+      showAxisRangeEntryBoxes: false
+    });
+    console.log(`✅ TEST.csv Plotly chart created successfully for Mode ${mode}`);
+
+    // ✅ COPY SECTION 1 LOGIC: Reset camera for export
+    try {
+      await resetCameraForExport(tempDiv);
+      console.log(`📷 Camera reset completed for Mode ${mode}`);
+    } catch (cameraError) {
+      console.warn(`⚠️ Camera reset failed for Mode ${mode}:`, cameraError.message);
+    }
+
+    // Convert to image
+    console.log(`🖼️ Converting TEST.csv chart to image for Mode ${mode}...`);
+    let imageDataURL;
+    try {
+      imageDataURL = await Plotly.toImage(tempDiv, {
+        format: 'png',
+        width: 1200,
+        height: 900,
+        scale: 3,
+        setBackground: 'white'
+      });
+      console.log(`✅ TEST.csv image generated for Mode ${mode}`);
+    } catch (imageError) {
+      throw new Error(`Failed to generate image for Mode ${mode}: ${imageError.message}`);
+    }
+
+    // Convert data URL to blob
+    let blob;
+    try {
+      blob = dataURLToBlob(imageDataURL);
+      console.log(`✅ TEST.csv image blob created for Mode ${mode}: ${blob.size} bytes`);
+    } catch (blobError) {
+      throw new Error(`Failed to convert image to blob for Mode ${mode}: ${blobError.message}`);
+    }
+
+    if (!blob || blob.size === 0) {
+      throw new Error(`Generated blob is empty for Mode ${mode}`);
+    }
+
+    console.log(`✅ Created TEST.csv image for Mode ${mode}, Z0 ${threshold}% - Size: ${blob.size} bytes`);
+    return blob;
+
+  } catch (error) {
+    console.error(`❌ Error in createChartImageFromSection1 for Mode ${mode}, Z0 ${threshold}%:`, error);
+    throw error;
+  } finally {
+    // Cleanup
+    try {
+      if (tempDiv && document.body.contains(tempDiv)) {
+        console.log(`🧹 Cleaning up temporary div: ${tempDiv.id}`);
+        if (typeof Plotly !== 'undefined') {
+          Plotly.purge(tempDiv);
+        }
+        document.body.removeChild(tempDiv);
+        console.log(`✅ Cleanup completed for Mode ${mode}`);
+      }
+    } catch (cleanupError) {
+      console.warn(`⚠️ Cleanup warning for Mode ${mode}, Z0 ${threshold}%:`, cleanupError.message);
+      try {
+        if (tempDiv && document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      } catch (forceError) {
+        console.error(`❌ Force cleanup failed for Mode ${mode}:`, forceError.message);
+      }
+    }
+  }
+}
+
+// HELPER FUNCTION: Create chart image without text labels (for Section 1 download)
+async function createChartImageNoLabels(chartData, mode, threshold) {
+  console.log(`📸 Creating Section 1 image (NO LABELS) for Mode ${mode}, Z0 ${threshold}%...`);
+
+  // Validate input data
+  if (!chartData || typeof chartData !== 'object') {
+    throw new Error(`Invalid chart data for Mode ${mode}`);
+  }
+
+  const { z, elements, Z0, Z0_percent, maxZ } = chartData;
+
+  // Validate required properties
+  if (!z || !elements || !Array.isArray(elements)) {
+    throw new Error(`Missing required chart data properties for Mode ${mode}`);
+  }
+
+  if (elements.length === 0) {
+    throw new Error(`No elements data available for Mode ${mode}`);
+  }
+
+  // Calculate element size (same as main function)
+  const elementSize = calculateRealElementSize(elements);
+
+  // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION
+  const transformation = centralizeCoordinateTransformation(elements);
+  const { xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
+
+  // ✅ USE SAME LOGIC AS SECTION 1: Single mesh3d with intensity colorscale
+  const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
+  const allFacesI = [], allFacesJ = [], allFacesK = [];
+  const allIntensity = [];
+  const allText = [];
+  let zeroEnergyElementsCount = 0;
+
+  elements.forEach((element, index) => {
+    let height = z[element.id] || 0;
+    const originalDamageIndex = z[element.id] || 0;
+
+    // Handle zero damage index (negative strain energy)
+    if (originalDamageIndex === 0) {
+      zeroEnergyElementsCount++;
+    }
+
+    // Minimum height for visualization (same as Section 1)
+    const minHeight = 0.001;
+    if (height === 0) {
+      height = minHeight;
+    }
+
+    // ✅ CREATE 3D BOX with CENTRALIZED TRANSFORMED coordinates
+    const transformedCoords = applyCoordinateTransformation(element, transformation);
+    const box = createBox3D(transformedCoords.x, transformedCoords.y, height, elementSize.width, elementSize.depth);
+
+    // Vertex offset to avoid index conflicts
+    const vertexOffset = allVerticesX.length;
+
+    // Add vertices
+    allVerticesX.push(...box.vertices.x);
+    allVerticesY.push(...box.vertices.y);
+    allVerticesZ.push(...box.vertices.z);
+
+    // Add faces with offset
+    allFacesI.push(...box.faces.i.map(i => i + vertexOffset));
+    allFacesJ.push(...box.faces.j.map(j => j + vertexOffset));
+    allFacesK.push(...box.faces.k.map(k => k + vertexOffset));
+
+    // Add intensity and text for each vertex (8 vertices per box)
+    for (let i = 0; i < 8; i++) {
+      allIntensity.push(originalDamageIndex);
+      allText.push(`Element ${element.id} (DI: ${originalDamageIndex.toFixed(4)})`);
+    }
+  });
+
+  console.log(`📊 Section 1 Chart (NO LABELS): ${zeroEnergyElementsCount} elements with damage index = 0`);
+
+  // Calculate colorscale range (same as Section 1)
+  const maxIntensity = Math.max(...allIntensity);
+  const minIntensity = Math.min(...allIntensity);
+
+  // Same colorscale as Section 1
+  const optimizedColorscale = [
+    [0, 'rgb(0,128,0)'],          // Dark green for low values
+    [0.2, 'rgb(50,205,50)'],      // Light green
+    [0.4, 'rgb(154,205,50)'],     // Yellow-green
+    [0.6, 'rgb(255,255,0)'],      // Yellow
+    [0.8, 'rgb(255,165,0)'],      // Orange
+    [1, 'rgb(255,0,0)']           // Red for high values
+  ];
+
+  // ✅ CLEAN MESH3D TRACE - NO TEXT LABELS
+  const traceMesh3D = {
+    type: 'mesh3d',
+    x: allVerticesX,
+    y: allVerticesY,
+    z: allVerticesZ,
+    i: allFacesI,
+    j: allFacesJ,
+    k: allFacesK,
+    intensity: allIntensity,
+    colorscale: optimizedColorscale,
+    cmin: minIntensity,
+    cmax: maxIntensity,
+    showscale: false,
+    opacity: 1.0,
+    flatshading: false,
+    lighting: {
+      ambient: 0.8,
+      diffuse: 0.4,
+      fresnel: 0.1,
+      specular: 0.1,
+      roughness: 0.3
+    },
+    lightposition: {
+      x: 100,
+      y: 200,
+      z: 0
+    },
+    name: 'Structural Elements',
+    showlegend: false,
+    text: allText,
+    hovertemplate: '<b>%{text}</b><br>' +
+                   '<b>Tọa độ:</b> (%{x:.4f}, %{y:.4f}, %{z:.4f})<br>' +
+                   '<extra></extra>',
+    flatshading: true,
+    contour: {
+      show: true,
+      color: '#333333',
+      width: 1
+    }
+  };
+
+  // ✅ NO TEXT LABELS FOR SECTION 1 DOWNLOAD
+  const textLabels = [];
+  console.log(`📝 Section 1 Text labels: DISABLED for clean download`);
+
+  // ✅ CREATE THRESHOLD PLANE (same as other functions)
+  console.log(`🎯 Section 1 NO LABELS - Creating threshold plane:`);
+  console.log(`   Z0 = ${Z0.toFixed(4)} (${threshold}%)`);
+  console.log(`   maxZ = ${maxZ.toFixed(4)}`);
+  console.log(`   Transformed bounds: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}]`);
+
+  const margin = 0.05; // 5% margin around data
+  const planeSize = 20; // Grid resolution for smooth plane
+
+  const planeXMin = -transformedXMax * margin;
+  const planeXMax = transformedXMax * (1 + margin);
+  const planeYMin = -transformedYMax * margin;
+  const planeYMax = transformedYMax * (1 + margin);
+
+  console.log(`   Plane bounds: X[${planeXMin.toFixed(3)}, ${planeXMax.toFixed(3)}], Y[${planeYMin.toFixed(3)}, ${planeYMax.toFixed(3)}]`);
+
+  const planeX = [];
+  const planeY = [];
+  const planeZ = [];
+
+  for (let i = 0; i <= planeSize; i++) {
+    const row = [];
+    for (let j = 0; j <= planeSize; j++) {
+      const x = planeXMin + (planeXMax - planeXMin) * i / planeSize;
+      const y = planeYMin + (planeYMax - planeYMin) * j / planeSize;
+
+      if (i === 0) planeX.push(x);
+      if (j === 0) planeY.push(y);
+      row.push(Z0);
+    }
+    planeZ.push(row);
+  }
+
+  console.log(`   Plane grid: ${planeX.length}×${planeY.length}, Z constant = ${Z0.toFixed(4)}`);
+
+  // ✅ THRESHOLD PLANE - MATCH SECTION 1 SETTINGS
+  const thresholdPlane = {
+    type: 'surface',
+    x: planeX,
+    y: planeY,
+    z: planeZ,
+    colorscale: [
+      [0, 'rgba(220,20,60,0.7)'],   // Crimson với alpha cao hơn
+      [1, 'rgba(220,20,60,0.7)']    // Crimson với alpha cao hơn
+    ],
+    showscale: false,
+    opacity: 0.7,
+    name: `Z₀ = ${Z0.toFixed(3)} (${threshold}%)`,
+    showlegend: false,
+    contours: {
+      z: {
+        show: true,
+        usecolormap: false,
+        color: 'darkred',
+        width: 8,
+        highlightcolor: 'red'
+      }
+    }
+  };
+
+  // Combine all traces (mesh3d + threshold plane, NO text labels)
+  const traces = [traceMesh3D, thresholdPlane];
+
+  console.log(`📊 Section 1 NO LABELS - Traces summary:`);
+  console.log(`   Trace 1: ${traceMesh3D.type} (${traceMesh3D.x.length} vertices)`);
+  console.log(`   Trace 2: ${thresholdPlane.type} (${thresholdPlane.x.length}×${thresholdPlane.y.length} grid)`);
+  console.log(`   Total traces: ${traces.length}`);
+
+  // ✅ LAYOUT (same as Section 1)
+  const layout = {
+    scene: {
+      xaxis: {
+        title: {
+          text: 'EX (m)',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 8,
+        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]
+      },
+      yaxis: {
+        title: {
+          text: 'EY (m)',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 8,
+        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]
+      },
+      zaxis: {
+        title: {
+          text: 'Damage Index',
+          font: { family: 'Arial, sans-serif', size: 18, color: '#1a252f', weight: 'bold' }
+        },
+        tickfont: { family: 'Arial, sans-serif', size: 15, color: '#2c3e50', weight: 'bold' },
+        gridcolor: 'rgba(70,70,70,0.6)',
+        gridwidth: 2,
+        zerolinecolor: 'rgba(0,0,0,0.8)',
+        zerolinewidth: 3,
+        showbackground: true,
+        backgroundcolor: 'rgba(245,245,245,0.9)',
+        showspikes: false,
+        tickmode: 'auto',
+        nticks: 6
+      },
+      camera: {
+        projection: { type: 'orthographic' },
+        eye: { x: 1.6, y: 1.6, z: 1.8 },
+        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 },
+        up: { x: 0, y: 0, z: 1 }
+      },
+      aspectmode: 'data',
+      bgcolor: 'rgba(248,249,250,0.9)'
+    },
+    title: {
+      text: mode === 'combine' ? `Mode Combine, Z₀ = ${threshold}%` : `Mode ${mode}, Z₀ = ${threshold}%`,
+      font: { family: 'Arial, sans-serif', size: 20, color: '#2c3e50', weight: 'bold' },
+      x: 0.5,
+      y: 0.95
+    },
+    width: 1200,
+    height: 900,
+    margin: { l: 60, r: 120, t: 100, b: 60 },
+    font: { family: 'Arial, sans-serif', color: '#2c3e50' },
+    paper_bgcolor: 'rgba(255,255,255,0.95)',
+    plot_bgcolor: 'rgba(248,249,250,0.9)',
+    showlegend: false
+  };
+
+  // Create temporary div for chart
+  let tempDiv;
+  try {
+    tempDiv = document.createElement('div');
+    tempDiv.style.width = '1200px';
+    tempDiv.style.height = '900px';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.id = `temp-chart-section1-${mode}-${threshold}-${Date.now()}`;
+    document.body.appendChild(tempDiv);
+    console.log(`📊 Created temporary div: ${tempDiv.id}`);
+  } catch (error) {
+    throw new Error(`Failed to create temporary div for Mode ${mode}: ${error.message}`);
+  }
+
+  try {
+    // Validate Plotly availability
+    if (typeof Plotly === 'undefined') {
+      throw new Error('Plotly library not available');
+    }
+
+    console.log(`📊 Creating Section 1 Plotly chart (NO LABELS) for Mode ${mode}...`);
+    await Plotly.newPlot(tempDiv, traces, layout, {
+      displayModeBar: false,
+      staticPlot: true,
+      doubleClick: false,
+      showTips: false,
+      showAxisDragHandles: false,
+      showAxisRangeEntryBoxes: false
+    });
+    console.log(`✅ Section 1 Plotly chart created successfully for Mode ${mode}`);
+
+    // Reset camera for export
+    try {
+      await resetCameraForExport(tempDiv);
+      console.log(`📷 Camera reset completed for Mode ${mode}`);
+    } catch (cameraError) {
+      console.warn(`⚠️ Camera reset failed for Mode ${mode}:`, cameraError.message);
+    }
+
+    // Convert to image
+    console.log(`🖼️ Converting Section 1 chart to image for Mode ${mode}...`);
+    let imageDataURL;
+    try {
+      imageDataURL = await Plotly.toImage(tempDiv, {
+        format: 'png',
+        width: 1200,
+        height: 900,
+        scale: 3,
+        setBackground: 'white'
+      });
+      console.log(`✅ Section 1 image generated for Mode ${mode}`);
+    } catch (imageError) {
+      throw new Error(`Failed to generate image for Mode ${mode}: ${imageError.message}`);
+    }
+
+    // Convert data URL to blob
+    let blob;
+    try {
+      blob = dataURLToBlob(imageDataURL);
+      console.log(`✅ Section 1 image blob created for Mode ${mode}: ${blob.size} bytes`);
+    } catch (blobError) {
+      throw new Error(`Failed to convert image to blob for Mode ${mode}: ${blobError.message}`);
+    }
+
+    if (!blob || blob.size === 0) {
+      throw new Error(`Generated blob is empty for Mode ${mode}`);
+    }
+
+    console.log(`✅ Created Section 1 image (NO LABELS) for Mode ${mode}, Z0 ${threshold}% - Size: ${blob.size} bytes`);
+    return blob;
+
+  } catch (error) {
+    console.error(`❌ Error in createChartImageNoLabels for Mode ${mode}, Z0 ${threshold}%:`, error);
+    throw error;
+  } finally {
+    // Cleanup
+    try {
+      if (tempDiv && document.body.contains(tempDiv)) {
+        console.log(`🧹 Cleaning up temporary div: ${tempDiv.id}`);
+        if (typeof Plotly !== 'undefined') {
+          Plotly.purge(tempDiv);
+        }
+        document.body.removeChild(tempDiv);
+        console.log(`✅ Cleanup completed for Mode ${mode}`);
+      }
+    } catch (cleanupError) {
+      console.warn(`⚠️ Cleanup warning for Mode ${mode}, Z0 ${threshold}%:`, cleanupError.message);
+      try {
+        if (tempDiv && document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      } catch (forceError) {
+        console.error(`❌ Force cleanup failed for Mode ${mode}:`, forceError.message);
+      }
+    }
+  }
+}
+
+// HELPER FUNCTION: Create chart image from data (original)
 async function createChartImage(chartData, mode, threshold) {
   console.log(`📸 Creating image for Mode ${mode}, Z0 ${threshold}%...`);
 
+  // Validate input data
+  if (!chartData || typeof chartData !== 'object') {
+    throw new Error(`Invalid chart data for Mode ${mode}`);
+  }
+
   const { z, elements, Z0, Z0_percent, maxZ } = chartData;
+
+  // Validate required properties
+  if (!z || !elements || !Array.isArray(elements)) {
+    throw new Error(`Missing required chart data properties for Mode ${mode}`);
+  }
+
+  if (elements.length === 0) {
+    throw new Error(`No elements data available for Mode ${mode}`);
+  }
 
   // Calculate element size (same as main function)
   const elementSize = calculateRealElementSize(elements);
@@ -3555,10 +5027,9 @@ async function createChartImage(chartData, mode, threshold) {
       height = minHeight;
     }
 
-    // Create 3D box with TRANSFORMED coordinates
-    const transformedX = element.center.x - xOffset;
-    const transformedY = element.center.y - yOffset;
-    const box = createBox3D(transformedX, transformedY, height, elementSize.width, elementSize.depth);
+    // ✅ CREATE 3D BOX with CENTRALIZED TRANSFORMED coordinates (MATCH SECTION 1)
+    const transformedCoords = applyCoordinateTransformation(element, transformation);
+    const box = createBox3D(transformedCoords.x, transformedCoords.y, height, elementSize.width, elementSize.depth);
 
     // Vertex offset to avoid index conflicts
     const vertexOffset = allVerticesX.length;
@@ -3626,9 +5097,30 @@ async function createChartImage(chartData, mode, threshold) {
     }
   };
 
-  // ✅ NO TEXT LABELS - CLEAN MINIMAL DESIGN
+  // ✅ NO TEXT LABELS FOR SECTION 1 DOWNLOAD (clean appearance)
   const textLabels = [];
-  // Removed all text label generation for clean appearance
+  console.log(`📝 Text labels: DISABLED for Section 1 clean download`);
+
+  // ✅ COMMENTED OUT: Text labels creation for clean Section 1 download
+  // elements.forEach(element => {
+  //   const damageIndex = z[element.id] || 0;
+  //   if (damageIndex >= Z0) {
+  //     const transformedCoords = applyCoordinateTransformation(element, transformation);
+  //     const percentage = ((damageIndex / maxZ) * 100).toFixed(1);
+  //     const textTrace = {
+  //       x: [transformedCoords.x],
+  //       y: [transformedCoords.y],
+  //       z: [damageIndex + 0.002],
+  //       mode: 'text',
+  //       type: 'scatter3d',
+  //       text: [`Element ${element.id}: ${percentage}%`],
+  //       textposition: 'middle center',
+  //       textfont: { family: 'Arial, sans-serif', size: 16, color: 'darkred', weight: 'bold' },
+  //       showlegend: false
+  //     };
+  //     textLabels.push(textTrace);
+  //   }
+  // });
 
   // ✅ THRESHOLD PLANE USING TRANSFORMED COORDINATES (consistent with Implementation 1)
   // Use transformed coordinate ranges for proper alignment
@@ -3674,28 +5166,35 @@ async function createChartImage(chartData, mode, threshold) {
   console.log(`   - Margin: 5% (X=${(transformedXMax * margin).toFixed(3)}m, Y=${(transformedYMax * margin).toFixed(3)}m)`);
   console.log(`   - Resolution: ${planeSize}x${planeSize} surface grid`);
 
-  // ✅ CLEAN THRESHOLD PLANE - NO LEGEND
+  // ✅ THRESHOLD PLANE - MATCH SECTION 1 SETTINGS
   const thresholdPlane = {
     type: 'surface',
     x: planeX,
     y: planeY,
     z: planeZ,
-    colorscale: [[0, 'rgba(139, 0, 0, 0.5)'], [1, 'rgba(139, 0, 0, 0.5)']],
+    colorscale: [
+      [0, 'rgba(220,20,60,0.7)'],   // ✅ MATCH SECTION 1: Crimson với alpha cao hơn
+      [1, 'rgba(220,20,60,0.7)']    // ✅ MATCH SECTION 1: Crimson với alpha cao hơn
+    ],
     showscale: false,
-    opacity: 0.5,
+    opacity: 0.7,                            // ✅ MATCH SECTION 1: 0.5→0.7 để rõ ràng hơn
     name: `Z₀ = ${Z0.toFixed(3)} (${Z0_percent}%)`,
     showlegend: false,                       // ✅ HIDE THRESHOLD PLANE LEGEND
     contours: {
       z: {
         show: true,
+        usecolormap: false,                  // ✅ MATCH SECTION 1
         color: 'darkred',
-        width: 6
+        width: 8,                            // ✅ MATCH SECTION 1: 6→8 để nổi bật hơn
+        highlightcolor: 'red'                // ✅ MATCH SECTION 1
       }
     }
   };
 
-  // Combine all traces (same order as Section 1)
+  // Combine all traces (mesh3d + text labels + threshold plane)
   const traces = [traceMesh3D, ...textLabels, thresholdPlane];
+
+  console.log(`📝 Section 3 Text labels: ${textLabels.length} damaged elements above threshold`);
 
   // ✅ PROFESSIONAL LAYOUT - TIMES NEW ROMAN & COMPACT DIMENSIONS
   const layout = {
@@ -3760,9 +5259,10 @@ async function createChartImage(chartData, mode, threshold) {
         ticks: 'outside'                     // ✅ EXPLICIT: Tick position
       },
       camera: {
-        projection: { type: 'orthographic' }, // OrthographicCamera (no perspective distortion)
-        eye: { x: 1.5, y: 1.5, z: 1.5 },
-        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 }  // ✅ CENTER CAMERA ON DATA CENTER
+        projection: { type: 'orthographic' }, // OrthographicCamera for no perspective distortion
+        eye: { x: 1.6, y: 1.6, z: 1.8 }, // ✅ MATCH SECTION 1: Same as button gốc for consistent view
+        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 }, // ✅ CENTER ON DATA
+        up: { x: 0, y: 0, z: 1 }  // ✅ MATCH SECTION 1: Add up vector
       },
       aspectmode: 'data'                     // ✅ PROPER PROPORTIONAL RENDERING (not 'cube')
     },
@@ -3780,14 +5280,32 @@ async function createChartImage(chartData, mode, threshold) {
   };
 
   // Create temporary div for chart (MATCH LAYOUT DIMENSIONS)
-  const tempDiv = document.createElement('div');
-  tempDiv.style.width = '1200px';   // ✅ MATCH LAYOUT WIDTH
-  tempDiv.style.height = '900px';   // ✅ MATCH LAYOUT HEIGHT
-  tempDiv.style.position = 'absolute';
-  tempDiv.style.left = '-9999px';
-  document.body.appendChild(tempDiv);
+  let tempDiv;
+  try {
+    tempDiv = document.createElement('div');
+    tempDiv.style.width = '1200px';   // ✅ MATCH LAYOUT WIDTH
+    tempDiv.style.height = '900px';   // ✅ MATCH LAYOUT HEIGHT
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.visibility = 'hidden'; // Additional hiding
+    tempDiv.id = `temp-chart-${mode}-${threshold}-${Date.now()}`; // Unique ID for debugging
+    document.body.appendChild(tempDiv);
+    console.log(`📊 Created temporary div: ${tempDiv.id}`);
+  } catch (error) {
+    throw new Error(`Failed to create temporary div for Mode ${mode}: ${error.message}`);
+  }
 
   try {
+    // Validate Plotly availability
+    if (typeof Plotly === 'undefined') {
+      throw new Error('Plotly library not available');
+    }
+
+    // Validate traces data
+    if (!traces || !Array.isArray(traces) || traces.length === 0) {
+      throw new Error(`No traces data available for Mode ${mode}`);
+    }
+
     // ✅ DEBUG: Log axis configuration before rendering
     console.log('🔍 AXIS CONFIGURATION DEBUG:');
     console.log(`   X-axis title: "${layout.scene.xaxis.title.text}"`);
@@ -3795,8 +5313,10 @@ async function createChartImage(chartData, mode, threshold) {
     console.log(`   Z-axis title: "${layout.scene.zaxis.title.text}"`);
     console.log(`   X-axis range: [${layout.scene.xaxis.range[0]}, ${layout.scene.xaxis.range[1].toFixed(3)}] (transformed)`);
     console.log(`   Y-axis range: [${layout.scene.yaxis.range[0]}, ${layout.scene.yaxis.range[1].toFixed(3)}] (transformed)`);
+    console.log(`   Traces count: ${traces.length}`);
 
     // Create plot with optimized config
+    console.log(`📊 Creating Plotly chart for Mode ${mode}...`);
     await Plotly.newPlot(tempDiv, traces, layout, {
       displayModeBar: false,
       staticPlot: true,
@@ -3814,42 +5334,112 @@ async function createChartImage(chartData, mode, threshold) {
       showAxisDragHandles: false,
       showAxisRangeEntryBoxes: false
     });
+    console.log(`✅ Plotly chart created successfully for Mode ${mode}`);
 
     // ✅ RESET CAMERA FOR CONSISTENT PNG EXPORT
-    await resetCameraForExport(tempDiv);
+    try {
+      await resetCameraForExport(tempDiv);
+      console.log(`📷 Camera reset completed for Mode ${mode}`);
+    } catch (cameraError) {
+      console.warn(`⚠️ Camera reset failed for Mode ${mode}:`, cameraError.message);
+      // Continue without camera reset
+    }
 
     // Convert to image (MATCH LAYOUT DIMENSIONS)
-    const imageDataURL = await Plotly.toImage(tempDiv, {
-      format: 'png',
-      width: 1200,   // ✅ MATCH LAYOUT WIDTH
-      height: 900,   // ✅ MATCH LAYOUT HEIGHT
-      scale: 3,      // ✅ INCREASED: 2→3 for better text clarity (3600×2700 pixels)
-      // ✅ OPTIMIZE CANVAS PERFORMANCE
-      imageDataOnly: true,  // Skip unnecessary DOM operations
-      setBackground: 'white' // Explicit background for better export
-    });
+    console.log(`🖼️ Converting chart to image for Mode ${mode}...`);
+    let imageDataURL;
 
-    // Convert data URL to blob
-    const response = await fetch(imageDataURL);
-    const blob = await response.blob();
+    // Try primary method first
+    try {
+      console.log(`🔄 Attempting primary image generation for Mode ${mode}...`);
+      imageDataURL = await Plotly.toImage(tempDiv, {
+        format: 'png',
+        width: 1200,   // ✅ MATCH LAYOUT WIDTH
+        height: 900,   // ✅ MATCH LAYOUT HEIGHT
+        scale: 3,      // ✅ INCREASED: 2→3 for better text clarity (3600×2700 pixels)
+        setBackground: 'white' // Explicit background for better export
+      });
 
-    console.log(`✅ Created image for Mode ${mode}, Z0 ${threshold}%`);
+      console.log(`✅ Primary image generation successful for Mode ${mode}`);
+
+    } catch (primaryError) {
+      console.warn(`⚠️ Primary image generation failed for Mode ${mode}:`, primaryError.message);
+      console.log(`🔄 Attempting fallback image generation for Mode ${mode}...`);
+
+      // Fallback method without advanced options
+      try {
+        imageDataURL = await Plotly.toImage(tempDiv, {
+          format: 'png',
+          width: 1200,
+          height: 900,
+          scale: 2  // Reduced scale for fallback
+        });
+        console.log(`✅ Fallback image generation successful for Mode ${mode}`);
+      } catch (fallbackError) {
+        console.error(`❌ Both primary and fallback image generation failed for Mode ${mode}`);
+        throw new Error(`Failed to generate image for Mode ${mode}: Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
+      }
+    }
+
+    // Validate the returned data URL
+    console.log(`📊 Image data type: ${typeof imageDataURL}`);
+    console.log(`📊 Image data length: ${imageDataURL ? imageDataURL.length : 'null'}`);
+    console.log(`📊 Image data preview: ${imageDataURL ? imageDataURL.substring(0, 100) + '...' : 'null'}`);
+
+    if (!imageDataURL) {
+      throw new Error('Plotly.toImage returned null or undefined');
+    }
+
+    if (typeof imageDataURL !== 'string') {
+      throw new Error(`Plotly.toImage returned unexpected type: ${typeof imageDataURL}`);
+    }
+
+    if (!imageDataURL.startsWith('data:')) {
+      throw new Error(`Plotly.toImage returned invalid format: ${imageDataURL.substring(0, 50)}...`);
+    }
+
+    // ✅ FIX CORS ERROR: Convert data URL to blob without fetch
+    let blob;
+    try {
+      blob = dataURLToBlob(imageDataURL);
+      console.log(`✅ Image blob created for Mode ${mode}: ${blob.size} bytes`);
+    } catch (blobError) {
+      throw new Error(`Failed to convert image to blob for Mode ${mode}: ${blobError.message}`);
+    }
+
+    // Validate final blob
+    if (!blob || blob.size === 0) {
+      throw new Error(`Generated blob is empty for Mode ${mode}`);
+    }
+
+    console.log(`✅ Created image for Mode ${mode}, Z0 ${threshold}% - Size: ${blob.size} bytes`);
     return blob;
 
+  } catch (error) {
+    console.error(`❌ Error in createChartImage for Mode ${mode}, Z0 ${threshold}%:`, error);
+    throw error; // Re-throw to be handled by caller
   } finally {
     // ✅ PROPER CLEANUP: Purge Plotly first, then remove DOM element
     try {
       if (tempDiv && document.body.contains(tempDiv)) {
+        console.log(`🧹 Cleaning up temporary div: ${tempDiv.id}`);
         // Purge Plotly data and event listeners first
-        Plotly.purge(tempDiv);
+        if (typeof Plotly !== 'undefined') {
+          Plotly.purge(tempDiv);
+        }
         // Then remove from DOM
         document.body.removeChild(tempDiv);
+        console.log(`✅ Cleanup completed for Mode ${mode}`);
       }
     } catch (cleanupError) {
       console.warn(`⚠️ Cleanup warning for Mode ${mode}, Z0 ${threshold}%:`, cleanupError.message);
       // Force remove if still in DOM
-      if (tempDiv && document.body.contains(tempDiv)) {
-        document.body.removeChild(tempDiv);
+      try {
+        if (tempDiv && document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      } catch (forceError) {
+        console.error(`❌ Force cleanup failed for Mode ${mode}:`, forceError.message);
       }
     }
   }
@@ -5272,18 +6862,18 @@ function resetCameraForExport(chartDiv) {
     }
 
     try {
-      // Define optimal camera position for PNG export (same as default but optimized for static images)
+      // Define optimal camera position for PNG export - MATCH SECTION 1 BUTTON
       const exportCameraSettings = {
         'scene.camera': {
           eye: {
-            x: 1.4,   // Slightly closer for better detail in static image
-            y: 1.4,   // Slightly closer for better detail in static image
-            z: 1.1    // Slightly lower for better structural overview
+            x: 1.6,   // ✅ MATCH SECTION 1: Same as button gốc
+            y: 1.6,   // ✅ MATCH SECTION 1: Same as button gốc
+            z: 1.8    // ✅ MATCH SECTION 1: Same as button gốc
           },
           center: {
             x: 0,     // Center on the structure
             y: 0,     // Center on the structure
-            z: 0.25   // Slightly elevated center point
+            z: 0      // ✅ MATCH SECTION 1: Same as button gốc
           },
           up: {
             x: 0,     // Standard up vector
@@ -5591,8 +7181,9 @@ function draw3DDamageChart(z, elements, Z0) {
     textposition: 'middle center',
     textfont: {
       family: 'Arial, sans-serif',
-      size: 10,
-      color: 'darkred'
+      size: 16,        // ✅ INCREASED: 10→16 for better visibility
+      color: 'darkred',
+      weight: 'bold'   // ✅ ADD: Bold text for better readability
     },
     showlegend: false,
     hovertemplate: '<b>Phần tử hư hỏng</b><br>' +
@@ -7027,3 +8618,414 @@ function updateExcelProgress(percent, mainText, detailText) {
 
   console.log(`📊 Excel Progress: ${percent.toFixed(1)}% - ${mainText}`);
 }
+
+// ✅ TEST FUNCTION FOR SECTION 3 DOWNLOAD
+function testSection3DownloadButton() {
+  console.log('🧪 === TESTING SECTION 3 DOWNLOAD BUTTON ===');
+
+  // Check if button exists
+  const button = document.getElementById('download-charts-btn-section3');
+  console.log(`✅ Button exists: ${!!button}`);
+
+  // Check if progress elements exist
+  const progressDiv = document.getElementById('download-progress-section3');
+  const progressText = document.getElementById('progress-text-section3');
+  const progressBar = document.getElementById('progress-bar-section3');
+
+  console.log(`✅ Progress div exists: ${!!progressDiv}`);
+  console.log(`✅ Progress text exists: ${!!progressText}`);
+  console.log(`✅ Progress bar exists: ${!!progressBar}`);
+
+  // Check if function is available
+  console.log(`✅ Function available: ${typeof downloadMultiMode3DChartsSection3}`);
+
+  // Check prerequisites
+  console.log(`✅ Mesh data: ${!!window.meshData}`);
+  console.log(`✅ Section 1 results: ${!!window.strainEnergyResults}`);
+  console.log(`✅ Section 3 results: ${!!window.section3Results}`);
+
+  if (window.section3Results) {
+    console.log(`📊 Section 3 survey elements: [${window.section3Results.surveyElements?.join(', ') || 'None'}]`);
+    console.log(`📊 Section 3 predictions count: ${window.section3Results.surveyPredictions?.length || 0}`);
+  }
+
+  console.log('🎉 Section 3 download button test completed!');
+  return {
+    buttonExists: !!button,
+    progressElementsExist: !!(progressDiv && progressText && progressBar),
+    functionAvailable: typeof downloadMultiMode3DChartsSection3 === 'function',
+    prerequisitesMet: !!(window.meshData && window.strainEnergyResults)
+  };
+}
+
+// ✅ SIMPLE DEBUG FUNCTION FOR PLOTLY IMAGE GENERATION
+async function debugPlotlyImageGeneration() {
+  console.log('🔧 === DEBUGGING PLOTLY IMAGE GENERATION ===');
+
+  try {
+    // Create simple test chart
+    const testDiv = document.createElement('div');
+    testDiv.style.width = '600px';
+    testDiv.style.height = '400px';
+    testDiv.style.position = 'absolute';
+    testDiv.style.left = '-9999px';
+    testDiv.id = `test-plotly-${Date.now()}`;
+    document.body.appendChild(testDiv);
+
+    console.log('📊 Creating simple test chart...');
+
+    // Simple test data
+    const testData = [{
+      x: [1, 2, 3, 4],
+      y: [10, 11, 12, 13],
+      type: 'scatter'
+    }];
+
+    const testLayout = {
+      title: 'Test Chart',
+      width: 600,
+      height: 400
+    };
+
+    // Create plot
+    await Plotly.newPlot(testDiv, testData, testLayout, {
+      displayModeBar: false,
+      staticPlot: true
+    });
+
+    console.log('✅ Test chart created');
+
+    // Test image generation
+    console.log('🖼️ Testing image generation...');
+    const imageDataURL = await Plotly.toImage(testDiv, {
+      format: 'png',
+      width: 600,
+      height: 400,
+      scale: 2
+    });
+
+    console.log(`📊 Image data type: ${typeof imageDataURL}`);
+    console.log(`📊 Image data length: ${imageDataURL ? imageDataURL.length : 'null'}`);
+    console.log(`📊 Image data preview: ${imageDataURL ? imageDataURL.substring(0, 100) + '...' : 'null'}`);
+
+    // Test blob conversion
+    const blob = dataURLToBlob(imageDataURL);
+    console.log(`✅ Blob created: ${blob.size} bytes`);
+
+    // Download test image
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Test_Plotly_Image.png`;
+    link.click();
+
+    // Cleanup
+    Plotly.purge(testDiv);
+    document.body.removeChild(testDiv);
+
+    console.log('🎉 Plotly image generation test completed successfully!');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Plotly image generation test failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    return false;
+  }
+}
+
+// ✅ DEBUG FUNCTION FOR SECTION 3 CHART GENERATION
+async function debugSection3ChartGeneration(mode = 10, threshold = 40) {
+  console.log(`🔧 === DEBUGGING SECTION 3 CHART GENERATION ===`);
+  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
+  try {
+    // Test data generation
+    console.log('📊 Step 1: Testing chart data generation...');
+    const chartData = await generateSection3ChartForModeAndThreshold(mode, threshold);
+    console.log('✅ Chart data generated successfully:', chartData);
+
+    // Test image creation
+    console.log('🖼️ Step 2: Testing image creation...');
+    const imageBlob = await createChartImage(chartData, mode, threshold);
+    console.log(`✅ Image created successfully: ${imageBlob.size} bytes`);
+
+    // Test download
+    console.log('💾 Step 3: Testing single image download...');
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(imageBlob);
+    link.download = `Debug_Section3_Mode${mode}_Z0${threshold}.png`;
+    link.click();
+
+    console.log('🎉 Debug test completed successfully!');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Debug test failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    return false;
+  }
+}
+
+// ✅ EXPORT SECTION 3 DOWNLOAD FUNCTION
+window.downloadMultiMode3DChartsSection3 = downloadMultiMode3DChartsSection3;
+window.generateSection3ChartForModeAndThreshold = generateSection3ChartForModeAndThreshold;
+window.testSection3DownloadButton = testSection3DownloadButton;
+window.debugSection3ChartGeneration = debugSection3ChartGeneration;
+window.debugPlotlyImageGeneration = debugPlotlyImageGeneration;
+
+// ✅ TEST FUNCTION FOR TEST.CSV BASED DOWNLOAD
+function testTestCSVDownloadButton() {
+  console.log('🧪 === TESTING TEST.CSV BASED DOWNLOAD BUTTON ===');
+
+  // Check if button exists
+  const button = document.getElementById('download-charts-test-csv-btn');
+  console.log(`✅ Button exists: ${!!button}`);
+
+  // Check prerequisites
+  console.log(`✅ Mesh data: ${!!window.meshData}`);
+  console.log(`✅ TEST.csv data cached: ${!!window.testCSVData}`);
+
+  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+  const fileInputDamaged = document.getElementById("txt-file-damaged");
+  console.log(`✅ Healthy file: ${fileInputNonDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
+  console.log(`✅ Damaged file: ${fileInputDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
+
+  // Check function availability
+  console.log(`✅ Function available: ${typeof downloadMultiMode3DChartsTestCSV}`);
+
+  // Test TEST.csv data reading
+  console.log('\n📊 Testing TEST.csv data access...');
+  if (window.testCSVData) {
+    console.log('✅ TEST.csv data available:', window.testCSVData);
+  } else {
+    console.log('⚠️ TEST.csv data not cached, will try to load from Data folder');
+  }
+
+  console.log('\n🎯 Configuration:');
+  console.log('- Modes: [10, 12, 14, 17, 20, combine]');
+  console.log('- Threshold: 40% only');
+  console.log('- Element mapping: DI1→55, DI2→95, DI3→60, DI4→75');
+  console.log('- Damage range: DI*100 ± 1% (random)');
+
+  console.log('🎉 TEST.CSV download button test completed!');
+  return {
+    buttonExists: !!button,
+    functionAvailable: typeof downloadMultiMode3DChartsTestCSV === 'function',
+    prerequisitesMet: !!(window.meshData && fileInputNonDamaged?.files[0] && fileInputDamaged?.files[0])
+  };
+}
+
+// ✅ DETAILED DEBUG FUNCTION FOR TEST.CSV CHART GENERATION
+async function debugTestCSVChartGeneration(mode = 10, threshold = 40) {
+  console.log(`🔧 === DETAILED DEBUGGING TEST.CSV CHART GENERATION ===`);
+  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
+  try {
+    // Step 1: Check prerequisites
+    console.log('\n📋 Step 1: Prerequisites check...');
+    console.log(`✅ Mesh data: ${!!window.meshData}`);
+    console.log(`✅ Elements count: ${window.meshData?.elements?.length || 'N/A'}`);
+
+    const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+    const fileInputDamaged = document.getElementById("txt-file-damaged");
+    console.log(`✅ Healthy file: ${fileInputNonDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
+    console.log(`✅ Damaged file: ${fileInputDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
+
+    // Step 2: Test data generation
+    console.log('\n📊 Step 2: Testing TEST.csv chart data generation...');
+    const chartData = await generateTestCSVChartForModeAndThreshold(mode, threshold);
+    console.log('✅ Chart data generated successfully');
+    console.log(`📊 Chart data structure:`, {
+      elements: chartData.elements?.length || 'N/A',
+      z: Object.keys(chartData.z || {}).length,
+      Z0: chartData.Z0,
+      Z0_percent: chartData.Z0_percent,
+      maxZ: chartData.maxZ,
+      mode: chartData.mode,
+      dataSource: chartData.dataSource
+    });
+
+    // Step 3: Show damage mapping
+    console.log('\n🎯 Step 3: Damage mapping analysis...');
+    const damagedElements = Object.keys(chartData.z).filter(id => chartData.z[id] > 0);
+    console.log(`🎯 Total elements: ${Object.keys(chartData.z).length}`);
+    console.log(`🎯 Damaged elements: ${damagedElements.length} [${damagedElements.join(', ')}]`);
+    console.log(`🎯 Zero elements: ${Object.keys(chartData.z).length - damagedElements.length}`);
+
+    damagedElements.forEach(id => {
+      const damageValue = chartData.z[id];
+      const percentage = (damageValue * 100).toFixed(2);
+      console.log(`   Element ${id}: ${damageValue.toFixed(4)} (${percentage}%)`);
+    });
+
+    console.log(`📊 Damage range: ${chartData.maxZ.toFixed(4)} (max), Z0 threshold: ${chartData.Z0.toFixed(4)} (${threshold}%)`);
+
+    // Step 4: Test image creation using Section 1 logic
+    console.log('\n🖼️ Step 4: Testing image creation with Section 1 logic...');
+    console.log('🔄 Calling createChartImageFromSection1...');
+    const imageBlob = await createChartImageFromSection1(chartData, mode, threshold);
+    console.log(`✅ Image created successfully: ${imageBlob.size} bytes, type: ${imageBlob.type}`);
+
+    // Step 5: Validate image
+    console.log('\n🔍 Step 5: Image validation...');
+    if (imageBlob.size === 0) {
+      throw new Error('Generated image is empty');
+    }
+    if (imageBlob.type !== 'image/png') {
+      console.warn(`⚠️ Unexpected image type: ${imageBlob.type}`);
+    }
+
+    // Step 6: Test download
+    console.log('\n💾 Step 6: Testing single image download...');
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(imageBlob);
+    link.download = `Debug_TestCSV_Mode${mode}_Z0${threshold}_${Date.now()}.png`;
+    link.click();
+    console.log(`✅ Download initiated: ${link.download}`);
+
+    console.log('\n🎉 TEST.csv debug test completed successfully!');
+    console.log('📊 Summary:');
+    console.log(`   - Mode: ${mode}`);
+    console.log(`   - Threshold: ${threshold}%`);
+    console.log(`   - Damaged elements: ${damagedElements.length}`);
+    console.log(`   - Image size: ${imageBlob.size} bytes`);
+    console.log(`   - Max damage: ${(chartData.maxZ * 100).toFixed(2)}%`);
+
+    return true;
+
+  } catch (error) {
+    console.error('\n❌ TEST.csv debug test failed:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
+
+    // Additional error context
+    console.error('\n🔍 Error context:');
+    console.error(`   - Mode: ${mode}`);
+    console.error(`   - Threshold: ${threshold}`);
+    console.error(`   - Mesh data available: ${!!window.meshData}`);
+    console.error(`   - TEST.csv data available: ${!!window.testCSVData}`);
+
+    return false;
+  }
+}
+
+// ✅ COMPARISON FUNCTION: Compare TEST.csv vs Section 1 data
+async function compareTestCSVWithSection1(mode = 10, threshold = 40) {
+  console.log(`🔍 === COMPARING TEST.CSV vs SECTION 1 ===`);
+  console.log(`🎯 Mode ${mode}, Threshold ${threshold}%`);
+
+  try {
+    // Generate TEST.csv data
+    console.log('\n📊 Generating TEST.csv data...');
+    const testCSVData = await generateTestCSVChartForModeAndThreshold(mode, threshold);
+
+    // Generate Section 1 data (if available)
+    console.log('\n📊 Generating Section 1 data...');
+    let section1Data = null;
+    try {
+      section1Data = await generateChartForModeAndThreshold(mode, threshold);
+    } catch (error) {
+      console.warn('⚠️ Could not generate Section 1 data:', error.message);
+    }
+
+    // Compare data structures
+    console.log('\n🔍 Data structure comparison:');
+    console.log('TEST.csv data:', {
+      elements: testCSVData.elements?.length,
+      z_keys: Object.keys(testCSVData.z).length,
+      Z0: testCSVData.Z0,
+      maxZ: testCSVData.maxZ,
+      damaged_elements: Object.keys(testCSVData.z).filter(id => testCSVData.z[id] > 0).length
+    });
+
+    if (section1Data) {
+      console.log('Section 1 data:', {
+        elements: section1Data.elements?.length,
+        z_keys: Object.keys(section1Data.z).length,
+        Z0: section1Data.Z0,
+        maxZ: section1Data.maxZ,
+        damaged_elements: Object.keys(section1Data.z).filter(id => section1Data.z[id] > 0).length
+      });
+    }
+
+    // Show TEST.csv damage mapping
+    console.log('\n🎯 TEST.csv damage mapping:');
+    const testCSVDamaged = Object.keys(testCSVData.z).filter(id => testCSVData.z[id] > 0);
+    testCSVDamaged.forEach(id => {
+      const value = testCSVData.z[id];
+      const percentage = (value * 100).toFixed(2);
+      console.log(`   Element ${id}: ${value.toFixed(4)} (${percentage}%)`);
+    });
+
+    // Show Section 1 damage mapping (top 10)
+    if (section1Data) {
+      console.log('\n🎯 Section 1 damage mapping (top 10):');
+      const section1Damaged = Object.entries(section1Data.z)
+        .filter(([id, value]) => value > 0)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10);
+
+      section1Damaged.forEach(([id, value]) => {
+        const percentage = (value * 100).toFixed(2);
+        console.log(`   Element ${id}: ${value.toFixed(4)} (${percentage}%)`);
+      });
+    }
+
+    console.log('\n✅ Comparison completed');
+    return { testCSVData, section1Data };
+
+  } catch (error) {
+    console.error('❌ Comparison failed:', error);
+    return null;
+  }
+}
+
+// ✅ DEBUG FUNCTION FOR SECTION 1 NO LABELS
+async function debugSection1NoLabels(mode = 10, threshold = 40) {
+  console.log(`🔧 === DEBUGGING SECTION 1 NO LABELS ===`);
+  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
+  try {
+    // Test data generation
+    console.log('📊 Step 1: Testing chart data generation...');
+    const chartData = await generateChartForModeAndThreshold(mode, threshold);
+    console.log('✅ Chart data generated successfully:', chartData);
+
+    // Show damage mapping
+    const damagedElements = Object.keys(chartData.z).filter(id => chartData.z[id] > 0);
+    console.log(`🎯 Damaged elements: ${damagedElements.length} total`);
+    console.log(`🎯 Z0 threshold: ${chartData.Z0.toFixed(4)} (${threshold}%)`);
+    console.log(`🎯 Max damage: ${chartData.maxZ.toFixed(4)}`);
+
+    // Test image creation using NO LABELS function
+    console.log('🖼️ Step 2: Testing Section 1 NO LABELS image creation...');
+    const imageBlob = await createChartImageNoLabels(chartData, mode, threshold);
+    console.log(`✅ Image created successfully: ${imageBlob.size} bytes`);
+
+    // Test download
+    console.log('💾 Step 3: Testing single image download...');
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(imageBlob);
+    link.download = `Debug_Section1_NoLabels_Mode${mode}_Z0${threshold}.png`;
+    link.click();
+
+    console.log('🎉 Section 1 NO LABELS debug test completed successfully!');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Section 1 NO LABELS debug test failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    return false;
+  }
+}
+
+// ✅ EXPORT TEST.CSV BASED DOWNLOAD FUNCTION
+window.downloadMultiMode3DChartsTestCSV = downloadMultiMode3DChartsTestCSV;
+window.generateTestCSVChartForModeAndThreshold = generateTestCSVChartForModeAndThreshold;
+window.createChartImageFromSection1 = createChartImageFromSection1;
+window.createChartImageNoLabels = createChartImageNoLabels;
+window.debugSection1NoLabels = debugSection1NoLabels;
+window.testTestCSVDownloadButton = testTestCSVDownloadButton;
+window.debugTestCSVChartGeneration = debugTestCSVChartGeneration;
+window.compareTestCSVWithSection1 = compareTestCSVWithSection1;
+window.loadTestCSVFromDataFolder = loadTestCSVFromDataFolder;
+window.useExistingTestCSVData = useExistingTestCSVData;

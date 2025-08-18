@@ -10,7 +10,7 @@ const SHM_CONFIG = {
     maxSupported: 1000    // Maximum features supported
   },
   damageIndices: {
-    maxCount: 4,          // Maximum DI columns supported (updated from 10)
+    maxCount: 20,         // Maximum DI columns supported (increased to support more elements)
     minCount: 1,          // Minimum DI columns required
     autoDetect: true,     // Auto-detect from damaged elements list
     warnOnTruncate: true, // Warn user when truncating data
@@ -537,7 +537,7 @@ function updateChart(data) {
       },
       plugins: {
         legend: {
-          display: false // 
+          display: false //
         }
       }
     },
@@ -550,6 +550,31 @@ function updateChart(data) {
           ctx.strokeStyle = 'black';     // Viền đen
           ctx.lineWidth = 2;
           ctx.strokeRect(left, top, right - left, bottom - top);
+          ctx.restore();
+        }
+      },
+      {
+        id: 'percentageLabels',
+        afterDatasetsDraw: (chart) => {
+          const { ctx, data, scales: { x, y } } = chart;
+
+          ctx.save();
+          ctx.font = '14px Times New Roman';
+          ctx.fillStyle = 'black';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+
+          // Hiển thị phần trăm chỉ cho các phần tử có AI prediction >2%
+          data.datasets[0].data.forEach((value, index) => {
+            if (value > 2.0) { // Chỉ hiển thị cho prediction >2%
+              const xPos = x.getPixelForValue(index);
+              const yPos = y.getPixelForValue(value);
+
+              // Hiển thị text với offset phía trên bar
+              ctx.fillText(`${value.toFixed(1)}%`, xPos, yPos - 5);
+            }
+          });
+
           ctx.restore();
         }
       }
@@ -5357,6 +5382,8 @@ function testSection3VisualizationFix() {
     return { error: error.message };
   }
 }
+
+
 
 // ✅ EXPLICIT GLOBAL EXPORTS: Ensure TestShm.js functions are available globally
 function exportTestShmFunctions() {

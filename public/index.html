@@ -207,6 +207,7 @@
             </div>
             <button onclick="processStrainEnergyData()">Tính toán năng lượng biến dạng</button>
             <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
+            <button onclick="downloadMultiMode3DChartsTestCSV()" id="download-charts-test-csv-btn" style="background-color: #17a2b8; color: white; margin-top: 10px;">Download Multi-3D (TEST.csv Based)</button>
             <button onclick="exportCompleteExcelReport()" style="background-color: #198754; color: white; margin-top: 10px;">📊 Xuất Báo Cáo Excel Hoàn Chỉnh</button>
 
 
@@ -337,7 +338,7 @@
             <div class="chart-container">
               <canvas id="predictionChart"></canvas>
             </div>
-            <div id="prediction3DChart" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+            <div id="prediction3DChart" style="width: 100%; height: 600px; margin-top: 20px; overflow: hidden; border: 1px solid #ddd; border-radius: 8px;"></div>
             <div id="lowValuesList" hidden>
               <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
               <ul id="lowValues"></ul>
@@ -376,11 +377,22 @@
               <canvas id="predictionChartSection3"></canvas>
             </div>
 
-            <div id="prediction3DChartSection3" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+            <div id="prediction3DChartSection3" style="width: 100%; height: 600px; margin-top: 20px; overflow: hidden; border: 1px solid #ddd; border-radius: 8px;"></div>
 
             <div id="lowValuesListSection3" hidden>
               <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
               <ul id="lowValuesSection3"></ul>
+            </div>
+
+            <button onclick="downloadMultiMode3DChartsSection3()" id="download-charts-btn-section3" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
+
+            <div id="download-progress-section3" style="margin-top: 10px; display: none;">
+              <div style="background-color: #f0f0f0; border-radius: 5px; padding: 10px;">
+                <div id="progress-text-section3">Preparing download...</div>
+                <div style="background-color: #e9ecef; border-radius: 3px; height: 20px; margin-top: 5px;">
+                  <div id="progress-bar-section3" style="background-color: #28a745; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
+                </div>
+              </div>
             </div>
 
             <button
@@ -414,7 +426,33 @@
       </div>
     </div>
     <script src="js/switch.js"></script>
+    <script src="js/test_switch_functions.js"></script>
     <script src="js/calculations.js"></script>
+
+    <!-- ✅ EMERGENCY FIX: Ensure switchToPartB1 function exists -->
+    <script>
+      // Emergency fallback for switchToPartB1
+      if (typeof switchToPartB1 === 'undefined') {
+        console.log('🔧 EMERGENCY FIX: Creating switchToPartB1 function');
+
+        function switchToPartB1() {
+          console.log('🔧 Emergency switchToPartB1 called');
+          var partB1 = document.getElementById("partB1");
+          if (partB1) {
+            partB1.style.display = partB1.style.display === "block" ? "none" : "block";
+            console.log('✅ partB1 toggled successfully');
+          } else {
+            console.error('❌ partB1 element not found');
+          }
+        }
+
+        // Make it globally available
+        window.switchToPartB1 = switchToPartB1;
+        console.log('✅ Emergency switchToPartB1 function created');
+      } else {
+        console.log('✅ switchToPartB1 function already exists');
+      }
+    </script>
     <script src="js/fileHandling.js"></script>
     <script src="js/chartProcessing.js"></script>
     <script src="js/trainPredict.js"></script>
@@ -444,6 +482,9 @@
     <script src="js/analyze_section2_data_requirements.js"></script>
     <script src="js/show_test_csv_format.js"></script>
     <script src="js/simulation_parser.js"></script>
+    <script src="js/test_simulation_mapping.js"></script>
+    <script src="js/debug_uz_values.js"></script>
+    <script src="js/test_element_40_di3.js"></script>
     <script src="js/test_dynamic_csv_format.js"></script>
     <script src="js/debug_section2_button.js"></script>
     <script src="js/verify_section2_fixes.js"></script>
