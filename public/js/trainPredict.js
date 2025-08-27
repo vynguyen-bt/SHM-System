@@ -162,7 +162,7 @@ function exportToCSV(data, headers, filename) {
 
 // ✅ UPDATED: Process Damage.txt file instead of TEST.txt for Section 2
 function processFileTest() {
-  console.log('📄 === PROCESSING DAMAGE.TXT FOR SECTION 2 ===');
+  // console.log('📄 === PROCESSING DAMAGE.TXT FOR SECTION 2 ===');
 
   // Use Damage.txt file instead of TEST.txt
   const fileInput = document.getElementById("txt-file-damaged");
@@ -177,7 +177,7 @@ function processFileTest() {
     return;
   }
 
-  console.log(`🔧 Processing Damage.txt for mode ${mode}`);
+  // console.log(`🔧 Processing Damage.txt for mode ${mode}`);
 
   const file = fileInput.files[0];
   const reader = new FileReader();
@@ -195,7 +195,7 @@ function processFileTest() {
         return;
       }
 
-      console.log(`✅ Found ${nodeOrder.length} nodes for mode ${mode}`);
+      // console.log(`✅ Found ${nodeOrder.length} nodes for mode ${mode}`);
 
       // Get damaged elements from Section 1 for DI values
       const damagedElements = getDamagedElementsList();
@@ -215,8 +215,8 @@ function processFileTest() {
             const simulationData = parseSimulationFile(simulationContent);
             numDamageIndices = Object.keys(simulationData).length;
 
-            console.log(`📊 Using ${numDamageIndices} damage indices from Simulation.txt`);
-            console.log(`📊 Elements in Simulation.txt: [${Object.keys(simulationData).join(', ')}]`);
+            // console.log(`📊 Using ${numDamageIndices} damage indices from Simulation.txt`);
+            // console.log(`📊 Elements in Simulation.txt: [${Object.keys(simulationData).join(', ')}]`);
 
             // Continue with CSV generation using actual simulation data
             continueCSVGeneration(nodeData, Object.keys(simulationData).map(id => parseInt(id)), numDamageIndices, parseInt(mode), simulationData);
@@ -229,11 +229,11 @@ function processFileTest() {
         return; // Exit here, continue in callback
       } else {
         // Fallback: Create default simulation data for single element
-        console.log(`⚠️ No simulation.txt file found, using default single element (2134) with DI=0.05`);
+        // console.log(`⚠️ No simulation.txt file found, using default single element (2134) with DI=0.05`);
         const defaultSimulationData = { 2134: 0.05 };
         numDamageIndices = 1;
 
-        console.log(`📊 Using ${numDamageIndices} damage index from default simulation data`);
+        // console.log(`📊 Using ${numDamageIndices} damage index from default simulation data`);
 
         // Continue with default simulation data
         continueCSVGeneration(nodeData, [2134], numDamageIndices, parseInt(mode), defaultSimulationData);
@@ -243,8 +243,8 @@ function processFileTest() {
       // Use enhanced CSV generation instead of simple concatenation
       const csvContent = generateTestCsvFromDamageData(nodeData, elementsForDI, numDamageIndices, mode, simulationData);
 
-      console.log(`✅ Generated enhanced TEST.csv using real Damage.txt data`);
-      console.log(`📊 Data source: Mode ${mode} from Damage.txt + Section 1 damage calculations`);
+      // console.log(`✅ Generated enhanced TEST.csv using real Damage.txt data`);
+      // console.log(`📊 Data source: Mode ${mode} from Damage.txt + Section 1 damage calculations`);
 
       // Download CSV file - DISABLED (TEST.csv created in switchToPartB instead)
       // const blob = new Blob([csvContent], { type: "text/csv" });
@@ -261,7 +261,7 @@ function processFileTest() {
       const csvDiCount = columns.filter(col => col.startsWith('DI')).length;
 
       // Removed alert notification for TEST.csv creation
-      console.log('✅ TEST.csv file downloaded successfully');
+      // console.log('✅ TEST.csv file downloaded successfully');
     }
 
     } catch (error) {
@@ -277,13 +277,13 @@ async function trainAndPredict() {
   try {
     // ✅ FIXED: Get all survey elements from Section 1 inputs
     const surveyElements = getSurveyElementsFromInputs();
-    console.log(`🎯 Survey elements for real ANN predictions: [${surveyElements.join(', ')}]`);
+    // console.log(`🎯 Survey elements for real ANN predictions: [${surveyElements.join(', ')}]`);
 
     // Use first survey element as primary target (for backward compatibility)
     let targetElementId = surveyElements[0] || 2134; // Default
 
-    console.log(`🎯 Running ANN prediction for primary element ${targetElementId}`);
-    console.log(`🤖 Using TRAIN.csv and TEST.csv for neural network computation`);
+    // console.log(`🎯 Running ANN prediction for primary element ${targetElementId}`);
+    // console.log(`🤖 Using TRAIN.csv and TEST.csv for neural network computation`);
 
     // Hiển thị progress
     updateProgressBar(10);
@@ -299,7 +299,7 @@ async function trainAndPredict() {
       return;
     }
 
-    console.log(`✅ Found ${allDamagedElements.length} damaged elements from Section 1: [${allDamagedElements.join(', ')}]`);
+    // console.log(`✅ Found ${allDamagedElements.length} damaged elements from Section 1: [${allDamagedElements.join(', ')}]`);
 
     // Chạy ANN thực tế với TRAIN.csv và TEST.csv
     setTimeout(async () => {
@@ -309,12 +309,12 @@ async function trainAndPredict() {
         updateProgressBar(80);
 
         // Hiển thị kết quả từ ANN lên bảng và biểu đồ Section 2
-        console.log('📊 Displaying ANN results for all damaged elements in Section 2...');
-        console.log(`📋 All damaged elements from Section 1: [${allDamagedElements.join(', ')}]`);
-        console.log(`🎯 Target element for ANN prediction: ${targetElementId}`);
+        // console.log('📊 Displaying ANN results for all damaged elements in Section 2...');
+        // console.log(`📋 All damaged elements from Section 1: [${allDamagedElements.join(', ')}]`);
+        // console.log(`🎯 Target element for ANN prediction: ${targetElementId}`);
 
         // ✅ FIXED: Use survey elements from inputs for real ANN predictions
-        console.log(`🎯 Survey elements for real ANN: [${surveyElements.join(', ')}]`);
+        // console.log(`🎯 Survey elements for real ANN: [${surveyElements.join(', ')}]`);
 
         // Tạo kết quả cho tất cả phần tử
         const allPredictions = [];
@@ -328,11 +328,11 @@ async function trainAndPredict() {
             if (elementId === targetElementId) {
               // Primary survey element → use main ANN result
               annPrediction = annResult.predictionPercentage;
-              console.log(`🤖 Element ${elementId}: Primary ANN prediction = ${annPrediction.toFixed(2)}%`);
+              // console.log(`🤖 Element ${elementId}: Primary ANN prediction = ${annPrediction.toFixed(2)}%`);
             } else {
               // Other survey elements → generate realistic ANN prediction
               annPrediction = generateRealisticANNPrediction(elementId);
-              console.log(`🤖 Element ${elementId}: Survey ANN prediction = ${annPrediction.toFixed(2)}% (realistic)`);
+              // console.log(`🤖 Element ${elementId}: Survey ANN prediction = ${annPrediction.toFixed(2)}% (realistic)`);
             }
 
             allPredictions.push(annPrediction);
@@ -340,7 +340,7 @@ async function trainAndPredict() {
             // Other elements → random 0-2%
             const randomPrediction = Math.random() * 2; // 0-2%
             allPredictions.push(randomPrediction);
-            console.log(`🎲 Element ${elementId}: Random prediction = ${randomPrediction.toFixed(2)}%`);
+            // console.log(`🎲 Element ${elementId}: Random prediction = ${randomPrediction.toFixed(2)}%`);
           }
         }
 
@@ -357,13 +357,13 @@ async function trainAndPredict() {
         // ✅ FIX: Draw 3D chart for Section 2 (use allDamagedElements instead of undefined damagedElements)
         drawSection2_3DChart(allPredictions, allDamagedElements);
 
-        console.log('✅ ANN results displayed for all damaged elements in Section 2');
+        // console.log('✅ ANN results displayed for all damaged elements in Section 2');
 
         updateProgressBar(100);
         setTimeout(resetProgressBar, 1000);
 
-        console.log(`✅ ANN Prediction completed for element ${targetElementId}`);
-        console.log(`📊 ANN DI1 result: ${annResult.prediction || 'N/A'}`);
+        // console.log(`✅ ANN Prediction completed for element ${targetElementId}`);
+        // console.log(`📊 ANN DI1 result: ${annResult.prediction || 'N/A'}`);
 
         // Hiển thị kết quả chi tiết
         setTimeout(() => {
@@ -402,16 +402,16 @@ function getDamagedElementsList() {
       // Sử dụng thứ tự từ window.strainEnergyResults.damagedElements nếu có
       if (window.strainEnergyResults.damagedElements && window.strainEnergyResults.damagedElements.length > 0) {
         const orderedElements = window.strainEnergyResults.damagedElements;
-        console.log(`Using exact order from section 1: [${orderedElements.join(', ')}]`);
-        console.log(`Damage values: [${orderedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
+        // console.log(`Using exact order from section 1: [${orderedElements.join(', ')}]`);
+        // console.log(`Damage values: [${orderedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
 
         return orderedElements;
       } else {
         // Fallback: sắp xếp theo damage index giảm dần
         damagedElements.sort((a, b) => (z[b] || 0) - (z[a] || 0));
 
-        console.log(`Using damaged elements from section 1 (sorted): [${damagedElements.join(', ')}]`);
-        console.log(`Damage values: [${damagedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
+        // console.log(`Using damaged elements from section 1 (sorted): [${damagedElements.join(', ')}]`);
+        // console.log(`Damage values: [${damagedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
 
         return damagedElements;
       }
@@ -421,27 +421,27 @@ function getDamagedElementsList() {
   // Thử lấy từ global results khác nếu có
   if (window.globalResults && window.globalResults.damagedElements) {
     const elements = window.globalResults.damagedElements;
-    console.log(`Using damaged elements from global results: [${elements.join(', ')}]`);
+    // console.log(`Using damaged elements from global results: [${elements.join(', ')}]`);
     return elements;
   }
 
   // Fallback: sử dụng mặc định
-  console.log('No data from section 1, using default: [284, 285, 286]');
+  // console.log('No data from section 1, using default: [284, 285, 286]');
   return [284, 285, 286];
 }
 
 async function autoUploadAndPredict() {
-  console.log('🚀 Starting prediction with mock data (CSV generation handled by trainAndPredict)...');
+  // console.log('🚀 Starting prediction with mock data (CSV generation handled by trainAndPredict)...');
   updateProgressBar(20);
 
   try {
     // Skip CSV generation - handled by trainAndPredict() function
-    console.log('📄 Skipping CSV generation - using mock prediction data');
+    // console.log('📄 Skipping CSV generation - using mock prediction data');
 
     updateProgressBar(40);
 
     // Use mock predictions directly (no backend upload needed)
-    console.log('🤖 Using mock predictions for Section 2...');
+    // console.log('🤖 Using mock predictions for Section 2...');
 
     setTimeout(() => {
       const damagedElements = [2134]; // From simulation.txt
@@ -460,10 +460,10 @@ async function autoUploadAndPredict() {
       setTimeout(resetProgressBar, 1000);
     }, 1000);
   } catch (error) {
-    console.error('❌ Error in autoUploadAndPredict:', error);
+    // console.error('❌ Error in autoUploadAndPredict:', error);
 
     // Fallback to mock predictions on any error
-    console.log('🔄 Falling back to mock predictions due to error');
+    // console.log('🔄 Falling back to mock predictions due to error');
     setTimeout(() => {
       const damagedElements = [2134]; // From simulation.txt
       const numElements = 1;
@@ -491,13 +491,13 @@ function createTrainCsvContent() {
 
     const elementsUsed = damagedElements.slice(0, numDamageIndices);
 
-    console.log(`🔧 Creating training CSV with ${numDamageIndices} damage indices for elements: [${elementsUsed.join(', ')}]`);
+    // console.log(`🔧 Creating training CSV with ${numDamageIndices} damage indices for elements: [${elementsUsed.join(', ')}]`);
 
     if (window.SHM_CONFIG?.ui?.verboseLogging) {
-      console.log(`📊 Training CSV Configuration:`);
-      console.log(`  - Total damaged elements: ${damagedElements.length}`);
-      console.log(`  - DI columns to create: ${numDamageIndices}`);
-      console.log(`  - Max DI limit: ${window.SHM_CONFIG?.damageIndices?.maxCount || 10}`);
+      // console.log(`📊 Training CSV Configuration:`);
+      // console.log(`  - Total damaged elements: ${damagedElements.length}`);
+      // console.log(`  - DI columns to create: ${numDamageIndices}`);
+      // console.log(`  - Max DI limit: ${window.SHM_CONFIG?.damageIndices?.maxCount || 10}`);
     }
 
   // Tạo header với số damage indices động
@@ -515,7 +515,7 @@ function createTrainCsvContent() {
   }
   content += "\n";
 
-  console.log(`📋 CSV Header: ${featureCount} features + ${numDamageIndices} DI columns = ${1 + featureCount + numDamageIndices} total columns`);
+  // console.log(`📋 CSV Header: ${featureCount} features + ${numDamageIndices} DI columns = ${1 + featureCount + numDamageIndices} total columns`);
 
   // Tạo 50 training cases (updated from 20)
   for (let case_num = 0; case_num < 50; case_num++) {
@@ -550,7 +550,7 @@ function createTrainCsvContent() {
     content += "\n";
   }
 
-    console.log(`Training CSV created with ${257 + numDamageIndices} columns`);
+    // console.log(`Training CSV created with ${257 + numDamageIndices} columns`);
 
     if (window.showUserSuccess) {
       window.showUserSuccess('Training CSV Created', `Successfully created training CSV with ${numDamageIndices} DI columns for ${elementsUsed.length} damaged elements`);
@@ -559,7 +559,7 @@ function createTrainCsvContent() {
     return content;
 
   } catch (error) {
-    console.error('❌ Error creating training CSV:', error);
+    // console.error('❌ Error creating training CSV:', error);
     if (window.showUserError) {
       window.showUserError('Training CSV Creation Failed', error.message);
     }
@@ -569,10 +569,10 @@ function createTrainCsvContent() {
 
 // ✅ UPDATED: Create correct TEST.csv with single DI column
 function createTestCsvContent() {
-  console.log('📄 === CREATING CORRECT TEST CSV (SINGLE DI FORMAT) ===');
+  // console.log('📄 === CREATING CORRECT TEST CSV (SINGLE DI FORMAT) ===');
 
   // Always create correct format: Case,U1-U121,DI1 with DI1=0.05
-  console.log('🔧 Using correct format: 121 features + 1 DI column (DI1=0.05)');
+  // console.log('🔧 Using correct format: 121 features + 1 DI column (DI1=0.05)');
 
   // Create CSV with only DI1=0.05
   let csvContent = "Case";
@@ -604,7 +604,7 @@ function createTestCsvContent() {
 
 // ✅ NEW FUNCTION: Create enhanced test CSV (original enhanced method)
 function createEnhancedTestCsvContent() {
-  console.log('📄 === CREATING ENHANCED TEST CSV FROM DAMAGE.TXT ===');
+  // console.log('📄 === CREATING ENHANCED TEST CSV FROM DAMAGE.TXT ===');
 
   const damagedElements = getDamagedElementsList();
   const numDamageIndices = getEffectiveDICount(damagedElements);
@@ -612,13 +612,13 @@ function createEnhancedTestCsvContent() {
   // Check if Damage.txt file is available
   const fileInputDamaged = document.getElementById("txt-file-damaged");
   if (!fileInputDamaged || !fileInputDamaged.files[0]) {
-    console.warn('⚠️ Damage.txt file not available, using fallback pattern');
+    // console.warn('⚠️ Damage.txt file not available, using fallback pattern');
     return Promise.resolve(createTestCsvContentFallback(damagedElements, numDamageIndices));
   }
 
   // Get mode from Section 1 results
   const modeUsed = window.strainEnergyResults?.modeUsed || 12;
-  console.log(`📊 Using mode ${modeUsed} from Section 1 results`);
+  // console.log(`📊 Using mode ${modeUsed} from Section 1 results`);
 
   // Read Damage.txt file content asynchronously
   const file = fileInputDamaged.files[0];
@@ -628,32 +628,32 @@ function createEnhancedTestCsvContent() {
     reader.onload = function(event) {
       try {
         const damageContent = event.target.result;
-        console.log(`📊 Damage.txt file size: ${damageContent.length} characters`);
+        // console.log(`📊 Damage.txt file size: ${damageContent.length} characters`);
 
         // Parse mode shape data for the specific mode
         const damageData = parseModeShapeFile(damageContent, modeUsed);
         const nodeCount = Object.keys(damageData).length;
 
         if (nodeCount === 0) {
-          console.warn(`⚠️ No data found for mode ${modeUsed} in Damage.txt`);
+          // console.warn(`⚠️ No data found for mode ${modeUsed} in Damage.txt`);
           resolve(createTestCsvContentFallback(damagedElements, numDamageIndices));
           return;
         }
 
-        console.log(`✅ Successfully parsed ${nodeCount} nodes for mode ${modeUsed}`);
+        // console.log(`✅ Successfully parsed ${nodeCount} nodes for mode ${modeUsed}`);
 
         // Generate CSV content with real damage data
         const csvContent = generateTestCsvFromDamageData(damageData, damagedElements, numDamageIndices, modeUsed);
         resolve(csvContent);
 
       } catch (error) {
-        console.error('❌ Error processing Damage.txt:', error);
+        // console.error('❌ Error processing Damage.txt:', error);
         reject(error);
       }
     };
 
     reader.onerror = function(error) {
-      console.error('❌ Error reading Damage.txt file:', error);
+      // console.error('❌ Error reading Damage.txt file:', error);
       reject(new Error('Failed to read Damage.txt file'));
     };
 
@@ -663,9 +663,9 @@ function createEnhancedTestCsvContent() {
 
 // ✅ NEW FUNCTION: Generate TEST CSV from parsed Damage.txt data with proper scaling
 function generateTestCsvFromDamageData(damageData, damagedElements, numDamageIndices, modeUsed, simulationData = null) {
-  console.log('🔄 === GENERATING TEST CSV FROM DAMAGE DATA ===');
-  console.log(`📊 Input: ${Object.keys(damageData).length} nodes, ${numDamageIndices} DI columns, mode ${modeUsed}`);
-  console.log(`📊 Simulation data: ${simulationData ? Object.keys(simulationData).length + ' elements' : 'not available'}`);
+  // console.log('🔄 === GENERATING TEST CSV FROM DAMAGE DATA ===');
+  // console.log(`📊 Input: ${Object.keys(damageData).length} nodes, ${numDamageIndices} DI columns, mode ${modeUsed}`);
+  // console.log(`📊 Simulation data: ${simulationData ? Object.keys(simulationData).length + ' elements' : 'not available'}`);
 
   // Get dynamic feature count based on actual node data
   const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
@@ -675,8 +675,8 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
   // Use dynamic count if available, otherwise fall back to configured count
   const featureCount = dynamicFeatureCount > 0 ? dynamicFeatureCount : configuredFeatureCount;
 
-  console.log(`📊 Dynamic feature count: ${dynamicFeatureCount} nodes`);
-  console.log(`📊 Using feature count: ${featureCount}`);
+  // console.log(`📊 Dynamic feature count: ${dynamicFeatureCount} nodes`);
+  // console.log(`📊 Using feature count: ${featureCount}`);
 
   // Create CSV header: Case,U1,U2,...,U256,DI1,DI2,DI3,DI4
   let csvContent = "Case";
@@ -696,28 +696,28 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
   csvContent += "0"; // Case number
 
   // ✅ CRITICAL FIX: Verify expected nodes are present
-  console.log(`📊 Node ID range: ${nodeIDs[0]} - ${nodeIDs[nodeIDs.length - 1]} (${nodeIDs.length} nodes)`);
-  console.log(`📊 Node ordering verification: ${nodeIDs.slice(0, 10).join(', ')}... (first 10)`);
+  // console.log(`📊 Node ID range: ${nodeIDs[0]} - ${nodeIDs[nodeIDs.length - 1]} (${nodeIDs.length} nodes)`);
+  // console.log(`📊 Node ordering verification: ${nodeIDs.slice(0, 10).join(', ')}... (first 10)`);
 
   // Verify expected nodes from user's example
   const expectedNodes = [1, 2, 3, 4, 18];
-  console.log('\n📊 Verifying expected nodes:');
-  expectedNodes.forEach(nodeID => {
-    const value = damageData[nodeID];
-    if (value !== undefined) {
-      console.log(`   ✅ Node ${nodeID}: ${value.toExponential(6)}`);
-    } else {
-      console.log(`   ❌ Node ${nodeID}: Missing!`);
-    }
-  });
+  // console.log('\n📊 Verifying expected nodes:');
+  // expectedNodes.forEach(nodeID => {
+  //   const value = damageData[nodeID];
+  //   if (value !== undefined) {
+  //     console.log(`   ✅ Node ${nodeID}: ${value.toExponential(6)}`);
+  //   } else {
+  //     console.log(`   ❌ Node ${nodeID}: Missing!`);
+  //   }
+  // });
 
   // ✅ USE RAW VALUES DIRECTLY (NO SCALING)
-  console.log(`\n📊 Using raw EigenVector_UZ values directly from Damage.txt:`);
-  console.log(`   Mode: ${modeUsed}`);
-  console.log(`   No scaling applied - preserving exact values`);
+  // console.log(`\n📊 Using raw EigenVector_UZ values directly from Damage.txt:`);
+  // console.log(`   Mode: ${modeUsed}`);
+  // console.log(`   No scaling applied - preserving exact values`);
 
   // ✅ GENERATE FEATURES WITH RAW VALUES (NO SCALING)
-  console.log('\n📊 Feature generation with raw values (first 10):');
+  // console.log('\n📊 Feature generation with raw values (first 10):');
   for (let i = 0; i < featureCount; i++) {
     let featureValue = 0; // Default zero value
 
@@ -731,16 +731,16 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
 
         // Log first 10 for verification
         if (i < 10) {
-          console.log(`   U${i + 1} (Node ${nodeID}): ${rawValue} (raw)`);
+          // console.log(`   U${i + 1} (Node ${nodeID}): ${rawValue} (raw)`);
         }
       } else {
-        console.log(`   U${i + 1} (Node ${nodeID}): undefined → ${featureValue}`);
+        // console.log(`   U${i + 1} (Node ${nodeID}): undefined → ${featureValue}`);
       }
     } else {
       // For features beyond available nodes (shouldn't happen with dynamic count)
       featureValue = 0;
       if (i < 10) {
-        console.log(`   U${i + 1} (No node): padding → ${featureValue}`);
+        // console.log(`   U${i + 1} (No node): padding → ${featureValue}`);
       }
     }
 
@@ -749,7 +749,7 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
 
   // Generate damage indices - use Simulation.txt elements directly
   const simulationElements = simulationData ? Object.keys(simulationData).map(id => parseInt(id)) : [];
-  console.log(`📊 Generating DI values for ${numDamageIndices} elements from Simulation.txt: [${simulationElements.join(', ')}]`);
+  // console.log(`📊 Generating DI values for ${numDamageIndices} elements from Simulation.txt: [${simulationElements.join(', ')}]`);
 
   for (let i = 0; i < numDamageIndices; i++) {
     let damageValue = 0;
@@ -758,7 +758,7 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
     const elementID = simulationElements[i];
 
     if (!elementID) {
-      console.log(`⚠️ DI${i+1}: No element available at index ${i}, using 0`);
+      // console.log(`⚠️ DI${i+1}: No element available at index ${i}, using 0`);
       csvContent += ",0.0000";
       continue;
     }
@@ -766,14 +766,14 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
     // Priority 1: Use simulation.txt data if available
     if (simulationData && simulationData[elementID] !== undefined) {
       damageValue = simulationData[elementID];
-      console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue} (from Simulation.txt)`);
+      // console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue} (from Simulation.txt)`);
 
       // Apply mapping for display purposes
       let displayElementID = elementID;
       if (elementID === 2134) displayElementID = 55;
       else if (elementID === 2174) displayElementID = 95;
 
-      console.log(`📍 Mapping: Simulation ID ${elementID} → Display Element ${displayElementID}`);
+      // console.log(`📍 Mapping: Simulation ID ${elementID} → Display Element ${displayElementID}`);
     }
     // Priority 2: Fallback to Section 1 strain energy results
     else {
@@ -790,9 +790,9 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
           damageValue = (actualDamage / Z0) * 0.1;
           damageValue = Math.min(Math.max(damageValue, 0), 0.1);
         }
-        console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (from Section 1: ${actualDamage.toFixed(3)})`);
+        // console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (from Section 1: ${actualDamage.toFixed(3)})`);
       } else {
-        console.log(`⚠️ DI${i+1} (Element ${elementID}): No data available, using 0`);
+        // console.log(`⚠️ DI${i+1} (Element ${elementID}): No data available, using 0`);
       }
     }
 
@@ -800,25 +800,25 @@ function generateTestCsvFromDamageData(damageData, damagedElements, numDamageInd
   }
   csvContent += "\n";
 
-  console.log(`✅ Generated TEST CSV with ${1 + featureCount + numDamageIndices} columns`);
-  console.log(`📊 Structure: 1 Case + ${featureCount} Features + ${numDamageIndices} Damage Indices`);
-  console.log(`📊 Data source: Mode ${modeUsed} from Damage.txt + Section 1 damage calculations`);
+  // console.log(`✅ Generated TEST CSV with ${1 + featureCount + numDamageIndices} columns`);
+  // console.log(`📊 Structure: 1 Case + ${featureCount} Features + ${numDamageIndices} Damage Indices`);
+  // console.log(`📊 Data source: Mode ${modeUsed} from Damage.txt + Section 1 damage calculations`);
 
   return csvContent;
 }
 
 // ✅ LEGACY FUNCTION: Convert Damage.txt mode shape data to CSV format (kept for compatibility)
 function convertDamageFileToTestCsv(damageContent, damagedElements, numDamageIndices) {
-  console.log('🔄 Converting Damage.txt to test CSV format (legacy method)...');
+  // console.log('🔄 Converting Damage.txt to test CSV format (legacy method)...');
 
   // Get mode used from Section 1 results
   const modeUsed = window.strainEnergyResults?.modeUsed || 12;
-  console.log(`📊 Using mode ${modeUsed} from Section 1 results`);
+  // console.log(`📊 Using mode ${modeUsed} from Section 1 results`);
 
   // Parse damage file for the specific mode
   const damageData = parseModeShapeFile(damageContent, modeUsed);
   const nodeCount = Object.keys(damageData).length;
-  console.log(`📊 Parsed ${nodeCount} nodes from Damage.txt for mode ${modeUsed}`);
+  // console.log(`📊 Parsed ${nodeCount} nodes from Damage.txt for mode ${modeUsed}`);
 
   if (nodeCount === 0) {
     throw new Error(`No data found for mode ${modeUsed} in Damage.txt`);
@@ -830,8 +830,8 @@ function convertDamageFileToTestCsv(damageContent, damagedElements, numDamageInd
 
 // ✅ ENHANCED FALLBACK FUNCTION: Create test CSV with real damage data when Damage.txt not available
 function createTestCsvContentFallback(damagedElements, numDamageIndices) {
-  console.log('🔄 === CREATING ENHANCED FALLBACK TEST CSV ===');
-  console.log('📊 Using Section 1 damage data with synthetic features');
+  // console.log('🔄 === CREATING ENHANCED FALLBACK TEST CSV ===');
+  // console.log('📊 Using Section 1 damage data with synthetic features');
 
   // Header: Case,U1,U2,...,U256,DI1,DI2,DI3,DI4
   let content = "Case";
@@ -856,7 +856,7 @@ function createTestCsvContentFallback(damagedElements, numDamageIndices) {
   const Z0 = window.strainEnergyResults?.Z0 || 1.0;
   const maxZ = window.strainEnergyResults?.maxZ || 10.0;
 
-  console.log(`📊 Damage info: Z0=${Z0}, maxZ=${maxZ}, damaged elements=${damagedElements.length}`);
+  // console.log(`📊 Damage info: Z0=${Z0}, maxZ=${maxZ}, damaged elements=${damagedElements.length}`);
 
   // Generate synthetic features that correlate with damage pattern
   for (let i = 1; i <= featureCount; i++) {
@@ -903,23 +903,23 @@ function createTestCsvContentFallback(damagedElements, numDamageIndices) {
           damageValue = Math.min(Math.max(damageValue, 0), 0.1);
         }
 
-        console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (from actual: ${actualDamage.toFixed(3)}, enhanced fallback)`);
+        // console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (from actual: ${actualDamage.toFixed(3)}, enhanced fallback)`);
       } else {
         // Use intelligent fallback based on element position
         const fallbackPattern = [0.05, 0.15, 0.25, 0.1]; // Varied pattern
         damageValue = fallbackPattern[i % fallbackPattern.length] || 0;
-        console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (intelligent fallback pattern)`);
+        // console.log(`🎯 DI${i+1} (Element ${elementID}): ${damageValue.toFixed(4)} (intelligent fallback pattern)`);
       }
     } else {
-      console.log(`📉 DI${i+1}: No corresponding element (index ${i} >= ${damagedElements.length})`);
+      // console.log(`📉 DI${i+1}: No corresponding element (index ${i} >= ${damagedElements.length})`);
     }
 
     content += "," + damageValue.toFixed(4);
   }
   content += "\n";
 
-  console.log(`✅ Enhanced fallback test CSV created with ${1 + featureCount + numDamageIndices} columns`);
-  console.log(`📊 Features: Synthetic with damage correlation, DI: Real Section 1 data`);
+  // console.log(`✅ Enhanced fallback test CSV created with ${1 + featureCount + numDamageIndices} columns`);
+  // console.log(`📊 Features: Synthetic with damage correlation, DI: Real Section 1 data`);
 
   return content;
 }
@@ -1047,7 +1047,7 @@ function exportTrainPredictFunctions() {
     });
 
 
-    console.log('✅ trainPredict.js functions exported to global scope');
+    // console.log('✅ trainPredict.js functions exported to global scope');
   }
 }
 
@@ -1772,7 +1772,7 @@ async function getSimulationDIValue(elementId) {
   console.log(`🔄 Applying pattern-based thickness assignment...`);
 
   // ✅ FIX: Change error to log to prevent console spam
-  console.error(`� Please ensure:`);
+
 
 
   // ✅ FIX: Intelligent fallback based on element ID patterns
@@ -2383,6 +2383,9 @@ function drawSection2_3DChart(predictions, damagedElements) {
 
     const elementsWithDamage = Object.values(z).filter(val => val > 0).length;
     console.log(`📈 Elements with damage > 0: ${elementsWithDamage} (from damaged list)`);
+
+
+
     console.log(`📈 Elements with damage = 0: ${elements.length - elementsWithDamage}`);
 
     // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION (same as Section 1)
@@ -2411,6 +2414,17 @@ function drawSection2_3DChart(predictions, damagedElements) {
     const elementSize = window.calculateRealElementSize ?
       window.calculateRealElementSize(elements) :
       { width: 0.8, depth: 0.8 };
+
+    // ✅ SYNCHRONIZED: Calculate extended ranges for edge element visibility (same as Section 1)
+    const { transformedXMax, transformedYMax } = transformation;
+    const extendedXMax = transformedXMax + elementSize.width/2;
+    const extendedYMax = transformedYMax + elementSize.depth/2;
+    const extendedXMin = -elementSize.width/2;
+    const extendedYMin = -elementSize.depth/2;
+
+    console.log(`📐 SECTION 2 SYNCHRONIZED RANGES:`);
+    console.log(`   Extended X: [${extendedXMin.toFixed(3)}, ${extendedXMax.toFixed(3)}] (includes margins)`);
+    console.log(`   Extended Y: [${extendedYMin.toFixed(3)}, ${extendedYMax.toFixed(3)}] (includes margins)`);
 
     // ✅ MATCH SECTION 1 COLORSCALE EXACTLY
     const optimizedColorscale = [
@@ -2542,9 +2556,7 @@ function drawSection2_3DChart(predictions, damagedElements) {
                      '<extra></extra>'
     };
 
-    // ✅ MATCH SECTION 1 LAYOUT EXACTLY
-    const xAxisMax = Math.max(...x1);
-    const yAxisMax = Math.max(...y1);
+    // ✅ SYNCHRONIZED: Use extended ranges instead of dynamic ranges (same as Section 1)
 
     const layout = {
       scene: {
@@ -2563,7 +2575,7 @@ function drawSection2_3DChart(predictions, damagedElements) {
           showspikes: false,
           tickmode: 'auto',
           nticks: 8,
-          range: [-elementSize.width/2, xAxisMax + elementSize.width/2]
+          range: [extendedXMin, extendedXMax]  // ✅ SYNCHRONIZED: Extended range for edge elements
         },
         yaxis: {
           title: {
@@ -2580,7 +2592,7 @@ function drawSection2_3DChart(predictions, damagedElements) {
           showspikes: false,
           tickmode: 'auto',
           nticks: 8,
-          range: [-elementSize.depth/2, yAxisMax + elementSize.depth/2]
+          range: [extendedYMin, extendedYMax]  // ✅ SYNCHRONIZED: Extended range for edge elements
         },
         zaxis: {
           title: {
@@ -2596,12 +2608,14 @@ function drawSection2_3DChart(predictions, damagedElements) {
           backgroundcolor: 'rgba(245,245,245,0.9)',
           showspikes: false,
           tickmode: 'auto',
-          nticks: 6
+          nticks: 6,
+          autorange: false, // ✅ DISABLE AUTOSCALING
+          range: [0, 25]  // ✅ SYNCHRONIZED: 0-25% damage index (750px height)
         },
         camera: {
           projection: { type: 'orthographic' },
-          eye: { x: 1.6, y: 1.6, z: 1.8 },
-          center: { x: xAxisMax/2, y: yAxisMax/2, z: 0 },
+          eye: { x: 1.5, y: 1.5, z: 1.6 }, // ✅ SYNCHRONIZED: Match Section 1 camera angle
+          center: { x: (extendedXMin + extendedXMax)/2, y: (extendedYMin + extendedYMax)/2, z: 12.5 }, // ✅ SYNCHRONIZED: Dynamic center
           up: { x: 0, y: 0, z: 1 }
         },
         aspectmode: 'data',
@@ -2613,8 +2627,9 @@ function drawSection2_3DChart(predictions, damagedElements) {
         x: 0.5,
         y: 0.95
       },
-      autosize: true,
-      margin: { l: 40, r: 80, t: 80, b: 40 },
+      width: 1200,  // ✅ SYNCHRONIZED: Match Section 1 dimensions
+      height: 1000, // ✅ SYNCHRONIZED: 750px Z-axis + margins
+      margin: { l: 60, r: 120, t: 100, b: 60 }, // ✅ SYNCHRONIZED: Match Section 1 margins
       font: { family: 'Arial, sans-serif', color: '#2c3e50' },
       paper_bgcolor: 'rgba(255,255,255,0.95)',
       plot_bgcolor: 'rgba(248,249,250,0.9)'
@@ -2667,6 +2682,9 @@ function drawSection2_3DChart(predictions, damagedElements) {
     };
 
     // Plot Section 2 3D chart with enhanced performance optimization
+    const chartContainer2 = document.getElementById('prediction3DChart');
+    console.log(`Kích thước biểu đồ 3D - Mục 2: ${chartContainer2.clientWidth}px x ${chartContainer2.clientHeight}px`);
+    console.log(`📊 Chiều cao trục Z - Mục 2: [${layout.scene.zaxis.range[0]}, ${layout.scene.zaxis.range[1]}]`);
     Plotly.newPlot('prediction3DChart', [traceMesh3D, textTrace], layout, config).then(() => {
       console.log('✅ Section 2 3D chart created successfully');
       optimizeCanvasPerformance('prediction3DChart');
@@ -2827,6 +2845,17 @@ function drawSection3_3DChart(predictions, surveyElements) {
       window.calculateRealElementSize(elements) :
       { width: 0.8, depth: 0.8 };
 
+    // ✅ SYNCHRONIZED: Calculate extended ranges for edge element visibility (same as Section 1)
+    const { transformedXMax, transformedYMax } = transformation;
+    const extendedXMax = transformedXMax + elementSize.width/2;
+    const extendedYMax = transformedYMax + elementSize.depth/2;
+    const extendedXMin = -elementSize.width/2;
+    const extendedYMin = -elementSize.depth/2;
+
+    console.log(`📐 SECTION 3 SYNCHRONIZED RANGES:`);
+    console.log(`   Extended X: [${extendedXMin.toFixed(3)}, ${extendedXMax.toFixed(3)}] (includes margins)`);
+    console.log(`   Extended Y: [${extendedYMin.toFixed(3)}, ${extendedYMax.toFixed(3)}] (includes margins)`);
+
     // ✅ MATCH SECTION 1 COLORSCALE EXACTLY
     const optimizedColorscale = [
       [0, 'rgb(0,128,0)'],          // Xanh lá đậm cho giá trị thấp
@@ -2966,9 +2995,7 @@ function drawSection3_3DChart(predictions, surveyElements) {
                      '<extra></extra>'
     };
 
-    // ✅ MATCH SECTION 1 LAYOUT EXACTLY
-    const xAxisMax = Math.max(...x1);
-    const yAxisMax = Math.max(...y1);
+    // ✅ SYNCHRONIZED: Use extended ranges instead of dynamic ranges (same as Section 1)
 
     const layout = {
       scene: {
@@ -2987,7 +3014,7 @@ function drawSection3_3DChart(predictions, surveyElements) {
           showspikes: false,
           tickmode: 'auto',
           nticks: 8,
-          range: [-elementSize.width/2, xAxisMax + elementSize.width/2]
+          range: [extendedXMin, extendedXMax]  // ✅ SYNCHRONIZED: Extended range for edge elements
         },
         yaxis: {
           title: {
@@ -3004,7 +3031,7 @@ function drawSection3_3DChart(predictions, surveyElements) {
           showspikes: false,
           tickmode: 'auto',
           nticks: 8,
-          range: [-elementSize.depth/2, yAxisMax + elementSize.depth/2]
+          range: [extendedYMin, extendedYMax]  // ✅ SYNCHRONIZED: Extended range for edge elements
         },
         zaxis: {
           title: {
@@ -3020,12 +3047,14 @@ function drawSection3_3DChart(predictions, surveyElements) {
           backgroundcolor: 'rgba(245,245,245,0.9)',
           showspikes: false,
           tickmode: 'auto',
-          nticks: 6
+          nticks: 6,
+          autorange: false, // ✅ DISABLE AUTOSCALING
+          range: [0, 25]  // ✅ SYNCHRONIZED: 0-25% damage index (750px height)
         },
         camera: {
           projection: { type: 'orthographic' },
-          eye: { x: 1.6, y: 1.6, z: 1.8 },
-          center: { x: xAxisMax/2, y: yAxisMax/2, z: 0 },
+          eye: { x: 1.5, y: 1.5, z: 1.6 }, // ✅ SYNCHRONIZED: Match Section 1 camera angle
+          center: { x: (extendedXMin + extendedXMax)/2, y: (extendedYMin + extendedYMax)/2, z: 12.5 }, // ✅ SYNCHRONIZED: Dynamic center
           up: { x: 0, y: 0, z: 1 }
         },
         aspectmode: 'data',
@@ -3037,8 +3066,9 @@ function drawSection3_3DChart(predictions, surveyElements) {
         x: 0.5,
         y: 0.95
       },
-      autosize: true,
-      margin: { l: 40, r: 80, t: 80, b: 40 },
+      width: 1200,  // ✅ SYNCHRONIZED: Match Section 1 dimensions
+      height: 1000, // ✅ SYNCHRONIZED: 750px Z-axis + margins
+      margin: { l: 60, r: 120, t: 100, b: 60 }, // ✅ SYNCHRONIZED: Match Section 1 margins
       font: { family: 'Arial, sans-serif', color: '#2c3e50' },
       paper_bgcolor: 'rgba(255,255,255,0.95)',
       plot_bgcolor: 'rgba(248,249,250,0.9)'
@@ -3108,6 +3138,9 @@ function drawSection3_3DChart(predictions, surveyElements) {
       offsetWidth: container.offsetWidth,
       offsetHeight: container.offsetHeight
     });
+    const chartContainer3 = document.getElementById('prediction3DChartSection3');
+    console.log(`📊 Chiều cao trục Z - Mục 3: [${layout.scene.zaxis.range[0]}, ${layout.scene.zaxis.range[1]}]`);
+    console.log(`Kích thước biểu đồ 3D - Mục 3: ${chartContainer3.clientWidth}px x ${chartContainer3.clientHeight}px`);
 
     // Plot Section 3 3D chart with enhanced performance optimization
     console.log('🎯 About to call Plotly.newPlot for Section 3...');

@@ -1,7 +1,7 @@
 // Apply immediate fix script - auto-run on page load
 
 (function() {
-  console.log('🚨 === AUTO-APPLYING IMMEDIATE RAW VALUES FIX ===\n');
+  // console.log('🚨 === AUTO-APPLYING IMMEDIATE RAW VALUES FIX ===\n');
   
   // Wait for page to load completely
   if (document.readyState === 'loading') {
@@ -14,21 +14,21 @@
     // Wait a bit for all scripts to load
     setTimeout(() => {
       if (typeof immediateRawValuesFix === 'function') {
-        console.log('✅ Immediate fix function available');
+        // console.log('✅ Immediate fix function available');
 
         // Silent mode - no interface shown automatically
         // Interface functions still available for manual use
 
         // Provide console commands for manual use
-        console.log('\n📋 MANUAL COMMANDS AVAILABLE:');
-        console.log('🚨 immediateRawValuesFix() - Apply immediate raw values fix');
-        console.log('🧪 testImmediateFix() - Test the fix');
-        console.log('📊 createImmediateFixInterface() - Show fix interface');
+        // console.log('\n📋 MANUAL COMMANDS AVAILABLE:');
+        // console.log('🚨 immediateRawValuesFix() - Apply immediate raw values fix');
+        // console.log('🧪 testImmediateFix() - Test the fix');
+        // console.log('📊 createImmediateFixInterface() - Show fix interface');
 
-        console.log('\n💡 Silent CSV fix is active - raw values will be used automatically');
+        // console.log('\n💡 Silent CSV fix is active - raw values will be used automatically');
 
       } else {
-        console.log('⚠️ Immediate fix function not yet available, retrying...');
+        // console.log('⚠️ Immediate fix function not yet available, retrying...');
         setTimeout(applyFixWhenReady, 1000);
       }
     }, 2000);
@@ -37,37 +37,37 @@
 
 // Auto-fix function that runs immediately
 function autoFixCsvGeneration() {
-  console.log('🔧 === AUTO-FIXING CSV GENERATION ===\n');
+  // console.log('🔧 === AUTO-FIXING CSV GENERATION ===\n');
   
   // Check if we have the necessary functions
   if (typeof parseModeShapeFile !== 'function') {
-    console.log('❌ parseModeShapeFile not available');
+    // console.log('❌ parseModeShapeFile not available');
     return;
   }
   
   if (typeof getDamagedElementsList !== 'function') {
-    console.log('❌ getDamagedElementsList not available');
+    // console.log('❌ getDamagedElementsList not available');
     return;
   }
   
-  console.log('✅ Required functions available - applying auto-fix...');
+  // console.log('✅ Required functions available - applying auto-fix...');
   
   // Override the main CSV generation function
   const originalCreateTestCsvContent = window.createTestCsvContent;
   
   window.createTestCsvContent = function() {
-    console.log('🔧 AUTO-FIX: Using raw values CSV generation');
+    // console.log('🔧 AUTO-FIX: Using raw values CSV generation');
     
     const damagedElements = getDamagedElementsList();
     const modeUsed = window.strainEnergyResults?.modeUsed || 12;
     const numDamageIndices = damagedElements.length;
     
-    console.log(`📊 Auto-fix parameters: mode=${modeUsed}, DI=${numDamageIndices}`);
+    // console.log(`📊 Auto-fix parameters: mode=${modeUsed}, DI=${numDamageIndices}`);
     
     // Check for Damage.txt file
     const fileInputDamaged = document.getElementById("txt-file-damaged");
     if (!fileInputDamaged || !fileInputDamaged.files[0]) {
-      console.log('⚠️ Damage.txt not loaded - using fallback');
+      // console.log('⚠️ Damage.txt not loaded - using fallback');
       return Promise.resolve(createAutoFixFallbackCsv(damagedElements, numDamageIndices, modeUsed));
     }
     
@@ -82,25 +82,25 @@ function autoFixCsvGeneration() {
           const damageData = parseModeShapeFile(content, modeUsed);
           
           if (Object.keys(damageData).length === 0) {
-            console.log('⚠️ No data for mode - using fallback');
+            // console.log('⚠️ No data for mode - using fallback');
             resolve(createAutoFixFallbackCsv(damagedElements, numDamageIndices, modeUsed));
             return;
           }
           
-          console.log(`✅ Parsed ${Object.keys(damageData).length} nodes for mode ${modeUsed}`);
+          // console.log(`✅ Parsed ${Object.keys(damageData).length} nodes for mode ${modeUsed}`);
           
           // Generate CSV with raw values
           const csvContent = createAutoFixRawCsv(damageData, damagedElements, numDamageIndices, modeUsed);
           resolve(csvContent);
           
         } catch (error) {
-          console.error('❌ Auto-fix error:', error);
+          // console.error('❌ Auto-fix error:', error);
           resolve(createAutoFixFallbackCsv(damagedElements, numDamageIndices, modeUsed));
         }
       };
       
       reader.onerror = () => {
-        console.error('❌ File read error');
+        // console.error('❌ File read error');
         resolve(createAutoFixFallbackCsv(damagedElements, numDamageIndices, modeUsed));
       };
       
@@ -108,17 +108,17 @@ function autoFixCsvGeneration() {
     });
   };
   
-  console.log('✅ Auto-fix applied - CSV generation will now use raw values');
+  // console.log('✅ Auto-fix applied - CSV generation will now use raw values');
 }
 
 function createAutoFixRawCsv(damageData, damagedElements, numDamageIndices, modeUsed) {
-  console.log('🔧 Creating auto-fix raw CSV');
+  // console.log('🔧 Creating auto-fix raw CSV');
   
   // Sort nodes for correct mapping
   const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
   const featureCount = nodeIDs.length;
   
-  console.log(`📊 Auto-fix: ${featureCount} features, ${numDamageIndices} DI columns`);
+  // console.log(`📊 Auto-fix: ${featureCount} features, ${numDamageIndices} DI columns`);
   
   // Create header
   let csvContent = "Case";
@@ -134,13 +134,13 @@ function createAutoFixRawCsv(damageData, damagedElements, numDamageIndices, mode
   csvContent += "0"; // Case
   
   // Add raw features
-  console.log('📊 Auto-fix raw values (first 5):');
+  // console.log('📊 Auto-fix raw values (first 5):');
   for (let i = 0; i < featureCount; i++) {
     const nodeID = nodeIDs[i];
     const rawValue = damageData[nodeID] || 0;
     
     if (i < 5) {
-      console.log(`   U${i + 1} (Node ${nodeID}): ${rawValue}`);
+      // console.log(`   U${i + 1} (Node ${nodeID}): ${rawValue}`);
     }
     
     csvContent += "," + rawValue;
@@ -177,7 +177,7 @@ function createAutoFixRawCsv(damageData, damagedElements, numDamageIndices, mode
 }
 
 function createAutoFixFallbackCsv(damagedElements, numDamageIndices, modeUsed) {
-  console.log('🔧 Creating auto-fix fallback CSV');
+  // console.log('🔧 Creating auto-fix fallback CSV');
   
   // Expected raw values for different modes
   const expectedRaw = {

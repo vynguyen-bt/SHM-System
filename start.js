@@ -6,9 +6,12 @@ const PORT = process.env.PORT || 8080;
 const config = require('./config');
 
 let app = express();
-app.use(express.static('src')); 
+app.use(express.static('src'));
 app.use(express.static('src', { 'extensions': ['html', 'js'] }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+
 app.use(express.json({ limit: '50mb' }));
 app.use((err, req, res, next) => {
     console.error(err);

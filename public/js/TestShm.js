@@ -53,11 +53,11 @@ function getEffectiveDICount(damagedElements) {
 // Helper function to log DI configuration
 function logDIConfiguration(context, damagedElements, effectiveDICount) {
   if (SHM_CONFIG.ui.verboseLogging) {
-    console.log(`🔧 ${context} - DI Configuration:`);
-    console.log(`  - Requested elements: ${damagedElements?.length || 0}`);
-    console.log(`  - Effective DI count: ${effectiveDICount}`);
-    console.log(`  - Max allowed: ${SHM_CONFIG.damageIndices.maxCount}`);
-    console.log(`  - Elements used: [${damagedElements?.slice(0, effectiveDICount).join(', ') || 'none'}]`);
+    // console.log(`🔧 ${context} - DI Configuration:`);
+    // console.log(`  - Requested elements: ${damagedElements?.length || 0}`);
+    // console.log(`  - Effective DI count: ${effectiveDICount}`);
+    // console.log(`  - Max allowed: ${SHM_CONFIG.damageIndices.maxCount}`);
+    // console.log(`  - Elements used: [${damagedElements?.slice(0, effectiveDICount).join(', ') || 'none'}]`);
   }
 }
 
@@ -80,8 +80,8 @@ function getDamagedElementsList() {
       // Sử dụng thứ tự từ window.strainEnergyResults.damagedElements nếu có
       if (window.strainEnergyResults.damagedElements && window.strainEnergyResults.damagedElements.length > 0) {
         const orderedElements = window.strainEnergyResults.damagedElements;
-        console.log(`Using exact order from section 1: [${orderedElements.join(', ')}]`);
-        console.log(`Damage values: [${orderedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
+        // console.log(`Using exact order from section 1: [${orderedElements.join(', ')}]`);
+        // console.log(`Damage values: [${orderedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
 
         // Cập nhật hiển thị UI
         updateDamagedElementsDisplay(orderedElements, z);
@@ -91,8 +91,8 @@ function getDamagedElementsList() {
         // Fallback: sắp xếp theo damage index giảm dần
         damagedElements.sort((a, b) => (z[b] || 0) - (z[a] || 0));
 
-        console.log(`Using damaged elements from section 1 (sorted): [${damagedElements.join(', ')}]`);
-        console.log(`Damage values: [${damagedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
+        // console.log(`Using damaged elements from section 1 (sorted): [${damagedElements.join(', ')}]`);
+        // console.log(`Damage values: [${damagedElements.map(id => (z[id] || 0).toFixed(2)).join(', ')}]`);
 
         // Cập nhật hiển thị UI
         updateDamagedElementsDisplay(damagedElements, z);
@@ -105,23 +105,23 @@ function getDamagedElementsList() {
   // Thử lấy từ global results khác nếu có
   if (window.globalResults && window.globalResults.damagedElements) {
     const elements = window.globalResults.damagedElements;
-    console.log(`Using damaged elements from global results: [${elements.join(', ')}]`);
+    // console.log(`Using damaged elements from global results: [${elements.join(', ')}]`);
     updateDamagedElementsDisplay(elements);
     return elements;
   }
 
   // Fallback: sử dụng mặc định
-  console.log('No data from section 1, using default: [284, 285, 286]');
+  // console.log('No data from section 1, using default: [284, 285, 286]');
   updateDamagedElementsDisplay([284, 285, 286], null, true);
   return [284, 285, 286];
 }
 
 // SECTION 3 FILTERING: Filter elements based on Section 2 AI predictions > 2%
 function filterElementsByPredictionThreshold(elements, predictions, threshold = 2.0) {
-  console.log('🔍 === SECTION 3 FILTERING: AI Prediction Threshold ===');
-  console.log(`Threshold: ${threshold}% (${threshold/100})`);
-  console.log(`Input elements: [${elements.join(', ')}]`);
-  console.log(`Input predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
+  // console.log('🔍 === SECTION 3 FILTERING: AI Prediction Threshold ===');
+  // console.log(`Threshold: ${threshold}% (${threshold/100})`);
+  // console.log(`Input elements: [${elements.join(', ')}]`);
+  // console.log(`Input predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
 
   const filteredElements = [];
   const filteredPredictions = [];
@@ -134,18 +134,18 @@ function filterElementsByPredictionThreshold(elements, predictions, threshold = 
     if (prediction > threshold) {
       filteredElements.push(elementId);
       filteredPredictions.push(prediction);
-      console.log(`✅ Element ${elementId}: ${prediction.toFixed(2)}% > ${threshold}% - INCLUDED`);
+      // console.log(`✅ Element ${elementId}: ${prediction.toFixed(2)}% > ${threshold}% - INCLUDED`);
     } else {
       excludedElements.push(elementId);
-      console.log(`❌ Element ${elementId}: ${prediction.toFixed(2)}% ≤ ${threshold}% - EXCLUDED`);
+      // console.log(`❌ Element ${elementId}: ${prediction.toFixed(2)}% ≤ ${threshold}% - EXCLUDED`);
     }
   }
 
-  console.log(`📊 FILTERING RESULTS:`);
-  console.log(`- Original elements: ${elements.length}`);
-  console.log(`- Filtered elements: ${filteredElements.length} [${filteredElements.join(', ')}]`);
-  console.log(`- Excluded elements: ${excludedElements.length} [${excludedElements.join(', ')}]`);
-  console.log(`- Filtered predictions: [${filteredPredictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
+  // console.log(`📊 FILTERING RESULTS:`);
+  // console.log(`- Original elements: ${elements.length}`);
+  // console.log(`- Filtered elements: ${filteredElements.length} [${filteredElements.join(', ')}]`);
+  // console.log(`- Excluded elements: ${excludedElements.length} [${excludedElements.join(', ')}]`);
+  // console.log(`- Filtered predictions: [${filteredPredictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
 
   return {
     elements: filteredElements,
@@ -158,19 +158,19 @@ function filterElementsByPredictionThreshold(elements, predictions, threshold = 
 
 // Get Section 2 AI predictions for filtering
 function getSection2Predictions() {
-  console.log('🔍 Getting Section 2 AI predictions for filtering...');
+  // console.log('🔍 Getting Section 2 AI predictions for filtering...');
 
   // Try to get from captured Section 2 data
   if (window.lastSection2Data && window.lastSection2Data.predictions) {
     const predictions = window.lastSection2Data.predictions;
-    console.log(`✅ Found Section 2 predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
+    // console.log(`✅ Found Section 2 predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
     return predictions;
   }
 
   // Try to get from global results
   if (window.section2Results && window.section2Results.predictions) {
     const predictions = window.section2Results.predictions;
-    console.log(`✅ Found Section 2 predictions from global results: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
+    // console.log(`✅ Found Section 2 predictions from global results: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
     return predictions;
   }
 
@@ -179,20 +179,20 @@ function getSection2Predictions() {
   if (storedPredictions) {
     try {
       const predictions = JSON.parse(storedPredictions);
-      console.log(`✅ Found stored Section 2 predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
+      // console.log(`✅ Found stored Section 2 predictions: [${predictions.map(p => p.toFixed(2) + '%').join(', ')}]`);
       return predictions;
     } catch (error) {
-      console.error('Error parsing stored predictions:', error);
+      // console.error('Error parsing stored predictions:', error);
     }
   }
 
-  console.warn('⚠️ No Section 2 predictions found. Section 3 will use all damaged elements.');
+  // console.warn('⚠️ No Section 2 predictions found. Section 3 will use all damaged elements.');
   return null;
 }
 
 // Hàm lấy danh sách phần tử hư hỏng từ kết quả mục 1 cho Section 3 mới
 function getDamagedElementsListNew() {
-  console.log('🔍 === SECTION 3: Getting Filtered Damaged Elements ===');
+  // console.log('🔍 === SECTION 3: Getting Filtered Damaged Elements ===');
 
   // Step 1: Get original damaged elements from Section 1
   let originalElements = [];
@@ -205,7 +205,7 @@ function getDamagedElementsListNew() {
     // Use ordered elements from Section 1 if available
     if (window.strainEnergyResults.damagedElements && window.strainEnergyResults.damagedElements.length > 0) {
       originalElements = window.strainEnergyResults.damagedElements;
-      console.log(`📋 Original damaged elements from Section 1: [${originalElements.join(', ')}]`);
+      // console.log(`📋 Original damaged elements from Section 1: [${originalElements.join(', ')}]`);
     } else {
       // Fallback: find elements with damage >= Z0
       for (const [id, val] of Object.entries(z)) {
@@ -214,19 +214,19 @@ function getDamagedElementsListNew() {
         }
       }
       originalElements.sort((a, b) => (z[b] || 0) - (z[a] || 0));
-      console.log(`📋 Calculated damaged elements from Section 1: [${originalElements.join(', ')}]`);
+      // console.log(`📋 Calculated damaged elements from Section 1: [${originalElements.join(', ')}]`);
     }
   } else {
     // Fallback to default
     originalElements = [284, 285, 286];
-    console.log('📋 Using default damaged elements: [284, 285, 286]');
+    // console.log('📋 Using default damaged elements: [284, 285, 286]');
   }
 
   // Step 2: Get Section 2 AI predictions
   const section2Predictions = getSection2Predictions();
 
   if (!section2Predictions || section2Predictions.length === 0) {
-    console.warn('⚠️ No Section 2 predictions available. Using all damaged elements.');
+    // console.warn('⚠️ No Section 2 predictions available. Using all damaged elements.');
     updateDamagedElementsDisplayNew(originalElements, z);
     return originalElements;
   }
@@ -237,15 +237,15 @@ function getDamagedElementsListNew() {
 
   // Step 4: Handle filtering results
   if (filterResult.filteredCount === 0) {
-    console.warn(`⚠️ No elements exceed ${threshold}% threshold. Using all damaged elements.`);
+    // console.warn(`⚠️ No elements exceed ${threshold}% threshold. Using all damaged elements.`);
     updateDamagedElementsDisplayNew(originalElements, z);
     return originalElements;
   }
 
-  console.log(`✅ SECTION 3 FILTERING COMPLETE:`);
-  console.log(`- Original elements: ${filterResult.originalCount}`);
-  console.log(`- Filtered elements: ${filterResult.filteredCount}`);
-  console.log(`- Using filtered elements: [${filterResult.elements.join(', ')}]`);
+  // console.log(`✅ SECTION 3 FILTERING COMPLETE:`);
+  // console.log(`- Original elements: ${filterResult.originalCount}`);
+  // console.log(`- Filtered elements: ${filterResult.filteredCount}`);
+  // console.log(`- Using filtered elements: [${filterResult.elements.join(', ')}]`);
 
   // Update UI with filtered elements
   updateDamagedElementsDisplayNew(filterResult.elements, z);
@@ -318,7 +318,7 @@ function trainModel() {
 
   // Kiểm tra xem có files được chọn không
   if (!trainFile || !testFile) {
-    console.log('No files selected, trying to load default files...');
+    // console.log('No files selected, trying to load default files...');
     loadDefaultFiles();
     return;
   }
@@ -336,7 +336,7 @@ function trainModel() {
       setTimeout(resetProgressBar, 1000);
     })
     .catch(error => {
-      console.error('Training error:', error);
+      // console.error('Training error:', error);
       alert('Lỗi trong quá trình huấn luyện.');
       resetProgressBar();
     });
@@ -361,12 +361,12 @@ function loadDefaultFiles() {
     return axios.post('http://localhost:5001/upload-files', formData);
   })
   .then(response => {
-    console.log('Default files loaded successfully:', response.data);
+    // console.log('Default files loaded successfully:', response.data);
     updateProgressBar(100);
     setTimeout(resetProgressBar, 1000);
   })
   .catch(error => {
-    console.error('Error loading default files:', error);
+    // console.error('Error loading default files:', error);
     alert('Không thể tải files mặc định. Vui lòng chọn files thủ công.');
     resetProgressBar();
   });
@@ -384,16 +384,16 @@ function predict() {
       setTimeout(resetProgressBar, 1000);
     })
     .catch(error => {
-      console.error('Prediction error:', error);
+      // console.error('Prediction error:', error);
       alert('Lỗi trong quá trình dự đoán.');
       resetProgressBar();
     });
 }
 
 function displayResults(predictions) {
-  console.log('🚀 SECTION 2 - displayResults() STARTED');
-  console.log('📍 EXECUTION PATH: displayResults() → getDamagedElementsList() → drawPrediction3DChart()');
-  console.log('🔍 SECTION 2 INPUT - predictions:', predictions);
+  // console.log('🚀 SECTION 2 - displayResults() STARTED');
+  // console.log('📍 EXECUTION PATH: displayResults() → getDamagedElementsList() → drawPrediction3DChart()');
+  // console.log('🔍 SECTION 2 INPUT - predictions:', predictions);
 
   const resultsBody = document.getElementById('resultsBody');
   const resultsTable = document.getElementById('resultsTable');
@@ -404,8 +404,8 @@ function displayResults(predictions) {
   const numElements = damagedElements.length;
   const effectiveDICount = getEffectiveDICount(damagedElements);
 
-  console.log(`🔍 SECTION 2 - Displaying results for ${numElements} elements: [${damagedElements.join(', ')}]`);
-  console.log('🔍 SECTION 2 - Damaged elements list:', damagedElements);
+  // console.log(`🔍 SECTION 2 - Displaying results for ${numElements} elements: [${damagedElements.join(', ')}]`);
+  // console.log('🔍 SECTION 2 - Damaged elements list:', damagedElements);
   logDIConfiguration('Section 2 Display Results', damagedElements, effectiveDICount);
 
   // Cập nhật header của bảng động
@@ -426,7 +426,7 @@ function displayResults(predictions) {
     // Hiển thị tất cả damage indices tương ứng với danh sách phần tử
     // Use effectiveDICount to ensure we process all available DI columns
     const columnsToProcess = Math.min(effectiveDICount, row.length, damagedElements.length);
-    console.log(`🔍 Processing ${columnsToProcess} columns for row ${rowIndex} (effectiveDICount: ${effectiveDICount}, row.length: ${row.length})`);
+    // console.log(`🔍 Processing ${columnsToProcess} columns for row ${rowIndex} (effectiveDICount: ${effectiveDICount}, row.length: ${row.length})`);
 
     for (let i = 0; i < columnsToProcess; i++) {
       const value = row[i] || 0;
@@ -448,13 +448,13 @@ function displayResults(predictions) {
 
   // Vẽ biểu đồ 3D cho dữ liệu dự đoán
   if (typeof Plotly !== 'undefined' && predictions.length > 0) {
-    console.log('🎯 SECTION 2 - Calling drawPrediction3DChart() with predictions:', predictions);
+    // console.log('🎯 SECTION 2 - Calling drawPrediction3DChart() with predictions:', predictions);
     drawPrediction3DChart(predictions[0]);
   } else {
-    console.error('❌ SECTION 2 - Cannot draw 3D chart: Plotly unavailable or no predictions');
+    // console.error('❌ SECTION 2 - Cannot draw 3D chart: Plotly unavailable or no predictions');
   }
 
-  console.log('✅ SECTION 2 - displayResults() COMPLETED');
+  // console.log('✅ SECTION 2 - displayResults() COMPLETED');
 }
 
 function updateLowValuesList(elements) {
@@ -489,7 +489,7 @@ function updateChart(data) {
   const chartData = data.slice(0, numElements);
   const chartLabels = damagedElements.map(id => `Phần tử ${id}`);
 
-  console.log(`Updating chart with ${numElements} elements: [${damagedElements.join(', ')}]`);
+  // console.log(`Updating chart with ${numElements} elements: [${damagedElements.join(', ')}]`);
 
   myChart = new Chart(ctx, {
     type: 'bar',
@@ -596,11 +596,11 @@ function resetProgressBar() {
 
 // ✅ UPDATED: Hàm được gọi khi chuyển sang mục 2 để cập nhật hiển thị và tự động tạo CSV
 function initializeSection2() {
-  console.log('🚀 === INITIALIZING SECTION 2 WITH AUTO CSV GENERATION ===');
+  // console.log('🚀 === INITIALIZING SECTION 2 WITH AUTO CSV GENERATION ===');
 
   // Kiểm tra dữ liệu có sẵn từ mục 1
   if (window.strainEnergyResults) {
-    console.log('✅ Found strain energy results from section 1:', window.strainEnergyResults);
+    // console.log('✅ Found strain energy results from section 1:', window.strainEnergyResults);
 
     // Cập nhật hiển thị danh sách phần tử hư hỏng
     getDamagedElementsList();
@@ -614,8 +614,8 @@ function initializeSection2() {
     // }, 1000);
 
   } else {
-    console.log('⚠️ No strain energy results found from section 1');
-    console.log('📋 Please run Section 1 first to generate strain energy data');
+    // console.log('⚠️ No strain energy results found from section 1');
+    // console.log('📋 Please run Section 1 first to generate strain energy data');
 
     // Hiển thị thông báo cho user
     setTimeout(() => {
@@ -626,21 +626,21 @@ function initializeSection2() {
 
 // ✅ NEW FUNCTION: Tự động tạo TEST.csv khi mở Section 2
 function autoGenerateTestCsv() {
-  console.log('📄 === AUTO GENERATING TEST.CSV FOR SECTION 2 ===');
+  // console.log('📄 === AUTO GENERATING TEST.CSV FOR SECTION 2 ===');
 
   // 1. Kiểm tra prerequisites
   const prerequisites = checkSection2Prerequisites();
   if (!prerequisites.valid) {
-    console.error('❌ Prerequisites not met for CSV generation:', prerequisites.message);
+    // console.error('❌ Prerequisites not met for CSV generation:', prerequisites.message);
     alert(`❌ Không thể tạo TEST.csv:\n\n${prerequisites.message}\n\nVui lòng kiểm tra và thử lại.`);
     return;
   }
 
-  console.log('✅ All prerequisites met, proceeding with CSV generation');
+  // console.log('✅ All prerequisites met, proceeding with CSV generation');
 
   // 2. Tạo CSV với dynamic format
   createTestCsvContent().then(csvContent => {
-    console.log('✅ CSV content generated successfully');
+    // console.log('✅ CSV content generated successfully');
 
     // 3. Tự động download CSV file
     downloadCsvFile(csvContent, 'TEST.csv');
@@ -652,7 +652,7 @@ function autoGenerateTestCsv() {
     const featureColumns = columns.filter(col => col.startsWith('U'));
     const diColumns = columns.filter(col => col.startsWith('DI'));
 
-    console.log(`📊 CSV generated: ${featureColumns.length} features, ${diColumns.length} DI columns`);
+    // console.log(`📊 CSV generated: ${featureColumns.length} features, ${diColumns.length} DI columns`);
 
     setTimeout(() => {
       alert(`✅ TEST.csv đã được tạo và tải xuống tự động!\n\n` +
@@ -664,14 +664,14 @@ function autoGenerateTestCsv() {
     }, 1000);
 
   }).catch(error => {
-    console.error('❌ Error generating CSV:', error);
+    // console.error('❌ Error generating CSV:', error);
     alert(`❌ Lỗi tạo TEST.csv: ${error.message}\n\nVui lòng kiểm tra console để biết chi tiết.`);
   });
 }
 
 // ✅ NEW FUNCTION: Kiểm tra prerequisites cho Section 2
 function checkSection2Prerequisites() {
-  console.log('🔍 Checking Section 2 prerequisites...');
+  // console.log('🔍 Checking Section 2 prerequisites...');
 
   // 1. Kiểm tra Section 1 results
   if (!window.strainEnergyResults || !window.strainEnergyResults.z) {
@@ -716,7 +716,7 @@ function checkSection2Prerequisites() {
     };
   }
 
-  console.log('✅ All prerequisites satisfied');
+  // console.log('✅ All prerequisites satisfied');
   return {
     valid: true,
     message: 'All prerequisites met',
@@ -731,7 +731,7 @@ function checkSection2Prerequisites() {
 
 // ✅ NEW FUNCTION: Download CSV file
 function downloadCsvFile(csvContent, filename) {
-  console.log(`📁 Downloading ${filename}...`);
+  // console.log(`📁 Downloading ${filename}...`);
 
   try {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -746,25 +746,25 @@ function downloadCsvFile(csvContent, filename) {
       link.click();
       document.body.removeChild(link);
 
-      console.log(`✅ ${filename} downloaded successfully`);
+      // console.log(`✅ ${filename} downloaded successfully`);
     } else {
       throw new Error('Browser does not support file download');
     }
   } catch (error) {
-    console.error(`❌ Error downloading ${filename}:`, error);
+    // console.error(`❌ Error downloading ${filename}:`, error);
     throw error;
   }
 }
 
 // Hàm được gọi khi chuyển sang mục 3 mới để cập nhật hiển thị
 function initializeSection3New() {
-  console.log('Initializing section 3 new - loading damaged elements from section 1');
+  // console.log('Initializing section 3 new - loading damaged elements from section 1');
 
   // Kiểm tra dữ liệu có sẵn từ mục 1
   if (window.strainEnergyResults) {
-    console.log('Found strain energy results from section 1:', window.strainEnergyResults);
+    // console.log('Found strain energy results from section 1:', window.strainEnergyResults);
   } else {
-    console.log('No strain energy results found from section 1');
+    // console.log('No strain energy results found from section 1');
   }
 
   getDamagedElementsListNew(); // Cập nhật hiển thị danh sách phần tử hư hỏng cho section 3 mới
@@ -772,12 +772,12 @@ function initializeSection3New() {
 
 // Hàm trainAndPredict cho Section 3 mới - NO ANN TRAINING: Tạo predictions từ TEST.csv DI values
 function trainAndPredictNew() {
-  console.log('🚀 SECTION 3 - trainAndPredictNew() STARTED');
-  console.log('📍 NEW LOGIC: No ANN training - Generate predictions from TEST.csv DI values');
+  // console.log('🚀 SECTION 3 - trainAndPredictNew() STARTED');
+  // console.log('📍 NEW LOGIC: No ANN training - Generate predictions from TEST.csv DI values');
 
   // Setup proper strain energy results if not available
   if (!window.strainEnergyResults || !Array.isArray(window.strainEnergyResults.elements)) {
-    console.log('🔧 Setting up proper strain energy results for Section 3...');
+    // console.log('🔧 Setting up proper strain energy results for Section 3...');
     setupProperStrainEnergyResults();
   }
 
@@ -785,7 +785,7 @@ function trainAndPredictNew() {
   getDamagedElementsListNew();
 
   // NEW APPROACH: Generate predictions directly from TEST.csv DI values
-  console.log('📊 NEW MODE: Section 3 generates predictions from TEST.csv DI values (±1% variation)');
+  // console.log('📊 NEW MODE: Section 3 generates predictions from TEST.csv DI values (±1% variation)');
 
   // Chạy verification trước khi bắt đầu
   verifyConsistencyBetweenSections();
@@ -794,19 +794,19 @@ function trainAndPredictNew() {
   // Generate predictions từ TEST.csv thay vì gọi backend
   generateSection3PredictionsFromTestCSV();
 
-  console.log('✅ SECTION 3 - trainAndPredictNew() COMPLETED');
+  // console.log('✅ SECTION 3 - trainAndPredictNew() COMPLETED');
 }
 
 // NEW FUNCTION: Generate Section 3 predictions from TEST.csv DI values (no ANN training)
 function generateSection3PredictionsFromTestCSV() {
-  console.log('📊 === SECTION 3: GENERATING PREDICTIONS FROM TEST.CSV DI VALUES ===');
+  // console.log('📊 === SECTION 3: GENERATING PREDICTIONS FROM TEST.CSV DI VALUES ===');
   updateProgressBarNew(20);
 
   try {
     // Use new mapping function to get filtered elements with preserved DI indices
     const mappingResult = getFilteredElementsWithDIMapping();
 
-    console.log(`📋 Processing ${mappingResult.elements.length} filtered elements with preserved DI mapping`);
+    // console.log(`📋 Processing ${mappingResult.elements.length} filtered elements with preserved DI mapping`);
     updateProgressBarNew(50);
 
     // Extract predictions for filtered elements only
@@ -814,13 +814,13 @@ function generateSection3PredictionsFromTestCSV() {
 
     updateProgressBarNew(80);
 
-    console.log('📈 Section 3 predictions generated from TEST.csv DI values:');
-    console.log(`- Filtered elements: [${mappingResult.elements.join(', ')}]`);
-    console.log(`- Preserved DI mapping:`);
-    mappingResult.mapping.forEach(item => {
-      console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
-    });
-    console.log('- Logic: DI > 0 → ±1% variation, DI = 0 → filtered out');
+    // console.log('📈 Section 3 predictions generated from TEST.csv DI values:');
+    // console.log(`- Filtered elements: [${mappingResult.elements.join(', ')}]`);
+    // console.log(`- Preserved DI mapping:`);
+    // mappingResult.mapping.forEach(item => {
+    //   console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
+    // });
+    // console.log('- Logic: DI > 0 → ±1% variation, DI = 0 → filtered out');
 
     // Display results with preserved DI mapping
     displayResultsNewWithMapping([filteredPredictions], mappingResult.mapping);
@@ -828,18 +828,18 @@ function generateSection3PredictionsFromTestCSV() {
     updateProgressBarNew(100);
     setTimeout(resetProgressBarNew, 1000);
 
-    console.log('✅ Section 3 predictions generated successfully with preserved DI mapping');
+    // console.log('✅ Section 3 predictions generated successfully with preserved DI mapping');
 
   } catch (error) {
-    console.error('❌ Error generating Section 3 predictions:', error);
+    // console.error('❌ Error generating Section 3 predictions:', error);
 
     // Fallback: Use simple pattern if mapping fails
     const damagedElements = getDamagedElementsList();
     const fallbackPredictions = [10, 20]; // Only elements with >2% predictions
     const fallbackElements = [damagedElements[1], damagedElements[2]]; // Elements 113, 120
 
-    console.log('🔄 Using fallback predictions:', fallbackPredictions);
-    console.log('🔄 Fallback elements:', fallbackElements);
+    // console.log('🔄 Using fallback predictions:', fallbackPredictions);
+    // console.log('🔄 Fallback elements:', fallbackElements);
 
     // Create fallback mapping
     const fallbackMapping = [
@@ -856,7 +856,7 @@ function generateSection3PredictionsFromTestCSV() {
 
 // TEST FUNCTION: Validate Section 3 new logic (no ANN training)
 function testSection3NewLogic() {
-  console.log('🧪 === TESTING SECTION 3 NEW LOGIC (NO ANN TRAINING) ===');
+  // console.log('🧪 === TESTING SECTION 3 NEW LOGIC (NO ANN TRAINING) ===');
 
   // Setup test data
   window.strainEnergyResults = {
@@ -866,14 +866,14 @@ function testSection3NewLogic() {
   };
 
   const damagedElements = getDamagedElementsList();
-  console.log(`📋 Testing with elements: [${damagedElements.join(', ')}]`);
+  // console.log(`📋 Testing with elements: [${damagedElements.join(', ')}]`);
 
   // Test DI pattern
   const fixedDIPattern = [0, 0.1, 0.2, 0]; // Same as Section 2
-  console.log(`📊 Fixed DI pattern: [${fixedDIPattern.join(', ')}]`);
+  // console.log(`📊 Fixed DI pattern: [${fixedDIPattern.join(', ')}]`);
 
   // Test prediction generation logic
-  console.log('\n🎯 Testing prediction generation:');
+  // console.log('\n🎯 Testing prediction generation:');
   const testPredictions = [];
 
   for (let i = 0; i < 4; i++) {
@@ -884,39 +884,38 @@ function testSection3NewLogic() {
       // For DI > 0: Add ±1% random variation
       const variation = (Math.random() - 0.5) * 0.02; // ±1% = ±0.01
       prediction = Math.max(0, (originalDI + variation) * 100); // Convert to percentage
-      console.log(`   Element ${damagedElements[i]}: DI${i+1}=${originalDI} → Prediction=${prediction.toFixed(2)}% (±1% variation)`);
+      // console.log(`   Element ${damagedElements[i]}: DI${i+1}=${originalDI} → Prediction=${prediction.toFixed(2)}% (±1% variation)`);
     } else {
       // For DI = 0: Keep prediction = 0
       prediction = 0;
-      console.log(`   Element ${damagedElements[i]}: DI${i+1}=${originalDI} → Prediction=${prediction}% (no damage)`);
+      // console.log(`   Element ${damagedElements[i]}: DI${i+1}=${originalDI} → Prediction=${prediction}% (no damage)`);
     }
 
     testPredictions.push(prediction);
   }
 
-  console.log('\n📈 Expected behavior:');
-  console.log('- Element 112 (DI1=0): ~0% (no damage)');
-  console.log('- Element 113 (DI2=0.1): ~9-11% (±1% around 10%)');
-  console.log('- Element 120 (DI3=0.2): ~19-21% (±1% around 20%)');
-  console.log('- Element 127 (DI4=0): ~0% (no damage)');
+  // console.log('\n📈 Expected behavior:');
+  // console.log('- Element 112 (DI1=0): ~0% (no damage)');
+  // console.log('- Element 113 (DI2=0.1): ~9-11% (±1% around 10%)');
+  // console.log('- Element 120 (DI3=0.2): ~19-21% (±1% around 20%)');
+  // console.log('- Element 127 (DI4=0): ~0% (no damage)');
 
-  console.log(`\n✅ Test predictions: [${testPredictions.map(p => p.toFixed(2)).join(', ')}]%`);
-  console.log('🚀 Section 3 logic: NO ANN training, direct DI-based predictions with ±1% variation');
+  // console.log(`\n✅ Test predictions: [${testPredictions.map(p => p.toFixed(2)).[object Object] direct DI-based predictions with ±1% variation');
 
   return testPredictions;
 }
 
 // NEW FUNCTION: Get filtered elements with preserved DI mapping
 function getFilteredElementsWithDIMapping() {
-  console.log('🔍 === SECTION 3: Getting Filtered Elements with Preserved DI Mapping ===');
+  // console.log('🔍 === SECTION 3: Getting Filtered Elements with Preserved DI Mapping ===');
 
   // Step 1: Get original damaged elements from Section 1
   const originalElements = getDamagedElementsList(); // Use Section 1's function
-  console.log(`📋 Original damaged elements: [${originalElements.join(', ')}]`);
+  // console.log(`📋 Original damaged elements: [${originalElements.join(', ')}]`);
 
   // Step 2: Use fixed DI pattern from TEST.csv
   const fixedDIPattern = [0, 0.1, 0.2, 0]; // Same as Section 2
-  console.log(`📊 Fixed DI pattern: [${fixedDIPattern.join(', ')}]`);
+  // console.log(`📊 Fixed DI pattern: [${fixedDIPattern.join(', ')}]`);
 
   // Step 3: Generate predictions for each element
   const elementPredictions = [];
@@ -942,20 +941,20 @@ function getFilteredElementsWithDIMapping() {
       isFiltered: prediction > 2.0 // >2% threshold
     });
 
-    console.log(`📊 Element ${elementId}: DI${i+1}=${originalDI} → Prediction=${prediction.toFixed(2)}% → ${prediction > 2.0 ? 'KEEP' : 'FILTER OUT'}`);
+    // // console.log(`📊 Element ${elementId}: DI${i+1}=${originalDI} → Prediction=${prediction.toFixed(2)}% → ${prediction > 2.0 ? 'KEEP' : 'FILTER OUT'}`);
   }
 
   // Step 4: Filter elements but preserve original DI indices
   const filteredMapping = elementDIMapping.filter(item => item.isFiltered);
   const filteredElements = filteredMapping.map(item => item.elementId);
 
-  console.log(`✅ FILTERING RESULTS:`);
-  console.log(`- Original elements: ${originalElements.length}`);
-  console.log(`- Filtered elements: ${filteredElements.length} [${filteredElements.join(', ')}]`);
-  console.log(`- Preserved DI mapping:`);
-  filteredMapping.forEach(item => {
-    console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
-  });
+  // console.log(`✅ FILTERING RESULTS:`);
+  // console.log(`- Original elements: ${originalElements.length}`);
+  // console.log(`- Filtered elements: ${filteredElements.length} [${filteredElements.join(', ')}]`);
+  // console.log(`- Preserved DI mapping:`);
+  // filteredMapping.forEach(item => {
+  //   console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
+  // });
 
   // Store mapping globally for use in other functions
   window.section3DIMapping = {
@@ -975,10 +974,10 @@ function getFilteredElementsWithDIMapping() {
 
 // NEW FUNCTION: Display results with preserved DI mapping
 function displayResultsNewWithMapping(predictions, diMapping) {
-  console.log('🚀 SECTION 3 - displayResultsNewWithMapping() STARTED (PRESERVED DI MAPPING)');
-  console.log('📍 NEW LOGIC: Preserve original DI indices even after filtering');
-  console.log('🔍 SECTION 3 INPUT - predictions:', predictions);
-  console.log('🔍 SECTION 3 INPUT - diMapping:', diMapping);
+  // console.log('🚀 SECTION 3 - displayResultsNewWithMapping() STARTED (PRESERVED DI MAPPING)');
+  // console.log('📍 NEW LOGIC: Preserve original DI indices even after filtering');
+  // console.log('🔍 SECTION 3 INPUT - predictions:', predictions);
+  // console.log('🔍 SECTION 3 INPUT - diMapping:', diMapping);
 
   const resultsBody = document.getElementById('resultsBodyNew');
   const resultsTable = document.getElementById('resultsTableNew');
@@ -988,10 +987,10 @@ function displayResultsNewWithMapping(predictions, diMapping) {
   const filteredElements = diMapping.map(item => item.elementId);
   const numElements = filteredElements.length;
 
-  console.log(`🔍 SECTION 3 FILTERED - Displaying results for ${numElements} elements with preserved DI mapping:`);
-  diMapping.forEach(item => {
-    console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (original DI=${item.originalDIValue})`);
-  });
+  // console.log(`🔍 SECTION 3 FILTERED - Displaying results for ${numElements} elements with preserved DI mapping:`);
+  // diMapping.forEach(item => {
+  //   console.log(`   Element ${item.elementId} → DI${item.originalDIIndex} (original DI=${item.originalDIValue})`);
+  // });
 
   // Update table headers with preserved DI indices
   tableHead.innerHTML = '';
@@ -1010,7 +1009,7 @@ function displayResultsNewWithMapping(predictions, diMapping) {
 
     // Process filtered elements with preserved DI mapping
     const columnsToProcess = Math.min(numElements, row.length);
-    console.log(`🔍 Section 3 - Processing ${columnsToProcess} columns for row ${rowIndex} with preserved DI mapping`);
+    // console.log(`🔍 Section 3 - Processing ${columnsToProcess} columns for row ${rowIndex} with preserved DI mapping`);
 
     for (let i = 0; i < columnsToProcess; i++) {
       const value = row[i] || 0;
@@ -1031,7 +1030,7 @@ function displayResultsNewWithMapping(predictions, diMapping) {
 
       rowElement.appendChild(cell);
 
-      console.log(`📊 Element ${mappingItem.elementId} (DI${mappingItem.originalDIIndex}): ${value.toFixed(2)}% (original DI=${mappingItem.originalDIValue})`);
+      // console.log(`📊 Element ${mappingItem.elementId} (DI${mappingItem.originalDIIndex}): ${value.toFixed(2)}% (original DI=${mappingItem.originalDIValue})`);
     }
 
     resultsBody.appendChild(rowElement);
@@ -1050,37 +1049,37 @@ function displayResultsNewWithMapping(predictions, diMapping) {
     drawPrediction3DDamageChartNewWithMapping(predictions[0], diMapping);
   }
 
-  console.log('✅ SECTION 3 - displayResultsNewWithMapping() COMPLETED with preserved DI indices');
+  // console.log('✅ SECTION 3 - displayResultsNewWithMapping() COMPLETED with preserved DI indices');
 }
 
 // NEW FUNCTION: Calculate indices with preserved DI mapping
 function calculateAndDisplayIndicesNewWithMapping(predictions, diMapping) {
-  console.log('🧮 === SECTION 3: CALCULATING INDICES WITH PRESERVED DI MAPPING ===');
+  // console.log('🧮 === SECTION 3: CALCULATING INDICES WITH PRESERVED DI MAPPING ===');
 
   if (!window.strainEnergyResults || !window.strainEnergyResults.Z0) {
-    console.log('⚠️ No strain energy results available for indices calculation');
+    // console.log('⚠️ No strain energy results available for indices calculation');
     return;
   }
 
   // Validate elements array
   let elements = window.strainEnergyResults.elements;
   if (!Array.isArray(elements)) {
-    console.warn('⚠️ elements is not an array, using z data keys');
+    // console.warn('⚠️ elements is not an array, using z data keys');
     if (window.strainEnergyResults.z) {
       elements = Object.keys(window.strainEnergyResults.z).map(id => ({ id: parseInt(id) }));
     } else {
-      console.error('❌ Cannot determine elements for calculation');
+      // console.error('❌ Cannot determine elements for calculation');
       return;
     }
   }
 
   const Z0 = window.strainEnergyResults.Z0;
 
-  console.log(`📊 Calculating indices for ${diMapping.length} filtered elements with preserved DI mapping:`);
-  diMapping.forEach((item, index) => {
-    const prediction = predictions[index] || 0;
-    console.log(`   Element ${item.elementId} (DI${item.originalDIIndex}): ${prediction.toFixed(2)}%`);
-  });
+  // console.log(`📊 Calculating indices for ${diMapping.length} filtered elements with preserved DI mapping:`);
+  // diMapping.forEach((item, index) => {
+  //   const prediction = predictions[index] || 0;
+  //   console.log(`   Element ${item.elementId} (DI${item.originalDIIndex}): ${prediction.toFixed(2)}%`);
+  // });
 
   // Use same calculation method as Section 1 for consistency
   let A = 0, B = 0, C = 0;
@@ -1107,7 +1106,7 @@ function calculateAndDisplayIndicesNewWithMapping(predictions, diMapping) {
       correctPredictions++;
     }
 
-    console.log(`📊 Element ${item.elementId} (DI${item.originalDIIndex}): actual=${actualZ.toFixed(4)}, predicted=${prediction.toFixed(2)}%, damaged=${isDamaged}, predicted_damaged=${isPredictedDamaged}`);
+    // console.log(`📊 Element ${item.elementId} (DI${item.originalDIIndex}): actual=${actualZ.toFixed(4)}, predicted=${prediction.toFixed(2)}%, damaged=${isDamaged}, predicted_damaged=${isPredictedDamaged}`);
   });
 
   // Calculate indices using Section 1 method
@@ -1115,14 +1114,14 @@ function calculateAndDisplayIndicesNewWithMapping(predictions, diMapping) {
   B = (correctPredictions / Math.max(diMapping.length, 1)) * 100;
   C = (correctPredictions / Math.max(totalElements, 1)) * 100;
 
-  console.log(`📈 INDICES CALCULATION RESULTS (with preserved DI mapping):`);
-  console.log(`- Total elements: ${totalElements}`);
-  console.log(`- Damaged elements: ${damagedCount}`);
-  console.log(`- Filtered elements: ${diMapping.length}`);
-  console.log(`- Correct predictions: ${correctPredictions}`);
-  console.log(`- Index A: ${A.toFixed(2)}%`);
-  console.log(`- Index B: ${B.toFixed(2)}%`);
-  console.log(`- Index C: ${C.toFixed(2)}%`);
+  // console.log(`📈 INDICES CALCULATION RESULTS (with preserved DI mapping):`);
+  // console.log(`- Total elements: ${totalElements}`);
+  // console.log(`- Damaged elements: ${damagedCount}`);
+  // console.log(`- Filtered elements: ${diMapping.length}`);
+  // console.log(`- Correct predictions: ${correctPredictions}`);
+  // console.log(`- Index A: ${A.toFixed(2)}%`);
+  // console.log(`- Index B: ${B.toFixed(2)}%`);
+  // console.log(`- Index C: ${C.toFixed(2)}%`);
 
   // Display in UI
   const indicesContainer = document.getElementById('indicesNew');
@@ -1141,13 +1140,13 @@ function calculateAndDisplayIndicesNewWithMapping(predictions, diMapping) {
 
 // NEW FUNCTION: Draw 3D chart with preserved DI mapping
 function drawPrediction3DDamageChartNewWithMapping(predictions, diMapping) {
-  console.log('🚀 SECTION 3 - drawPrediction3DDamageChartNewWithMapping() STARTED');
-  console.log('📍 NEW LOGIC: 3D visualization with preserved DI mapping');
-  console.log('🔍 SECTION 3 INPUT - predictions:', predictions);
-  console.log('🔍 SECTION 3 INPUT - diMapping:', diMapping);
+  // console.log('🚀 SECTION 3 - drawPrediction3DDamageChartNewWithMapping() STARTED');
+  // console.log('📍 NEW LOGIC: 3D visualization with preserved DI mapping');
+  // console.log('🔍 SECTION 3 INPUT - predictions:', predictions);
+  // console.log('🔍 SECTION 3 INPUT - diMapping:', diMapping);
 
   if (!window.strainEnergyResults) {
-    console.error('❌ SECTION 3 - No strain energy results found for 3D chart');
+    // console.error('❌ SECTION 3 - No strain energy results found for 3D chart');
     return;
   }
 
@@ -1156,7 +1155,7 @@ function drawPrediction3DDamageChartNewWithMapping(predictions, diMapping) {
 
   // Check if elements is valid array
   if (!Array.isArray(elements)) {
-    console.warn('⚠️ SECTION 3 - elements is not an array, attempting to fix...');
+    // console.warn('⚠️ SECTION 3 - elements is not an array, attempting to fix...');
 
     // Try to get elements from other sources
     if (window.strainEnergyResults.z) {
@@ -1165,19 +1164,19 @@ function drawPrediction3DDamageChartNewWithMapping(predictions, diMapping) {
         id: parseInt(id),
         center: { x: parseInt(id) * 0.1, y: parseInt(id) * 0.1 } // Simple positioning
       }));
-      console.log(`📋 Created elements array from z data: ${elements.length} elements`);
+      // console.log(`📋 Created elements array from z data: ${elements.length} elements`);
     } else {
-      console.error('❌ SECTION 3 - Cannot create elements array');
+      // console.error('❌ SECTION 3 - Cannot create elements array');
       return;
     }
   }
 
   const originalZ0 = window.strainEnergyResults.Z0 || 0.05;
 
-  console.log(`🔍 SECTION 3 3D CHART WITH PRESERVED MAPPING:`);
-  console.log(`- Total elements in model: ${elements.length}`);
-  console.log(`- Filtered elements with preserved DI mapping: ${diMapping.length}`);
-  console.log(`- Original Z₀: ${originalZ0.toFixed(2)}`);
+  // console.log(`🔍 SECTION 3 3D CHART WITH PRESERVED MAPPING:`);
+  // console.log(`- Total elements in model: ${elements.length}`);
+  // console.log(`- Filtered elements with preserved DI mapping: ${diMapping.length}`);
+  // console.log(`- Original Z₀: ${originalZ0.toFixed(2)}`);
 
   // Create z-data with preserved DI mapping
   const z = {};
@@ -1191,20 +1190,20 @@ function drawPrediction3DDamageChartNewWithMapping(predictions, diMapping) {
   diMapping.forEach((item, index) => {
     const prediction = predictions[index] || 0;
     z[item.elementId] = prediction / 100; // Convert percentage to decimal
-    console.log(`📊 3D Chart: Element ${item.elementId} (DI${item.originalDIIndex}) = ${prediction.toFixed(2)}% → z=${(prediction/100).toFixed(4)}`);
+    // console.log(`📊 3D Chart: Element ${item.elementId} (DI${item.originalDIIndex}) = ${prediction.toFixed(2)}% → z=${(prediction/100).toFixed(4)}`);
   });
 
-  console.log('🎯 3D Chart z-data created with preserved DI mapping');
-  console.log(`- Non-zero elements: ${Object.keys(z).filter(id => z[id] > 0).length}`);
-  console.log(`- Max value: ${Math.max(...Object.values(z)).toFixed(4)}`);
+  // console.log('🎯 3D Chart z-data created with preserved DI mapping');
+  // console.log(`- Non-zero elements: ${Object.keys(z).filter(id => z[id] > 0).length}`);
+  // console.log(`- Max value: ${Math.max(...Object.values(z)).toFixed(4)}`);
 
   // Draw 3D chart using existing function
   try {
     drawPrediction3DDamageChartWithContainer(z, originalZ0, elements, 'prediction3DChartContainerNew');
-    console.log('✅ SECTION 3 - 3D chart drawn successfully with preserved DI mapping');
+    // console.log('✅ SECTION 3 - 3D chart drawn successfully with preserved DI mapping');
   } catch (error) {
-    console.error('❌ SECTION 3 - Error drawing 3D chart:', error);
-    console.log('🔄 Falling back to simple 3D chart...');
+    // console.error('❌ SECTION 3 - Error drawing 3D chart:', error);
+    // console.log('🔄 Falling back to simple 3D chart...');
 
     // Fallback: Use simpler 3D chart function
     if (typeof drawPrediction3DDamageChartNew === 'function') {
@@ -1215,7 +1214,7 @@ function drawPrediction3DDamageChartNewWithMapping(predictions, diMapping) {
 
 // TEST FUNCTION: Validate Section 3 DI mapping fix
 function testSection3DIMappingFix() {
-  console.log('🧪 === TESTING SECTION 3 DI MAPPING FIX ===');
+  // console.log('🧪 === TESTING SECTION 3 DI MAPPING FIX ===');
 
   // Setup test data with proper elements array
   window.strainEnergyResults = {
@@ -1230,24 +1229,24 @@ function testSection3DIMappingFix() {
     ]
   };
 
-  console.log('📋 Test scenario:');
-  console.log('- Original elements: [112, 113, 120, 127]');
-  console.log('- Fixed DI pattern: [0, 0.1, 0.2, 0] (from TEST.csv)');
-  console.log('- Expected mapping:');
-  console.log('  * Element 112 → DI1=0 → ~0% → FILTERED OUT');
-  console.log('  * Element 113 → DI2=0.1 → ~10% → KEEP (preserve DI2)');
-  console.log('  * Element 120 → DI3=0.2 → ~20% → KEEP (preserve DI3)');
-  console.log('  * Element 127 → DI4=0 → ~0% → FILTERED OUT');
+  // console.log('📋 Test scenario:');
+  // console.log('- Original elements: [112, 113, 120, 127]');
+  // console.log('- Fixed DI pattern: [0, 0.1, 0.2, 0] (from TEST.csv)');
+  // console.log('- Expected mapping:');
+  // console.log('  * Element 112 → DI1=0 → ~0% → FILTERED OUT');
+  // console.log('  * Element 113 → DI2=0.1 → ~10% → KEEP (preserve DI2)');
+  // console.log('  * Element 120 → DI3=0.2 → ~20% → KEEP (preserve DI3)');
+  // console.log('  * Element 127 → DI4=0 → ~0% → FILTERED OUT');
 
   // Test the new mapping function
   const mappingResult = getFilteredElementsWithDIMapping();
 
-  console.log('\n📊 MAPPING RESULTS:');
-  console.log(`- Filtered elements: [${mappingResult.elements.join(', ')}]`);
-  console.log('- DI mapping preservation:');
-  mappingResult.mapping.forEach(item => {
-    console.log(`  * Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
-  });
+  // console.log('\n📊 MAPPING RESULTS:');
+  // console.log(`- Filtered elements: [${mappingResult.elements.join(', ')}]`);
+  // console.log('- DI mapping preservation:');
+  // mappingResult.mapping.forEach(item => {
+  //   console.log(`  * Element ${item.elementId} → DI${item.originalDIIndex} (${item.originalDIValue}) → ${item.prediction.toFixed(2)}%`);
+  // });
 
   // Validate expected results
   const expectedElements = [113, 120];
@@ -1258,22 +1257,22 @@ function testSection3DIMappingFix() {
     item.originalDIIndex === expectedDIIndices[index]
   );
 
-  console.log('\n✅ VALIDATION RESULTS:');
-  console.log(`- Filtered elements correct: ${elementsCorrect ? '✅' : '❌'}`);
-  console.log(`  Expected: [${expectedElements.join(', ')}]`);
-  console.log(`  Actual: [${mappingResult.elements.join(', ')}]`);
+  // console.log('\n✅ VALIDATION RESULTS:');
+  // console.log(`- Filtered elements correct: ${elementsCorrect ? '✅' : '❌'}`);
+  // console.log(`  Expected: [${expectedElements.join(', ')}]`);
+  // console.log(`  Actual: [${mappingResult.elements.join(', ')}]`);
 
-  console.log(`- DI indices preserved: ${diIndicesCorrect ? '✅' : '❌'}`);
-  console.log(`  Expected: DI indices [${expectedDIIndices.join(', ')}]`);
-  console.log(`  Actual: DI indices [${mappingResult.mapping.map(item => item.originalDIIndex).join(', ')}]`);
+  // console.log(`- DI indices preserved: ${diIndicesCorrect ? '✅' : '❌'}`);
+  // console.log(`  Expected: DI indices [${expectedDIIndices.join(', ')}]`);
+  // console.log(`  Actual: DI indices [${mappingResult.mapping.map(item => item.originalDIIndex).join(', ')}]`);
 
-  console.log('\n🎯 EXPECTED TABLE HEADERS:');
-  console.log('- Column 1: "Phần tử 113 (DI2)" ← Preserved DI2 index');
-  console.log('- Column 2: "Phần tử 120 (DI3)" ← Preserved DI3 index');
-  console.log('- NOT: "Phần tử 113 (DI1)" and "Phần tử 120 (DI2)" ← Wrong reindexing');
+  // console.log('\n🎯 EXPECTED TABLE HEADERS:');
+  // console.log('- Column 1: "Phần tử 113 (DI2)" ← Preserved DI2 index');
+  // console.log('- Column 2: "Phần tử 120 (DI3)" ← Preserved DI3 index');
+  // console.log('- NOT: "Phần tử 113 (DI1)" and "Phần tử 120 (DI2)" ← Wrong reindexing');
 
   const overallSuccess = elementsCorrect && diIndicesCorrect;
-  console.log(`\n🎉 OVERALL FIX STATUS: ${overallSuccess ? '✅ SUCCESS' : '❌ NEEDS MORE WORK'}`);
+  // console.log(`\n🎉 OVERALL FIX STATUS: ${overallSuccess ? '✅ SUCCESS' : '❌ NEEDS MORE WORK'}`);
 
   return {
     success: overallSuccess,
@@ -1285,7 +1284,7 @@ function testSection3DIMappingFix() {
 
 // UTILITY FUNCTION: Setup proper strain energy results for Section 3 testing
 function setupProperStrainEnergyResults() {
-  console.log('🔧 === SETTING UP PROPER STRAIN ENERGY RESULTS FOR SECTION 3 ===');
+  // console.log('🔧 === SETTING UP PROPER STRAIN ENERGY RESULTS FOR SECTION 3 ===');
 
   // Create proper elements array with center coordinates
   const elements = [
@@ -1308,11 +1307,11 @@ function setupProperStrainEnergyResults() {
     }
   };
 
-  console.log('✅ Strain energy results setup completed:');
-  console.log(`- Elements: ${elements.length} (proper array with center coordinates)`);
-  console.log(`- Damaged elements: [${window.strainEnergyResults.damagedElements.join(', ')}]`);
-  console.log(`- Z0 threshold: ${window.strainEnergyResults.Z0}`);
-  console.log(`- Chart settings: configured`);
+  // console.log('✅ Strain energy results setup completed:');
+  // console.log(`- Elements: ${elements.length} (proper array with center coordinates)`);
+  // console.log(`- Damaged elements: [${window.strainEnergyResults.damagedElements.join(', ')}]`);
+  // console.log(`- Z0 threshold: ${window.strainEnergyResults.Z0}`);
+  // console.log(`- Chart settings: configured`);
 
   return window.strainEnergyResults;
 }
@@ -2086,8 +2085,14 @@ function drawPrediction3DDamageChartWithContainer(z, elements, Z0, containerId) 
   const data = [traceMesh3D, traceText]; // Không có threshold plane cho Section 3
 
   // Tạo title cho Section 3 (CHÍNH XÁC GIỐNG SECTION 2)
-  const highestElement = Object.keys(z).find(id => z[id] > 0);
-  const highestValue = highestElement ? z[highestElement] : 0;
+  const damagedEntries = Object.entries(z).filter(([, value]) => value > 0);
+  let highestElement = 'N/A';
+  let highestValue = 0;
+  if (damagedEntries.length > 0) {
+    const [foundElement, foundValue] = damagedEntries.reduce((a, b) => (a[1] > b[1] ? a : b));
+    highestElement = foundElement;
+    highestValue = foundValue;
+  }
 
   const layout = {
     title: {
@@ -2379,8 +2384,14 @@ function drawPrediction3DChartForContainer(z, elements, Z0, containerId) {
 
   // Tạo title cho visualization đơn giản hóa
   const elementsList = getDamagedElementsList();
-  const highestElement = Object.keys(z).find(id => z[id] > 0);
-  const highestValue = highestElement ? z[highestElement] : 0;
+  const damagedEntries = Object.entries(z).filter(([, value]) => value > 0);
+  let highestElement = 'N/A';
+  let highestValue = 0;
+  if (damagedEntries.length > 0) {
+    const [foundElement, foundValue] = damagedEntries.reduce((a, b) => (a[1] > b[1] ? a : b));
+    highestElement = foundElement;
+    highestValue = foundValue;
+  }
 
   const layout = {
     title: {
@@ -3253,8 +3264,14 @@ function drawPrediction3DDamageChart(z, elements, Z0) {
 
   // Tạo title cho visualization đơn giản hóa
   const elementsList = getDamagedElementsList();
-  const highestElement = Object.keys(z).find(id => z[id] > 0);
-  const highestValue = highestElement ? z[highestElement] : 0;
+  const damagedEntries = Object.entries(z).filter(([, value]) => value > 0);
+  let highestElement = 'N/A';
+  let highestValue = 0;
+  if (damagedEntries.length > 0) {
+    const [foundElement, foundValue] = damagedEntries.reduce((a, b) => (a[1] > b[1] ? a : b));
+    highestElement = foundElement;
+    highestValue = foundValue;
+  }
 
   // Tính toán range cho layout
   const minX = Math.min(...x1);

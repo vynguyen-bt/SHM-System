@@ -16,7 +16,7 @@ function switchToPartB() {
   if (partB.style.display === "block") {
     setTimeout(() => {
       // ✅ NEW: Use Simulation.txt data to create TEST.csv with proper mapping
-      console.log('🎯 Creating TEST.csv using Simulation.txt data...');
+      
 
       // Check if Simulation.txt is available
       const fileInputSimulation = document.getElementById("txt-file-simulation");
@@ -34,28 +34,28 @@ function switchToPartB() {
               simulationData = parseSimulationFile(simulationContent);
               numDamageIndices = Object.keys(simulationData).length;
 
-              console.log(`📊 Found ${numDamageIndices} elements in Simulation.txt: [${Object.keys(simulationData).join(', ')}]`);
+              
 
               // Create TEST.csv with simulation data
               createTestCsvWithSimulationData(simulationData, numDamageIndices);
 
             } catch (error) {
-              console.error('❌ Error parsing Simulation.txt:', error);
+              
               createDefaultTestCsv();
             }
           };
           reader.readAsText(file);
         } catch (error) {
-          console.error('❌ Error reading Simulation.txt:', error);
+          
           createDefaultTestCsv();
         }
       } else {
-        console.log('⚠️ No Simulation.txt file found, using default TEST.csv');
+        
         createDefaultTestCsv();
       }
 
       function createTestCsvWithSimulationData(simulationData, numDI) {
-        console.log(`🔧 Creating TEST.csv with ${numDI} DI columns from Simulation.txt`);
+        
 
         let testCsvContent = "Case";
 
@@ -74,7 +74,7 @@ function switchToPartB() {
         testCsvContent += "0"; // Case number
 
         // ✅ FIXED: Add feature values from real Damage.txt data instead of random
-        console.log('🔧 Generating features from real Damage.txt data...');
+        
 
         // Get Damage.txt file and parse it
         const fileInputDamaged = document.getElementById("txt-file-damaged");
@@ -86,14 +86,14 @@ function switchToPartB() {
 
             // Get mode from Section 1 results
             const modeUsed = window.strainEnergyResults?.modeUsed || 12;
-            console.log(`📊 Using Mode ${modeUsed} from Section 1 results`);
+            
 
             try {
               // Parse real damage data
               const damageData = parseModeShapeFile(damageContent, modeUsed);
               const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
 
-              console.log(`✅ Parsed ${nodeIDs.length} nodes from Damage.txt for Mode ${modeUsed}`);
+              
 
               // Generate features from real data
               for (let i = 1; i <= 121; i++) {
@@ -108,7 +108,7 @@ function switchToPartB() {
 
                     // Log first 10 for verification
                     if (i <= 10) {
-                      console.log(`   U${i} (Node ${nodeID}): ${rawValue} (real data)`);
+                      
                     }
                   }
                 }
@@ -120,18 +120,18 @@ function switchToPartB() {
               finishTestCsvGeneration();
 
             } catch (error) {
-              console.error('❌ Error parsing Damage.txt, using fallback:', error);
+              
               generateFallbackFeatures();
             }
           };
           reader.readAsText(file);
         } else {
-          console.log('⚠️ Damage.txt not found, using fallback values');
+          
           generateFallbackFeatures();
         }
 
         function generateFallbackFeatures() {
-          console.log('🔧 Generating fallback random features...');
+          
           for (let i = 1; i <= 121; i++) {
             const value = (Math.random() * 0.001).toFixed(6);
             testCsvContent += "," + value;
@@ -151,7 +151,7 @@ function switchToPartB() {
             if (elementID === 2134) displayElementID = 55;
             else if (elementID === 2174) displayElementID = 95;
 
-            console.log(`🎯 DI${i+1} (Simulation ID ${elementID} → Display Element ${displayElementID}): ${damageValue}`);
+            
             testCsvContent += "," + damageValue.toFixed(4);
           }
           testCsvContent += "\n";
@@ -163,12 +163,12 @@ function switchToPartB() {
           testLink.download = "TEST.csv";
           testLink.click();
 
-          console.log(`✅ TEST.csv created with ${numDI} DI columns: ${simulationElements.map((id, i) => `DI${i+1}=${simulationData[id]}`).join(', ')}`);
+          
         }
       }
 
       function createDefaultTestCsv() {
-        console.log('🔧 Creating default TEST.csv with single DI');
+        
 
         let testCsvContent = "Case";
 
@@ -186,7 +186,7 @@ function switchToPartB() {
         // ✅ FIXED: Try to use real Damage.txt data, fallback to random if not available
         const fileInputDamaged = document.getElementById("txt-file-damaged");
         if (fileInputDamaged && fileInputDamaged.files[0]) {
-          console.log('🔧 Using real Damage.txt data for default TEST.csv...');
+          
 
           const file = fileInputDamaged.files[0];
           const reader = new FileReader();
@@ -198,7 +198,7 @@ function switchToPartB() {
               const damageData = parseModeShapeFile(damageContent, modeUsed);
               const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
 
-              console.log(`✅ Using real data: ${nodeIDs.length} nodes from Mode ${modeUsed}`);
+              
 
               // Add real feature values
               for (let i = 1; i <= 121; i++) {
@@ -224,16 +224,16 @@ function switchToPartB() {
               testLink.download = "TEST.csv";
               testLink.click();
 
-              console.log(`✅ Default TEST.csv created with real data from Mode ${modeUsed}`);
+              
 
             } catch (error) {
-              console.error('❌ Error using real data, falling back to random:', error);
+              
               generateRandomFeatures();
             }
           };
           reader.readAsText(file);
         } else {
-          console.log('⚠️ Damage.txt not available, using random values');
+          
           generateRandomFeatures();
         }
 
@@ -255,7 +255,7 @@ function switchToPartB() {
           testLink.download = "TEST.csv";
           testLink.click();
 
-          console.log(`✅ Default TEST.csv created with random values`);
+          
         }
       }
 
@@ -288,7 +288,7 @@ function switchToPartB3New() {
   if (partB3New) {
     partB3New.style.display = partB3New.style.display === "block" ? "none" : "block";
   } else {
-    console.log('⚠️ Element "partB3New" not found in DOM');
+    
   }
 
   // Khởi tạo mục 3 mới và cập nhật danh sách phần tử hư hỏng từ mục 1
@@ -316,7 +316,7 @@ function calculateDamageValueForElement(elementId) {
       let damageValue = actualDamage / 10.0; // Simple normalization
       damageValue = Math.min(Math.max(damageValue, 0), 1.0);
 
-      console.log(`📊 Element ${elementId}: Actual damage = ${actualDamage.toFixed(4)}, DI1 = ${damageValue.toFixed(4)}`);
+      
       return damageValue;
     }
   }
@@ -337,7 +337,7 @@ function calculateDamageValueForElement(elementId) {
     damageValue = 0.03; // Default for other elements
   }
 
-  console.log(`📊 Element ${elementId}: Using pattern-based DI1 = ${damageValue.toFixed(4)}`);
+  
   return damageValue;
 }
 
@@ -379,7 +379,7 @@ function createTrainCsvFromUploadedFiles() {
     processTrainingFilesAndCreateCsv(trainingFiles);
 
   } catch (error) {
-    console.error('❌ Error creating TRAIN.csv:', error);
+    
     createSampleTrainCsv();
   }
 }
@@ -480,9 +480,9 @@ window.onload = function () {
     if (element && element.style) {
       element.style.display = "none";
     } else if (!element) {
-      console.warn(`⚠️ Element '${elementId}' not found in DOM`);
+      
     }
   });
 
-  console.log('✅ All sections collapsed on page load for consistent UI');
+  
 };

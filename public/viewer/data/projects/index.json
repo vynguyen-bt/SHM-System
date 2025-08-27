@@ -1,0 +1,64 @@
+{
+  "projects": [
+    {
+      "id": "PhuDien",
+      "name": "Phu Dien Building"
+    },
+    {
+      "id": "MyProject",
+      "name": "Phu Dien Building (Old)"
+    },
+    {
+      "id": "Duplex",
+      "name": "Duplex"
+    },
+    {
+      "id": "Schependomlaan",
+      "name": "Schependomlaan"
+    },
+    {
+      "id": "Schependomlaan_invalid",
+      "name": "Schependomlaan Invalid"
+    },
+    {
+      "id": "WestRiversideHospital",
+      "name": "West Riverside Hospital"
+    },
+    {
+      "id": "OTCConferenceCenter",
+      "name": "OTC Conference Center"
+    },
+    {
+      "id": "ManyModels",
+      "name": "Duplex and Conference Center"
+    },
+    {
+      "id": "Systhema",
+      "name": "Systhema Test Model"
+    },
+    {
+      "id": "WaterLock",
+      "name": "WaterLock"
+    },
+    {
+      "id": "MAP",
+      "name": "MAP"
+    },
+    {
+      "id": "MAPPointCloud",
+      "name": "MAP Point Cloud"
+    },
+    {
+      "id": "Lyon",
+      "name": "Lyon"
+    },
+    {
+      "id": "HolterTower",
+      "name": "Holter Tower"
+    },
+    {
+      "id": "RevitSamples",
+      "name": "Revit Samples"
+    }
+  ]
+}

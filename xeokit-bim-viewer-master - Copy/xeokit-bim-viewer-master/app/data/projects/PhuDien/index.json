@@ -1,0 +1,24 @@
+{
+    "id": "PhuDien",
+    "name": "Phu Dien Building",
+    "models": [
+        {
+            "id": "building",
+            "name": "Phu Dien Building"
+        }
+    ],
+    "viewerConfigs": {
+        "backgroundColor": [1.0, 1.0, 1.0]
+    },
+    "viewerContent": {
+        "modelsLoaded": [
+            "building"
+        ]
+    },
+    "viewerState": {
+        "tabOpen": "models",
+        "expandObjectsTree": 1,
+        "expandClassesTree": 1,
+        "expandStoreysTree": 1
+    }
+}

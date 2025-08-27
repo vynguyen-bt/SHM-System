@@ -5,7 +5,7 @@
   
   // Silent auto-fix that runs on page load
   function applySilentCsvFix() {
-    console.log('🔧 Applying silent CSV raw values fix...');
+    // console.log('🔧 Applying silent CSV raw values fix...');
     
     // Override main CSV generation function
     window.createTestCsvContent = function() {
@@ -74,9 +74,9 @@
       };
     }
     
-    console.log('✅ Silent CSV fix applied - raw values will be used');
-    console.log('📊 CSV generation will now use exact EigenVector_UZ values from Damage.txt');
-    console.log('🔧 No user interaction required - fix runs automatically');
+    // console.log('✅ Silent CSV fix applied - raw values will be used');
+    // console.log('📊 CSV generation will now use exact EigenVector_UZ values from Damage.txt');
+    // console.log('🔧 No user interaction required - fix runs automatically');
   }
   
   function createSilentRawCsv(damageData, damagedElements, modeUsed) {

@@ -206,6 +206,28 @@
               <input type="number" id="step-value" value="3" step="0.1" />
             </div>
             <button onclick="processStrainEnergyData()">Tính toán năng lượng biến dạng</button>
+
+            <!-- Visualization Type Toggle -->
+            <div id="visualization-toggle-container" style="margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8f9fa;">
+              <label style="font-weight: bold; margin-bottom: 10px; display: block;">3D Visualization Type:</label>
+              <div style="display: flex; gap: 20px; align-items: center;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" id="viz-plotly" name="visualization-type" value="plotly" checked onchange="handleVisualizationTypeChange()" style="margin-right: 5px;">
+                  <span>🌐 Plotly (Interactive)</span>
+                </label>
+                <label for="viz-matplotlib" style="display: flex; align-items: center; cursor: pointer;">
+                  <input type="radio" id="viz-matplotlib" name="visualization-type" value="matplotlib" onchange="handleVisualizationTypeChange()" style="margin-right: 5px;">
+                  <span>📈 Matplotlib (High Quality)</span>
+                </label>
+                <div id="matplotlib-status" style="font-size: 12px; color: #666; margin-left: 10px;">
+                  Checking backend status...
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #666; margin-top: 5px;">
+                💡 Plotly: Interactive 3D charts with zoom/rotate. Matplotlib: High-quality static charts with Times New Roman fonts.
+              </div>
+            </div>
+
             <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
             <button onclick="downloadMultiMode3DChartsTestCSV()" id="download-charts-test-csv-btn" style="background-color: #17a2b8; color: white; margin-top: 10px;">Download Multi-3D (TEST.csv Based)</button>
             <button onclick="exportCompleteExcelReport()" style="background-color: #198754; color: white; margin-top: 10px;">📊 Xuất Báo Cáo Excel Hoàn Chỉnh</button>
@@ -233,7 +255,7 @@
               </div>
             </div>
             <div id="results"></div>
-            <div id="damage3DChart"></div>
+            <div id="damage3DChart" style="width:1200px; height:900px;"></div>
           </div>
         </div>
       </div>
@@ -338,7 +360,7 @@
             <div class="chart-container">
               <canvas id="predictionChart"></canvas>
             </div>
-            <div id="prediction3DChart" style="width: 100%; height: 600px; margin-top: 20px; overflow: hidden; border: 1px solid #ddd; border-radius: 8px;"></div>
+            <div id="prediction3DChart"></div>
             <div id="lowValuesList" hidden>
               <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
               <ul id="lowValues"></ul>
@@ -377,7 +399,7 @@
               <canvas id="predictionChartSection3"></canvas>
             </div>
 
-            <div id="prediction3DChartSection3" style="width: 100%; height: 600px; margin-top: 20px; overflow: hidden; border: 1px solid #ddd; border-radius: 8px;"></div>
+            <div id="prediction3DChartSection3"></div>
 
             <div id="lowValuesListSection3" hidden>
               <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
@@ -425,33 +447,85 @@
         </div>
       </div>
     </div>
+    <div class="main-part">
+      <button onclick="openIFCViewer()" class="button-open">
+        5. Xem mô hình IFC 3D
+      </button>
+      <div class="body-part">
+        <div id="partIFC" class="body-part">
+          <div class="container">
+            <h1>5. Xem mô hình IFC 3D</h1>
+            <p>Truy cập vào trình xem mô hình IFC 3D để visualize kết cấu công trình</p>
+            <button onclick="openIFCViewerWindow()" class="btn btn-primary" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
+              🏗️ Mở IFC Viewer
+            </button>
+            <button onclick="openIFCViewerNewTab()" class="btn btn-secondary" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
+              🔗 Mở trong Tab Mới
+            </button>
+            <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
+              <h5>📋 Hướng dẫn sử dụng:</h5>
+              <ul style="margin-bottom: 0;">
+                <li>Click "Mở IFC Viewer" để xem mô hình trong cửa sổ hiện tại</li>
+                <li>Click "Mở trong Tab Mới" để xem mô hình trong tab mới</li>
+                <li>Sử dụng chuột để xoay, zoom và di chuyển mô hình 3D</li>
+                <li>Sử dụng các công cụ trong toolbar để đo đạc và phân tích</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="js/switch.js"></script>
     <script src="js/test_switch_functions.js"></script>
     <script src="js/calculations.js"></script>
+    <script src="js/matplotlib_3d_integration.js"></script>
 
     <!-- ✅ EMERGENCY FIX: Ensure switchToPartB1 function exists -->
     <script>
       // Emergency fallback for switchToPartB1
       if (typeof switchToPartB1 === 'undefined') {
-        console.log('🔧 EMERGENCY FIX: Creating switchToPartB1 function');
+
 
         function switchToPartB1() {
-          console.log('🔧 Emergency switchToPartB1 called');
+
           var partB1 = document.getElementById("partB1");
           if (partB1) {
             partB1.style.display = partB1.style.display === "block" ? "none" : "block";
-            console.log('✅ partB1 toggled successfully');
+
           } else {
-            console.error('❌ partB1 element not found');
+
           }
         }
 
         // Make it globally available
         window.switchToPartB1 = switchToPartB1;
-        console.log('✅ Emergency switchToPartB1 function created');
+
       } else {
-        console.log('✅ switchToPartB1 function already exists');
+
       }
+
+      // IFC Viewer functions
+      function openIFCViewer() {
+        var partIFC = document.getElementById("partIFC");
+        if (partIFC) {
+          partIFC.style.display = partIFC.style.display === "block" ? "none" : "block";
+        }
+      }
+
+      function openIFCViewerWindow() {
+        // Navigate to IFC viewer in current window
+        window.location.href = '/viewer/index.html?projectId=PhuDien';
+      }
+
+      function openIFCViewerNewTab() {
+        // Open IFC viewer in new tab
+        window.open('/viewer/index.html?projectId=PhuDien', '_blank');
+      }
+
+      // Make functions globally available
+      window.openIFCViewer = openIFCViewer;
+      window.openIFCViewerWindow = openIFCViewerWindow;
+      window.openIFCViewerNewTab = openIFCViewerNewTab;
     </script>
     <script src="js/fileHandling.js"></script>
     <script src="js/chartProcessing.js"></script>
@@ -512,8 +586,8 @@
         // - createImmediateFixReport() - Test toggle functions
         // - createLayoutTestReport() - Test section layout
         // - createTextAlignmentReport() - Test text alignment
-        console.log('✅ SHM-BIM-FEM loaded successfully');
-        console.log('💡 Debug tools available: createImmediateFixReport(), createLayoutTestReport(), createTextAlignmentReport()');
+        
+        
       });
     </script>
   </body>

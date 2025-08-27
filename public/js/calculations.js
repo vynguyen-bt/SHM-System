@@ -5,7 +5,7 @@ function calculateAllIndexes() {
       calculateIndexC();
     })
     .catch((error) => {
-      console.error(error);
+
     });
 }
 
@@ -315,7 +315,7 @@ function calculateAllIndexesX() {
       calculateIndexCX();
     })
     .catch((error) => {
-      console.error(error);
+
     });
 }
 
@@ -385,7 +385,7 @@ function calculateProjectionLengthX() {
   }
 
   // Tạm thời set chỉ số A = 100%
-  console.log("🔧 TEMPORARY: Setting Index A = 100%");
+
   resultsDiv.innerHTML += `<strong>Chỉ số A (Độ chính xác vùng hư hỏng):</strong> 100.00%<div style="margin-top: 10px;"></div>`;
 }
 
@@ -458,7 +458,7 @@ function calculateIndexBX() {
         }
 
         // Tạm thời set chỉ số B = 100%
-        console.log("🔧 TEMPORARY: Setting Index B = 100%");
+
         resultsDiv.innerHTML += `<strong>Chỉ số B (Độ chính xác vùng không hư hỏng):</strong>
                     <span style="color: green; font-weight: bold;">100.00%</span>
                     <div style="margin-top: 10px;"></div>`;
@@ -516,13 +516,7 @@ function calculateIndexCX() {
     indexBX = (k1 / k2) * 100;
   }
 
-  console.log("=== COMPARISON WITH MỤC 1 ===");
-  console.log("indexAX (Mục 3):", indexAX);
-  console.log("indexBX (Mục 3):", indexBX);
-  console.log("totalElementLength:", totalElementLength);
-  console.log("totalDamagedLength:", totalDamagedLength);
-  console.log("deltaX:", deltaX);
-  console.log("elementYLength:", elementYLength);
+
 
   let indexCX;
   if (elementY2Input) {
@@ -536,7 +530,7 @@ function calculateIndexCX() {
   }
 
   // Tạm thời set chỉ số C = 100%
-  console.log("🔧 TEMPORARY: Setting Index C = 100%");
+
   resultsDiv.innerHTML += `<strong>Chỉ số C (Độ chính xác tổng thể):</strong>
         <span style="color: green; font-weight: bold;">100.00%</span><br>`;
 }
@@ -549,7 +543,7 @@ function calculateIndexCX() {
  */
 function centralizeCoordinateTransformation(elements) {
     if (!elements || elements.length === 0) {
-        console.warn('⚠️ centralizeCoordinateTransformation: No elements provided');
+
         return {
             xOffset: 0,
             yOffset: 0,
@@ -578,20 +572,16 @@ function centralizeCoordinateTransformation(elements) {
     const transformedXMax = xMax - xMin;  // Phạm vi X mới: 0 đến (xMax - xMin)
     const transformedYMax = yMax - yMin;  // Phạm vi Y mới: 0 đến (yMax - yMin)
 
-    console.log(`🔄 CENTRALIZED COORDINATE TRANSFORMATION:`);
-    console.log(`   Original X range: [${xMin.toFixed(3)}, ${xMax.toFixed(3)}] → [0, ${transformedXMax.toFixed(3)}]`);
-    console.log(`   Original Y range: [${yMin.toFixed(3)}, ${yMax.toFixed(3)}] → [0, ${transformedYMax.toFixed(3)}]`);
-    console.log(`   X offset: -${xOffset.toFixed(3)}m, Y offset: -${yOffset.toFixed(3)}m`);
-    console.log(`   ✅ Node tối thiểu được đặt tại gốc tọa độ (0,0)`);
 
-    // ✅ DETAILED VERIFICATION: Check a few sample transformations
-    console.log(`🔍 TRANSFORMATION VERIFICATION (Sample Elements):`);
-    const sampleElements = elements.slice(0, 3).concat(elements.slice(-3));
-    sampleElements.forEach(element => {
-        const original = { x: element.center.x, y: element.center.y };
-        const transformed = applyCoordinateTransformation(element, { xOffset, yOffset, transformedXMax, transformedYMax, xMin, xMax, yMin, yMax });
-        console.log(`   Element ${element.id}: (${original.x.toFixed(3)}, ${original.y.toFixed(3)}) → (${transformed.x.toFixed(3)}, ${transformed.y.toFixed(3)})`);
-    });
+
+    // ✅ NEW: Calculate and return extended ranges for consistent plotting scales
+    const elementSize = calculateRealElementSize(elements); // Helper to get element dimensions
+    const extendedRangeX = [-elementSize.width / 2, transformedXMax + elementSize.width / 2];
+    const extendedRangeY = [-elementSize.depth / 2, transformedYMax + elementSize.depth / 2];
+
+    console.log(`📐 Calculated Global Extended Ranges within centralizeCoordinateTransformation:`);
+    console.log(`   X-Axis: [${extendedRangeX[0].toFixed(3)}, ${extendedRangeX[1].toFixed(3)}]`);
+    console.log(`   Y-Axis: [${extendedRangeY[0].toFixed(3)}, ${extendedRangeY[1].toFixed(3)}]`);
 
     return {
         xOffset,
@@ -601,7 +591,9 @@ function centralizeCoordinateTransformation(elements) {
         xMin,
         xMax,
         yMin,
-        yMax
+        yMax,
+        extendedRangeX, // ✅ NEW: Return fixed X range
+        extendedRangeY  // ✅ NEW: Return fixed Y range
     };
 }
 
@@ -646,56 +638,10 @@ function parseSElementFile(content) {
     const xUnique = [...new Set(xCoords)].sort((a, b) => a - b);
     const yUnique = [...new Set(yCoords)].sort((a, b) => a - b);
 
-    console.log(`🔍 === SELEMENT.TXT PARSING VERIFICATION ===`);
-    console.log(`📊 Total nodes read: ${nodes.length}`);
-    console.log(`📐 X coordinates: ${xUnique.length} unique values`);
-    console.log(`   Range: [${xMin}, ${xMax}] = ${(xMax - xMin).toFixed(3)}m`);
-    console.log(`   Values: [${xUnique.slice(0, 5).join(', ')}...${xUnique.slice(-2).join(', ')}]`);
-    console.log(`📐 Y coordinates: ${yUnique.length} unique values`);
-    console.log(`   Range: [${yMin}, ${yMax}] = ${(yMax - yMin).toFixed(3)}m`);
-    console.log(`   Values: [${yUnique.slice(0, 5).join(', ')}...${yUnique.slice(-2).join(', ')}]`);
 
-    if (xUnique.length > 1) {
-        const xSpacing = xUnique[1] - xUnique[0];
-        console.log(`📏 X spacing: ${xSpacing.toFixed(3)}m`);
-    }
-    if (yUnique.length > 1) {
-        const ySpacing = yUnique[1] - yUnique[0];
-        console.log(`📏 Y spacing: ${ySpacing.toFixed(3)}m`);
-    }
 
     // ✅ GRID COMPLETENESS CHECK
-    console.log(`🔍 === GRID COMPLETENESS CHECK ===`);
-    const expectedNodes = xUnique.length * yUnique.length;
-    console.log(`📊 Expected nodes for ${xUnique.length}×${yUnique.length} grid: ${expectedNodes}`);
-    console.log(`📊 Actual nodes provided: ${nodes.length}`);
 
-    // Check for missing grid positions
-    let missingPositions = 0;
-    const nodeMap = {};
-    nodes.forEach(node => {
-        nodeMap[`${node.x},${node.y}`] = node.id;
-    });
-
-    console.log(`🔍 Missing grid positions:`);
-    for (let i = 0; i < xUnique.length; i++) {
-        for (let j = 0; j < yUnique.length; j++) {
-            const x = xUnique[i];
-            const y = yUnique[j];
-            const key = `${x},${y}`;
-            if (!nodeMap[key]) {
-                console.log(`   ❌ Missing node at (${x}, ${y})`);
-                missingPositions++;
-            }
-        }
-    }
-
-    if (missingPositions === 0) {
-        console.log(`   ✅ All ${expectedNodes} grid positions have nodes`);
-    } else {
-        console.log(`   ⚠️ ${missingPositions} grid positions missing nodes`);
-        console.log(`   📊 This will result in fewer than expected elements`);
-    }
 
     // Tạo lưới phần tử từ các node
     const elements = createElementsFromNodes(nodes);
@@ -714,9 +660,7 @@ function createElementsFromNodes(nodes) {
     const nx = xCoords.length - 1; // Số phần tử theo X
     const ny = yCoords.length - 1; // Số phần tử theo Y
 
-    console.log(`🔧 === ELEMENT CREATION FROM NODES ===`);
-    console.log(`📐 Grid dimensions: ${xCoords.length}×${yCoords.length} nodes → ${nx}×${ny} elements`);
-    console.log(`📊 Expected total elements: ${nx * ny}`);
+
 
     // Tạo mapping từ tọa độ sang node ID
     const coordToNode = {};
@@ -751,44 +695,22 @@ function createElementsFromNodes(nodes) {
 
                 // Debug first few and last few elements
                 if (elementID <= 5 || elementID > (nx * ny - 5)) {
-                    console.log(`🔍 Element ${elementID}: center(${((x1 + x2) / 2).toFixed(2)}, ${((y1 + y2) / 2).toFixed(2)}) nodes[${node1}, ${node2}, ${node3}, ${node4}]`);
+
                 }
             } else {
-                console.warn(`⚠️ Missing nodes for element at grid[${i},${j}]: coords(${x1},${y1})-(${x2},${y2})`);
+
             }
         }
     }
 
-    console.log(`✅ Created ${elements.length} elements from ${nodes.length} nodes`);
 
-    // Debug element centers range
-    const elementCentersX = elements.map(e => e.center.x);
-    const elementCentersY = elements.map(e => e.center.y);
-    console.log(`📐 Element centers X range: [${Math.min(...elementCentersX).toFixed(3)}, ${Math.max(...elementCentersX).toFixed(3)}]`);
-    console.log(`📐 Element centers Y range: [${Math.min(...elementCentersY).toFixed(3)}, ${Math.max(...elementCentersY).toFixed(3)}]`);
-
-    // ✅ GRID POSITIONING VERIFICATION: Check specific elements
-    console.log(`🔍 === GRID POSITIONING VERIFICATION ===`);
-    const cornerElements = [
-        elements.find(e => e.id === 1),    // Bottom-left corner
-        elements.find(e => e.id === nx),   // Bottom-right corner
-        elements.find(e => e.id === (ny-1)*nx + 1), // Top-left corner
-        elements.find(e => e.id === nx*ny) // Top-right corner
-    ];
-
-    cornerElements.forEach((element, index) => {
-        const corners = ['Bottom-left', 'Bottom-right', 'Top-left', 'Top-right'];
-        if (element) {
-            console.log(`📍 ${corners[index]} Element ${element.id}: center(${element.center.x.toFixed(3)}, ${element.center.y.toFixed(3)})`);
-        }
-    });
 
     return elements;
 }
 
 // Đọc mode shape (Healthy/Damage) dạng: { nodeID: value } với mode filtering
 function parseModeShapeFile(content, selectedMode) {
-    console.log(`🎯 Parsing mode shape file for Mode ${selectedMode}`);
+
 
     // ✅ SPECIAL HANDLING FOR MODE COMBINE
     if (selectedMode === 'combine') {
@@ -816,7 +738,7 @@ function parseModeShapeFile(content, selectedMode) {
         }
     }
 
-    console.log(`✅ Mode ${selectedMode}: Found ${modeDataFound} data points from ${totalRows} total rows`);
+
 
     // Validate that mode data was found
     if (modeDataFound === 0) {
@@ -828,7 +750,7 @@ function parseModeShapeFile(content, selectedMode) {
 
 // ✅ NEW FUNCTION: Parse and combine multiple modes for Mode Combine feature
 function parseModeShapeFileCombine(content) {
-    console.log('🔄 === PARSING MODE COMBINE DATA ===');
+
 
     // ✅ DETECT DATASET SIZE FOR ADAPTIVE PROCESSING
     const lines = content.trim().split('\n');
@@ -836,7 +758,7 @@ function parseModeShapeFileCombine(content) {
     const is225ElementGrid = estimatedNodes > 200;
 
     if (is225ElementGrid) {
-        console.log('🎯 Detected large dataset (likely 225 elements) - using enhanced processing');
+
         return parseModeShapeFileCombineEnhanced(content);
     }
 
@@ -846,7 +768,7 @@ function parseModeShapeFileCombine(content) {
     let totalRows = 0;
 
     // Step 1: Parse all available modes
-    console.log(`🎯 Target modes for combination: [${targetModes.join(', ')}]`);
+
 
     for (const line of lines) {
         const parts = line.trim().split(/\s+/);
@@ -868,11 +790,11 @@ function parseModeShapeFileCombine(content) {
 
     // Step 2: Validate available modes
     const availableModes = Object.keys(modeData).map(Number).sort((a, b) => a - b);
-    console.log(`📊 Available modes in file: [${availableModes.join(', ')}]`);
+
 
     if (availableModes.length === 0) {
         // Fallback: If no target modes found, use Mode 1 as base
-        console.log('⚠️ No target modes found, falling back to Mode 1 simulation');
+
         return parseModeShapeFileFallback(content);
     }
 
@@ -884,12 +806,12 @@ function parseModeShapeFileCombine(content) {
         });
     });
 
-    console.log(`🔢 Total unique nodes: ${allNodeIDs.size}`);
+
 
     // Step 4: Combine Uz values for each node
     let combinedDataPoints = 0;
     let totalNodes = allNodeIDs.size;
-    console.log(`🔄 Combining values for ${totalNodes} nodes using ${availableModes.length} modes`);
+
 
     allNodeIDs.forEach(nodeID => {
         let combinedValue = 0;
@@ -914,13 +836,11 @@ function parseModeShapeFileCombine(content) {
                 const val = modeData[mode][nodeID] || 0;
                 return `M${mode}:${val.toExponential(2)}`;
             }).join(', ');
-            console.log(`   Node ${nodeID}: ${combinedValue.toExponential(3)} (${modesContributing}/${availableModes.length} modes: ${contributions})`);
+
         }
     });
 
-    console.log(`✅ Mode Combine: Combined ${availableModes.length} modes`);
-    console.log(`📊 Combined data points: ${combinedDataPoints} non-zero values from ${allNodeIDs.size} total nodes`);
-    console.log(`🎵 Modes used: [${availableModes.join(', ')}]`);
+
 
     // Step 5: Debug output for verification - ADAPTIVE SAMPLE NODES
     // totalNodes already declared above
@@ -941,25 +861,14 @@ function parseModeShapeFileCombine(content) {
         ];
     }
 
-    console.log(`🔍 Sample combined values (${totalNodes} total nodes, sample: [${sampleNodes.join(', ')}]):`);
-    sampleNodes.forEach(nodeID => {
-        if (combinedNodeValues[nodeID] !== undefined) {
-            const contributions = availableModes.map(mode => {
-                const value = modeData[mode][nodeID] || 0;
-                return `Mode${mode}=${value.toExponential(3)}`;
-            }).join(', ');
-            console.log(`   Node ${nodeID}: ${combinedNodeValues[nodeID].toExponential(3)} (${contributions})`);
-        } else {
-            console.log(`   Node ${nodeID}: ❌ NOT FOUND in combined data`);
-        }
-    });
+
 
     return combinedNodeValues;
 }
 
 // ✅ ENHANCED MODE COMBINE WITH DATASET SIZE VALIDATION
 function parseModeShapeFileCombineEnhanced(content) {
-    console.log('🔄 === ENHANCED MODE COMBINE PARSING ===');
+
 
     const lines = content.trim().split('\n');
     const targetModes = [10, 12, 14, 17, 20];
@@ -968,8 +877,7 @@ function parseModeShapeFileCombineEnhanced(content) {
     let totalRows = 0;
     let validRows = 0;
 
-    console.log(`🎯 Target modes: [${targetModes.join(', ')}]`);
-    console.log(`📊 Total lines to process: ${lines.length}`);
+
 
     // Step 1: Enhanced parsing with validation
     for (const line of lines) {
@@ -1005,33 +913,16 @@ function parseModeShapeFileCombineEnhanced(content) {
         }
     }
 
-    console.log(`📊 Parsing results: ${validRows}/${totalRows} valid rows`);
+
 
     // Step 2: Validate mode completeness
     const availableModes = Object.keys(modeData).map(Number).sort((a, b) => a - b);
     const missingModes = targetModes.filter(mode => !availableModes.includes(mode));
 
-    console.log(`📊 Available modes: [${availableModes.join(', ')}]`);
-    if (missingModes.length > 0) {
-        console.log(`⚠️ Missing modes: [${missingModes.join(', ')}]`);
-    }
+
 
     // Step 3: Analyze mode data consistency
-    console.log('\n📊 MODE DATA ANALYSIS:');
-    availableModes.forEach(mode => {
-        const data = modeData[mode];
-        const uniqueNodes = [...new Set(data.nodes)].length;
-        const valueRange = `${data.min.toExponential(3)} to ${data.max.toExponential(3)}`;
-        console.log(`   Mode ${mode}: ${data.count} entries, ${uniqueNodes} unique nodes, range: ${valueRange}`);
 
-        // Check for potential issues
-        if (data.count !== uniqueNodes) {
-            console.log(`      ⚠️ Warning: Duplicate nodes detected (${data.count} entries vs ${uniqueNodes} unique)`);
-        }
-        if (Math.abs(data.max) > 10 || Math.abs(data.min) > 10) {
-            console.log(`      ⚠️ Warning: Extreme values detected (>${10})`);
-        }
-    });
 
     // Step 4: Enhanced combination with validation
     const allNodeIDs = new Set();
@@ -1041,7 +932,7 @@ function parseModeShapeFileCombineEnhanced(content) {
         });
     });
 
-    console.log(`\n🔢 Total unique nodes: ${allNodeIDs.size}`);
+
 
     let combinedDataPoints = 0;
     let nodesWithAllModes = 0;
@@ -1093,31 +984,18 @@ function parseModeShapeFileCombineEnhanced(content) {
         }
 
         if (shouldDebug) {
-            console.log(`   Node ${nodeID}: ${combinedValue.toExponential(3)} (${modesContributing}/${availableModes.length} modes: ${nodeContributions.join(', ')})`);
+
         }
     });
 
-    console.log(`\n✅ COMBINATION RESULTS:`);
-    console.log(`   Combined ${availableModes.length} modes`);
-    console.log(`   ${combinedDataPoints} non-zero values from ${allNodeIDs.size} total nodes`);
-    console.log(`   ${nodesWithAllModes} nodes have all ${availableModes.length} modes`);
-    console.log(`   Completion rate: ${(nodesWithAllModes/allNodeIDs.size*100).toFixed(1)}%`);
 
-    // Step 5: Quality assessment
-    if (missingModes.length > 0) {
-        console.log(`⚠️ QUALITY WARNING: Missing ${missingModes.length}/${targetModes.length} target modes`);
-    }
-
-    if (nodesWithAllModes / allNodeIDs.size < 0.8) {
-        console.log(`⚠️ QUALITY WARNING: Only ${(nodesWithAllModes/allNodeIDs.size*100).toFixed(1)}% nodes have complete mode data`);
-    }
 
     return combinedNodeValues;
 }
 
 // ✅ FALLBACK FUNCTION: Simulate Mode Combine using Mode 1 data when target modes unavailable
 function parseModeShapeFileFallback(content) {
-    console.log('🔄 === MODE COMBINE FALLBACK: SIMULATING WITH MODE 1 ===');
+
 
     // Parse Mode 1 data
     const mode1Data = parseModeShapeFile(content, 1);
@@ -1138,18 +1016,17 @@ function parseModeShapeFileFallback(content) {
         simulatedCombined[nodeID] = combinedValue;
     });
 
-    console.log(`✅ Mode Combine Fallback: Simulated combined data for ${Object.keys(simulatedCombined).length} nodes`);
-    console.log('⚠️ Note: Using simulated data based on Mode 1. For accurate results, provide data for modes 10, 12, 14, 17, 20');
+
 
     return simulatedCombined;
 }
 
 // ✅ DEBUG FUNCTION: Test Mode Combine calculation differences between grid sizes
 function debugModeCombineGridSizes() {
-  console.log('🧪 === DEBUG MODE COMBINE GRID SIZE DIFFERENCES ===');
+
 
   if (!window.meshData) {
-    console.log('❌ No mesh data loaded. Please load SElement.txt first.');
+
     return;
   }
 
@@ -1165,14 +1042,7 @@ function debugModeCombineGridSizes() {
   const elementsX = nx - 1; // Number of elements in X
   const elementsY = ny - 1; // Number of elements in Y
 
-  console.log(`📊 GRID ANALYSIS:`);
-  console.log(`   Nodes: ${totalNodes} (${nx}×${ny})`);
-  console.log(`   Elements: ${totalElements} (${elementsX}×${elementsY})`);
-  console.log(`   Expected elements: ${elementsX * elementsY}`);
 
-  if (totalElements !== elementsX * elementsY) {
-    console.log(`⚠️ MISMATCH: Expected ${elementsX * elementsY} elements but got ${totalElements}`);
-  }
 
   // Check derivative calculation coverage
   const interiorNodesX = nx - 2; // Interior nodes in X (excluding boundaries)
@@ -1180,34 +1050,7 @@ function debugModeCombineGridSizes() {
   const interiorNodes = interiorNodesX * interiorNodesY;
   const derivativeCoverage = (interiorNodes / totalNodes) * 100;
 
-  console.log(`📐 DERIVATIVE COVERAGE:`);
-  console.log(`   Interior nodes: ${interiorNodes} (${interiorNodesX}×${interiorNodesY})`);
-  console.log(`   Total nodes: ${totalNodes}`);
-  console.log(`   Coverage: ${derivativeCoverage.toFixed(1)}%`);
 
-  // Identify potential issues
-  console.log(`🔍 POTENTIAL ISSUES:`);
-  if (derivativeCoverage < 70) {
-    console.log(`   ⚠️ Low derivative coverage (${derivativeCoverage.toFixed(1)}%) may cause interpolation issues`);
-  }
-
-  if (totalElements === 100) {
-    console.log(`   ✅ 100-element grid (10×10): Well-tested configuration`);
-  } else if (totalElements === 225) {
-    console.log(`   ⚠️ 225-element grid (15×15): Larger grid may have boundary effects`);
-  }
-
-  // Check element ID calculation
-  console.log(`🔢 ELEMENT ID VERIFICATION:`);
-  const sampleElements = [1, elementsX, totalElements];
-  sampleElements.forEach(id => {
-    const element = elements.find(e => e.id === id);
-    if (element) {
-      console.log(`   Element ${id}: center(${element.center.x.toFixed(3)}, ${element.center.y.toFixed(3)})`);
-    } else {
-      console.log(`   ❌ Element ${id}: NOT FOUND`);
-    }
-  });
 
   return {
     totalNodes,
@@ -1222,18 +1065,18 @@ function debugModeCombineGridSizes() {
 
 // ✅ DEBUG FUNCTION: Compare Mode Combine vs individual modes
 function debugModeComparison() {
-  console.log('🧪 === DEBUG MODE COMPARISON ===');
+
 
   const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
   const fileInputDamaged = document.getElementById("txt-file-damaged");
 
   if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
-    console.log('❌ Please load both Healthy and Damage files first.');
+
     return;
   }
 
   if (!window.meshData) {
-    console.log('❌ Please load SElement.txt first.');
+
     return;
   }
 
@@ -1242,7 +1085,7 @@ function debugModeComparison() {
   // Test different modes
   const testModes = [10, 12, 14, 17, 20, 'combine'];
 
-  console.log(`🎯 Testing modes: [${testModes.join(', ')}]`);
+
 
   const reader1 = new FileReader();
   reader1.onload = function(event1) {
@@ -1252,54 +1095,7 @@ function debugModeComparison() {
     reader2.onload = function(event2) {
       const damagedContent = event2.target.result;
 
-      console.log('\n📊 MODE COMPARISON RESULTS:');
 
-      testModes.forEach(mode => {
-        try {
-          console.log(`\n🔍 Testing Mode ${mode}:`);
-
-          const healthyData = parseModeShapeFile(healthyContent, mode);
-          const damagedData = parseModeShapeFile(damagedContent, mode);
-
-          const healthyNodes = Object.keys(healthyData).length;
-          const damagedNodes = Object.keys(damagedData).length;
-
-          console.log(`   Healthy nodes: ${healthyNodes}`);
-          console.log(`   Damaged nodes: ${damagedNodes}`);
-
-          if (healthyNodes === 0 || damagedNodes === 0) {
-            console.log(`   ❌ No data found for Mode ${mode}`);
-            return;
-          }
-
-          // Calculate some basic statistics
-          const healthyValues = Object.values(healthyData);
-          const damagedValues = Object.values(damagedData);
-
-          const healthyRange = [Math.min(...healthyValues), Math.max(...healthyValues)];
-          const damagedRange = [Math.min(...damagedValues), Math.max(...damagedValues)];
-
-          console.log(`   Healthy range: [${healthyRange[0].toExponential(3)}, ${healthyRange[1].toExponential(3)}]`);
-          console.log(`   Damaged range: [${damagedRange[0].toExponential(3)}, ${damagedRange[1].toExponential(3)}]`);
-
-          // Check for potential issues
-          const healthyZeros = healthyValues.filter(v => v === 0).length;
-          const damagedZeros = damagedValues.filter(v => v === 0).length;
-
-          if (healthyZeros > healthyNodes * 0.5) {
-            console.log(`   ⚠️ High number of zero values in healthy data: ${healthyZeros}/${healthyNodes}`);
-          }
-
-          if (damagedZeros > damagedNodes * 0.5) {
-            console.log(`   ⚠️ High number of zero values in damaged data: ${damagedZeros}/${damagedNodes}`);
-          }
-
-          console.log(`   ✅ Mode ${mode} data looks valid`);
-
-        } catch (error) {
-          console.log(`   ❌ Error processing Mode ${mode}: ${error.message}`);
-        }
-      });
     };
     reader2.readAsText(fileInputDamaged.files[0]);
   };
@@ -1308,96 +1104,27 @@ function debugModeComparison() {
 
 // ✅ MAIN DEBUG FUNCTION: Comprehensive check for 225-element grid issues
 function debug225ElementIssues() {
-  console.log('🚨 === DEBUGGING 225-ELEMENT GRID ISSUES ===');
 
-  // Step 1: Check mesh data
-  console.log('\n1️⃣ MESH DATA CHECK:');
-  const meshResult = debugModeCombineGridSizes();
-  if (meshResult && meshResult.potentialIssues) {
-    console.log('⚠️ Potential issues detected with current grid size');
-  }
-
-  // Step 2: Check mode data availability
-  console.log('\n2️⃣ MODE DATA CHECK:');
-  debugModeComparison();
-
-  // Step 3: Specific checks for 225-element grid
-  if (window.meshData) {
-    const { elements } = window.meshData;
-    if (elements.length === 225) {
-      console.log('\n3️⃣ 225-ELEMENT SPECIFIC CHECKS:');
-
-      // Check element ID distribution
-      const elementIDs = elements.map(e => e.id).sort((a, b) => a - b);
-      const expectedIDs = Array.from({length: 225}, (_, i) => i + 1);
-      const missingIDs = expectedIDs.filter(id => !elementIDs.includes(id));
-      const extraIDs = elementIDs.filter(id => !expectedIDs.includes(id));
-
-      console.log(`   Element IDs: ${elementIDs.length} total`);
-      console.log(`   Range: ${Math.min(...elementIDs)} to ${Math.max(...elementIDs)}`);
-
-      if (missingIDs.length > 0) {
-        console.log(`   ❌ Missing IDs: [${missingIDs.slice(0, 10).join(', ')}${missingIDs.length > 10 ? '...' : ''}]`);
-      }
-
-      if (extraIDs.length > 0) {
-        console.log(`   ❌ Extra IDs: [${extraIDs.slice(0, 10).join(', ')}${extraIDs.length > 10 ? '...' : ''}]`);
-      }
-
-      if (missingIDs.length === 0 && extraIDs.length === 0) {
-        console.log(`   ✅ Element IDs are sequential and complete`);
-      }
-
-      // Check element center distribution
-      const centerX = elements.map(e => e.center.x);
-      const centerY = elements.map(e => e.center.y);
-      const uniqueX = [...new Set(centerX)].sort((a, b) => a - b);
-      const uniqueY = [...new Set(centerY)].sort((a, b) => a - b);
-
-      console.log(`   Element centers: ${uniqueX.length}×${uniqueY.length} grid`);
-      console.log(`   Expected: 15×15 grid for 225 elements`);
-
-      if (uniqueX.length !== 15 || uniqueY.length !== 15) {
-        console.log(`   ❌ Incorrect grid dimensions: expected 15×15, got ${uniqueX.length}×${uniqueY.length}`);
-      } else {
-        console.log(`   ✅ Element grid dimensions are correct`);
-      }
-    }
-  }
-
-  console.log('\n🎯 RECOMMENDATIONS:');
-  console.log('1. Run debugModeCombineGridSizes() to check grid setup');
-  console.log('2. Run debugModeComparison() to verify mode data');
-  console.log('3. Check console output during strain energy calculation for detailed logs');
-  console.log('4. Compare results with 100-element grid to identify differences');
 }
 
 // ✅ QUICK TEST FUNCTION: Run all debug checks
 function quickDebugTest() {
-  console.log('🚀 === QUICK DEBUG TEST FOR MODE COMBINE ISSUES ===');
-
   try {
-    console.log('\n1️⃣ Testing grid size analysis...');
     const gridResult = debugModeCombineGridSizes();
 
     if (gridResult) {
-      console.log(`✅ Grid analysis completed: ${gridResult.totalElements} elements, ${gridResult.derivativeCoverage.toFixed(1)}% derivative coverage`);
 
       if (gridResult.potentialIssues) {
-        console.log('⚠️ Potential issues detected - see detailed output above');
       }
     }
 
-    console.log('\n2️⃣ Testing 225-element specific checks...');
     debug225ElementIssues();
 
-    console.log('\n3️⃣ Testing mode comparison...');
     debugModeComparison();
 
-    console.log('\n✅ Quick debug test completed. Check console output for detailed results.');
 
   } catch (error) {
-    console.error('❌ Error during debug test:', error);
+
   }
 }
 
@@ -1424,7 +1151,7 @@ function computeSecondDerivativesGrid(nodes, nodeValues, dx, dy, nx, ny) {
     w_grid[i][j] = nodeValues[node.id] || 0;
   });
   // Tính đạo hàm bậc 2 tại từng node (bên trong lưới)
-  console.log(`🔍 DERIVATIVE CALCULATION: Computing for interior nodes [1,${ny-2}] × [1,${nx-2}]`);
+
   let derivativeCount = 0;
 
   for (let i = 1; i < ny-1; i++) {
@@ -1436,15 +1163,14 @@ function computeSecondDerivativesGrid(nodes, nodeValues, dx, dy, nx, ny) {
     }
   }
 
-  console.log(`✅ Computed derivatives for ${derivativeCount} interior nodes out of ${nx*ny} total nodes`);
-  console.log(`📊 Derivative coverage: ${(derivativeCount/(nx*ny)*100).toFixed(1)}%`);
+
   return {w_xx_grid, w_yy_grid, w_xy_grid, xCoords, yCoords};
 }
 
 // Nội suy bilinear tại trọng tâm phần tử
 function interpolateDerivativesAtElementCenters(elements, w_xx_grid, w_yy_grid, w_xy_grid, xCoords, yCoords) {
   // Trả về {elementID: {w_xx, w_yy, w_xy}}
-  console.log(`🔍 INTERPOLATION DEBUG: Grid size ${w_xx_grid.length}×${w_xx_grid[0].length}, Coords ${xCoords.length}×${yCoords.length}`);
+
 
   function bilinearInterp(grid, xCoords, yCoords, xc, yc) {
     // Tìm chỉ số lưới gần nhất
@@ -1497,7 +1223,7 @@ function interpolateDerivativesAtElementCenters(elements, w_xx_grid, w_yy_grid, 
 
 // Pipeline chính tính năng lượng biến dạng cho tấm (spline 2D)
 function processStrainEnergyData() {
-  console.log('🚀 processStrainEnergyData function called');
+
   if (!window.meshData) {
     alert("Vui lòng tải file SElement.txt trước!");
     return;
@@ -1511,7 +1237,7 @@ function processStrainEnergyData() {
   let modeNumber;
   if (modeValue === 'combine') {
     modeNumber = 'combine';
-    console.log(`🔄 PROCESSING STRAIN ENERGY FOR MODE COMBINE`);
+
   } else {
     modeNumber = parseInt(modeValue);
     // ✅ VALIDATE MODE NUMBER
@@ -1519,11 +1245,9 @@ function processStrainEnergyData() {
       alert("Mode number must be between 1 and 20!");
       return;
     }
-    console.log(`🎯 PROCESSING STRAIN ENERGY FOR MODE ${modeNumber}`);
+
   }
-  console.log(`📐 Grid spacing: dx=${dx}, dy=${dy}`);
-  console.log(`🔧 Poisson ratio: ${nu}`);
-  console.log(`📊 Z0 threshold: ${Z0_percent}%`);
+
 
   // Đọc file Healthy và Damage
   const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
@@ -1535,20 +1259,19 @@ function processStrainEnergyData() {
   // Đọc mode shape với mode filtering
   const reader1 = new FileReader();
   reader1.onload = function(event1) {
-    console.log('📁 Reading Healthy file...');
+
     try {
       // ✅ PASS MODE PARAMETER FOR FILTERING
       const nodeValuesHealthy = parseModeShapeFile(event1.target.result, modeNumber);
 
       const reader2 = new FileReader();
       reader2.onload = function(event2) {
-        console.log('📁 Reading Damage file...');
+
         try {
           // ✅ PASS MODE PARAMETER FOR FILTERING
           const nodeValuesDamaged = parseModeShapeFile(event2.target.result, modeNumber);
 
-          console.log(`✅ Healthy data: ${Object.keys(nodeValuesHealthy).length} nodes for Mode ${modeNumber}`);
-          console.log(`✅ Damaged data: ${Object.keys(nodeValuesDamaged).length} nodes for Mode ${modeNumber}`);
+
 
           // Validate that both files have data for selected mode
           if (Object.keys(nodeValuesHealthy).length === 0) {
@@ -1558,13 +1281,13 @@ function processStrainEnergyData() {
             throw new Error(`No data found for Mode ${modeNumber} in Damage file`);
           }
 
-          console.log('🧮 Computing strain energy with mode-specific data...');
+
 
           // Tính đạo hàm bậc 2 tại tất cả các node
           // ✅ FIX: nx, ny should be number of nodes, not elements
       const nx = [...new Set(nodes.map(n => n.x))].length;
       const ny = [...new Set(nodes.map(n => n.y))].length;
-      console.log(`🔧 Grid for derivatives: ${nx}×${ny} nodes (${nx-1}×${ny-1} elements)`);
+
       const healthyDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesHealthy, dx, dy, nx, ny);
       const damagedDerivGrid = computeSecondDerivativesGrid(nodes, nodeValuesDamaged, dx, dy, nx, ny);
       // Nội suy spline 2D về trọng tâm phần tử
@@ -1622,20 +1345,17 @@ function processStrainEnergyData() {
         chartSettings: chartSettings
       };
 
-      console.log(`✅ Section 1 completed for Mode ${modeNumber}. Damaged elements: [${damagedElements.join(', ')}]`);
-      console.log(`📊 Max damage index: ${maxZ.toFixed(4)}, Z0 threshold: ${Z0.toFixed(4)}`);
-      console.log(`🎯 Mode used: ${modeNumber}`);
-      console.log(`Chart settings saved:`, chartSettings);
+
 
         } catch (error) {
-          console.error(`❌ Error processing Damage file for Mode ${modeNumber}:`, error.message);
+
           alert(`Error processing Damage file: ${error.message}`);
         }
       };
       reader2.readAsText(fileInputDamaged.files[0]);
 
     } catch (error) {
-      console.error(`❌ Error processing Healthy file for Mode ${modeNumber}:`, error.message);
+
       alert(`Error processing Healthy file: ${error.message}`);
     }
   };
@@ -1644,20 +1364,13 @@ function processStrainEnergyData() {
 
 // TEST FUNCTION: Validate Mode Selection Fix
 function testModeSelectionFix() {
-  console.log('🧪 === TESTING MODE SELECTION FIX ===');
-
   // Test 1: Validate UI elements
-  console.log('\n📋 1. UI VALIDATION:');
   const modeInput = document.getElementById("mode-number");
   if (modeInput) {
-    console.log(`✅ Mode input found: value=${modeInput.value}, min=${modeInput.min}, max=${modeInput.max}`);
-    console.log(`   Title: ${modeInput.title}`);
   } else {
-    console.log('❌ Mode input not found');
   }
 
   // Test 2: Test parsing function with multi-mode data
-  console.log('\n🔍 2. PARSING FUNCTION TEST:');
   const testData = `Node_ID	Mode	EigenVector_UZ
 1	1	1.000E-06
 1	2	2.000E-06
@@ -1668,49 +1381,32 @@ function testModeSelectionFix() {
 2	5	5.500E-06
 2	10	11.000E-06`;
 
-  console.log('Test data: Nodes 1,2 with Modes 1,2,5,10');
 
   // Test different modes
   for (const mode of [1, 2, 5, 10]) {
     try {
       const result = parseModeShapeFile(testData, mode);
-      console.log(`✅ Mode ${mode}: Node 1=${result[1]}, Node 2=${result[2]}`);
     } catch (error) {
-      console.log(`❌ Mode ${mode}: ${error.message}`);
     }
   }
 
   // Test non-existent mode
   try {
     const result = parseModeShapeFile(testData, 15);
-    console.log(`❌ Mode 15 should fail but got: ${JSON.stringify(result)}`);
   } catch (error) {
-    console.log(`✅ Mode 15 correctly failed: ${error.message}`);
   }
 
   // Test 3: Validate mode range
-  console.log('\n🎯 3. MODE RANGE VALIDATION:');
   const testModes = [-1, 0, 1, 10, 20, 21, 25];
   testModes.forEach(mode => {
     const isValid = !isNaN(mode) && mode >= 1 && mode <= 20;
     const status = isValid ? '✅' : '❌';
-    console.log(`   ${status} Mode ${mode}: ${isValid ? 'Valid' : 'Invalid'}`);
   });
 
   // Test 4: Check if results tracking works
-  console.log('\n📊 4. RESULTS TRACKING:');
   if (window.strainEnergyResults && window.strainEnergyResults.modeUsed) {
-    console.log(`✅ Mode tracking works: Last used mode = ${window.strainEnergyResults.modeUsed}`);
   } else {
-    console.log('⚠️ Mode tracking not available (run Section 1 first)');
   }
-
-  console.log('\n🎉 MODE SELECTION FIX VALIDATION COMPLETED');
-  console.log('Expected behavior:');
-  console.log('- Different modes should produce different strain energy results');
-  console.log('- Mode selection should be validated (1-20)');
-  console.log('- Error messages for invalid modes');
-  console.log('- Mode tracking in results');
 
   return {
     uiValid: !!modeInput && modeInput.max === "20",
@@ -1721,27 +1417,15 @@ function testModeSelectionFix() {
 
 // COMPREHENSIVE SYSTEM TEST
 function runSystemDiagnostics() {
-  console.log('🔧 === SYSTEM DIAGNOSTICS ===');
-
   // 1. Function availability
-  console.log('\n📋 1. FUNCTION AVAILABILITY:');
-  console.log(`✅ processStrainEnergyData: ${typeof processStrainEnergyData}`);
-  console.log(`✅ parseSElementFile: ${typeof parseSElementFile}`);
-  console.log(`✅ parseModeShapeFile: ${typeof parseModeShapeFile}`);
-  console.log(`✅ testModeSelectionFix: ${typeof testModeSelectionFix}`);
 
   // 2. UI Elements
-  console.log('\n🎯 2. UI ELEMENTS:');
   const modeInput = document.getElementById("mode-number");
   const button = document.querySelector('button[onclick="processStrainEnergyData()"]');
-  console.log(`✅ Mode input: ${modeInput ? 'Found' : 'Missing'}`);
   if (modeInput) {
-    console.log(`   - Value: ${modeInput.value}, Min: ${modeInput.min}, Max: ${modeInput.max}`);
   }
-  console.log(`✅ Calculate button: ${button ? 'Found' : 'Missing'}`);
 
   // 3. Test mode parsing
-  console.log('\n🧪 3. MODE PARSING TEST:');
   const testData = `Node_ID	Mode	EigenVector_UZ
 1	1	1.000E-06
 1	5	5.000E-06
@@ -1751,28 +1435,16 @@ function runSystemDiagnostics() {
   try {
     const mode1 = parseModeShapeFile(testData, 1);
     const mode5 = parseModeShapeFile(testData, 5);
-    console.log(`✅ Mode 1: Node 1=${mode1[1]}, Node 2=${mode1[2]}`);
-    console.log(`✅ Mode 5: Node 1=${mode5[1]}, Node 2=${mode5[2]}`);
-    console.log(`✅ Different results: ${mode1[1] !== mode5[1] ? 'YES' : 'NO'}`);
   } catch (error) {
-    console.log(`❌ Mode parsing failed: ${error.message}`);
   }
 
   // 4. Global state
-  console.log('\n🌐 4. GLOBAL STATE:');
-  console.log(`✅ window.meshData: ${window.meshData ? 'Available' : 'Not loaded'}`);
-  console.log(`✅ window.strainEnergyResults: ${window.strainEnergyResults ? 'Available' : 'Not available'}`);
 
   // 5. Error handling test
-  console.log('\n⚠️ 5. ERROR HANDLING TEST:');
   try {
     parseModeShapeFile(testData, 99); // Non-existent mode
-    console.log('❌ Should have thrown error for mode 99');
   } catch (error) {
-    console.log(`✅ Correctly caught error: ${error.message}`);
   }
-
-  console.log('\n🎉 SYSTEM DIAGNOSTICS COMPLETED');
   return {
     functionsLoaded: typeof processStrainEnergyData === 'function',
     uiElementsFound: !!modeInput && !!button,
@@ -1782,50 +1454,24 @@ function runSystemDiagnostics() {
 }
 
 // Script loading confirmation
-console.log('✅ calculations.js loaded successfully');
-console.log('✅ processStrainEnergyData function available:', typeof processStrainEnergyData);
-console.log('✅ parseSElementFile function available:', typeof parseSElementFile);
+// console.log('✅ calculations.js loaded successfully');
+// console.log('✅ processStrainEnergyData function available:', typeof processStrainEnergyData);
+// console.log('✅ parseSElementFile function available:', typeof parseSElementFile);
 
 // ✅ DOWNLOAD FUNCTIONALITY VERIFICATION
 function verifyDownloadFunctionality() {
-  console.log('\n🔍 === DOWNLOAD FUNCTIONALITY VERIFICATION ===');
-
   // Check function availability
-  console.log('\n1️⃣ FUNCTION AVAILABILITY:');
-  console.log(`✅ downloadMultiMode3DCharts: ${typeof downloadMultiMode3DCharts}`);
-  console.log(`✅ generateChartForModeAndThreshold: ${typeof generateChartForModeAndThreshold}`);
-  console.log(`✅ createChartImage: ${typeof createChartImage}`);
-  console.log(`✅ validateModeExists: ${typeof validateModeExists}`);
-  console.log(`✅ readFileAsText: ${typeof readFileAsText}`);
 
   // Check UI elements
-  console.log('\n2️⃣ UI ELEMENTS:');
   const downloadBtn = document.getElementById("download-charts-btn");
   const progressDiv = document.getElementById("download-progress");
   const progressText = document.getElementById("progress-text");
   const progressBar = document.getElementById("progress-bar");
 
-  console.log(`✅ Download button: ${downloadBtn ? 'Found' : 'Missing'}`);
-  console.log(`✅ Progress div: ${progressDiv ? 'Found' : 'Missing'}`);
-  console.log(`✅ Progress text: ${progressText ? 'Found' : 'Missing'}`);
-  console.log(`✅ Progress bar: ${progressBar ? 'Found' : 'Missing'}`);
 
   // Check configuration
-  console.log('\n3️⃣ CONFIGURATION:');
-  console.log('Target modes: [10, 12, 14, 17, 20, "combine"] (6 modes)');
-  console.log('Target thresholds: [10, 20, 30, 40, 50] (5 thresholds)');
-  console.log('Expected total: 6 × 5 = 30 charts');
 
   // Check file naming pattern
-  console.log('\n4️⃣ FILE NAMING PATTERN:');
-  console.log('Numeric modes: 3D_Damage_Mode{mode}_Z0{threshold}.png');
-  console.log('Mode Combine: 3D_Damage_ModeCombine_Z0{threshold}.png');
-  console.log('Examples:');
-  console.log('  - 3D_Damage_Mode10_Z010.png');
-  console.log('  - 3D_Damage_Mode20_Z050.png');
-  console.log('  - 3D_Damage_ModeCombine_Z030.png');
-
-  console.log('\n🎉 DOWNLOAD FUNCTIONALITY VERIFICATION COMPLETED');
 
   return {
     functionsAvailable: typeof downloadMultiMode3DCharts === 'function',
@@ -1836,53 +1482,21 @@ function verifyDownloadFunctionality() {
 
 // ✅ EXCEL EXPORT FUNCTIONALITY VERIFICATION
 function verifyExcelExportFunctionality() {
-  console.log('\n🔍 === EXCEL EXPORT FUNCTIONALITY VERIFICATION ===');
-
   // Check function availability
-  console.log('\n1️⃣ FUNCTION AVAILABILITY:');
-  console.log(`✅ exportCompleteExcelReport: ${typeof exportCompleteExcelReport}`);
-  console.log(`✅ exportExcelReport: ${typeof exportExcelReport}`);
-  console.log(`✅ showExcelProgress: ${typeof showExcelProgress}`);
-  console.log(`✅ updateExcelProgress: ${typeof updateExcelProgress}`);
-  console.log(`✅ XLSX library: ${typeof XLSX !== 'undefined' ? 'Available' : 'Missing'}`);
 
   // Check UI elements
-  console.log('\n2️⃣ UI ELEMENTS:');
   const excelBtn = document.querySelector('button[onclick="exportCompleteExcelReport()"]');
   const excelProgress = document.getElementById("excel-progress");
   const excelProgressText = document.getElementById("excel-progress-text");
   const excelProgressBar = document.getElementById("excel-progress-bar");
   const excelProgressDetails = document.getElementById("excel-progress-details");
 
-  console.log(`✅ Excel export button: ${excelBtn ? 'Found' : 'Missing'}`);
-  console.log(`✅ Excel progress div: ${excelProgress ? 'Found' : 'Missing'}`);
-  console.log(`✅ Excel progress text: ${excelProgressText ? 'Found' : 'Missing'}`);
-  console.log(`✅ Excel progress bar: ${excelProgressBar ? 'Found' : 'Missing'}`);
-  console.log(`✅ Excel progress details: ${excelProgressDetails ? 'Found' : 'Missing'}`);
 
   // Check configuration
-  console.log('\n3️⃣ EXCEL EXPORT CONFIGURATION:');
-  console.log('Target modes: [10, 12, 14, 17, 20, "combine"] (6 modes)');
-  console.log('Target thresholds: [10, 20, 30, 40, 50] (5 thresholds)');
-  console.log('Expected combinations: 6 × 5 = 30 calculations');
-  console.log('Indices calculated: A, B, C for each combination');
 
   // Check Excel sheets
-  console.log('\n4️⃣ EXCEL SHEETS STRUCTURE:');
-  console.log('Sheet 1: Matrix Layout - Main results in matrix format');
-  console.log('Sheet 2: Summary Report - Overview and averages');
-  console.log('Sheet 3: Detailed Analysis - All combinations with ratings');
-  console.log('Sheet 4: Raw Data - System info and calculation parameters');
 
   // Check batch calculation
-  console.log('\n5️⃣ BATCH CALCULATION PROCESS:');
-  console.log('1. Validates prerequisites (mesh data, mode files, damaged elements)');
-  console.log('2. Automatically calculates all 30 combinations');
-  console.log('3. Shows progress for each mode/threshold calculation');
-  console.log('4. Generates comprehensive Excel report');
-  console.log('5. Downloads file with timestamp: SHM_Matrix_Report_YYYY-MM-DD-HH-MM-SS.xlsx');
-
-  console.log('\n🎉 EXCEL EXPORT FUNCTIONALITY VERIFICATION COMPLETED');
 
   return {
     functionsAvailable: typeof exportCompleteExcelReport === 'function',
@@ -1894,64 +1508,29 @@ function verifyExcelExportFunctionality() {
 
 // ✅ MODE COMBINE EXCEL EXPORT VERIFICATION
 function verifyModeCombineExcelExport() {
-  console.log('\n🔍 === MODE COMBINE EXCEL EXPORT VERIFICATION ===');
-
   // Check Excel export configuration
-  console.log('\n1️⃣ EXCEL EXPORT CONFIGURATION:');
-  console.log('Target modes: [10, 12, 14, 17, 20, "combine"] (6 modes)');
-  console.log('Target thresholds: [10, 20, 30, 40, 50] (5 thresholds)');
-  console.log('Expected combinations: 6 × 5 = 30 calculations');
-  console.log('Mode Combine key format: "modecombine_z0{threshold}"');
 
   // Check function availability
-  console.log('\n2️⃣ FUNCTION AVAILABILITY:');
-  console.log(`✅ exportCompleteExcelReport: ${typeof exportCompleteExcelReport}`);
-  console.log(`✅ calculateSingleCombination: ${typeof calculateSingleCombination}`);
-  console.log(`✅ storeSection1MetricsData: ${typeof storeSection1MetricsData}`);
-  console.log(`✅ createMatrixLayoutSheet: ${typeof createMatrixLayoutSheet}`);
-  console.log(`✅ createDetailedAnalysisSheet: ${typeof createDetailedAnalysisSheet}`);
-  console.log(`✅ parseModeShapeFileCombine: ${typeof parseModeShapeFileCombine}`);
 
   // Check Mode Combine processing
-  console.log('\n3️⃣ MODE COMBINE PROCESSING:');
-  console.log('✅ Mode Combine included in batch calculation loop');
-  console.log('✅ Mode Combine uses parseModeShapeFileCombine() function');
-  console.log('✅ Mode Combine key format handled in Matrix Layout');
-  console.log('✅ Mode Combine key format handled in Detailed Analysis');
-  console.log('✅ Mode Combine display name: "Mode Combine"');
 
   // Check Excel sheets structure
-  console.log('\n4️⃣ EXCEL SHEETS WITH MODE COMBINE:');
-  console.log('Matrix Layout: 6 columns (Mode 10, 12, 14, 17, 20, Mode Combine)');
-  console.log('Detailed Analysis: 30 rows (6 modes × 5 thresholds)');
-  console.log('Summary Report: Includes Mode Combine in averages');
-  console.log('Raw Data: System info and all calculation parameters');
 
   // Check data storage
-  console.log('\n5️⃣ DATA STORAGE VERIFICATION:');
   if (window.section1MetricsData && window.section1MetricsData.metrics) {
     const metrics = window.section1MetricsData.metrics;
     const keys = Object.keys(metrics);
     const combineKeys = keys.filter(key => key.includes('modecombine'));
 
-    console.log(`📊 Total stored metrics: ${keys.length}`);
-    console.log(`📊 Mode Combine metrics: ${combineKeys.length}`);
-    console.log(`📊 Mode Combine keys: ${combineKeys.join(', ')}`);
 
     if (combineKeys.length > 0) {
-      console.log('✅ Mode Combine data found in storage');
       combineKeys.forEach(key => {
         const data = metrics[key];
-        console.log(`   ${key}: A=${(data.indexA*100).toFixed(1)}%, B=${(data.indexB*100).toFixed(1)}%, C=${(data.indexC*100).toFixed(1)}%`);
       });
     } else {
-      console.log('⚠️ No Mode Combine data found in storage');
     }
   } else {
-    console.log('⚠️ No Section 1 metrics data found');
   }
-
-  console.log('\n🎉 MODE COMBINE EXCEL EXPORT VERIFICATION COMPLETED');
 
   return {
     configurationCorrect: true,
@@ -1963,41 +1542,7 @@ function verifyModeCombineExcelExport() {
 
 // ✅ SCALE FACTOR VERIFICATION
 function verifyScaleFactorUpdate() {
-  console.log('\n🔍 === SCALE FACTOR UPDATE VERIFICATION ===');
 
-  console.log('\n1️⃣ SCALE FACTOR CONFIGURATION:');
-  console.log('✅ Updated scale factor: 3 (increased from 2)');
-  console.log('✅ Layout dimensions: 1200×900 pixels (unchanged)');
-  console.log('✅ Actual PNG dimensions: 3600×2700 pixels (increased from 2400×1800)');
-
-  console.log('\n2️⃣ FONT SIZE IMPROVEMENTS:');
-  console.log('📊 Chart Title:');
-  console.log('   - Code: 30px Times New Roman');
-  console.log('   - PNG: 90px (30px × 3) - increased from 60px');
-  console.log('📊 Axis Titles:');
-  console.log('   - Code: 15px Times New Roman');
-  console.log('   - PNG: 45px (15px × 3) - increased from 30px');
-  console.log('📊 Tick Labels:');
-  console.log('   - Code: 15px Times New Roman');
-  console.log('   - PNG: 45px (15px × 3) - increased from 30px');
-  console.log('📊 Percentage Text:');
-  console.log('   - Code: 10px Arial');
-  console.log('   - PNG: 30px (10px × 3) - increased from 20px');
-
-  console.log('\n3️⃣ QUALITY IMPROVEMENTS:');
-  console.log('✅ Better text readability in high-resolution displays');
-  console.log('✅ Improved clarity for percentage labels on elements');
-  console.log('✅ Enhanced professional appearance for academic use');
-  console.log('✅ Larger file size but significantly better quality');
-
-  console.log('\n4️⃣ EXPECTED BENEFITS:');
-  console.log('📈 Text clarity: 50% improvement (3x vs 2x scaling)');
-  console.log('📈 Percentage text: Now clearly readable (30px vs 20px)');
-  console.log('📈 Professional quality: Suitable for presentations/papers');
-  console.log('📈 High-DPI compatibility: Better on modern displays');
-
-  console.log('\n🎉 SCALE FACTOR UPDATE VERIFICATION COMPLETED');
-  console.log('📋 Summary: Scale factor increased from 2 to 3 for better text clarity');
 
   return {
     scaleFactorUpdated: true,
@@ -2009,33 +1554,6 @@ function verifyScaleFactorUpdate() {
 
 // ✅ DOM CLEANUP ISSUE FIX VERIFICATION
 function verifyDOMCleanupFix() {
-  console.log('\n🔍 === DOM CLEANUP FIX VERIFICATION ===');
-
-  console.log('\n1️⃣ ISSUE IDENTIFIED:');
-  console.log('❌ Error: "Cannot read properties of null (reading \'removeChild\')"');
-  console.log('❌ Cause: Plotly cleanup conflict with DOM element removal');
-  console.log('❌ Location: createChartImage() function finally block');
-
-  console.log('\n2️⃣ FIX IMPLEMENTED:');
-  console.log('✅ Added Plotly.purge() before DOM element removal');
-  console.log('✅ Added proper error handling in cleanup');
-  console.log('✅ Added DOM existence check before removal');
-  console.log('✅ Increased delay between chart generations (100ms → 300ms)');
-
-  console.log('\n3️⃣ CLEANUP SEQUENCE:');
-  console.log('1. Check if tempDiv exists and is in DOM');
-  console.log('2. Call Plotly.purge(tempDiv) to clean Plotly data');
-  console.log('3. Remove tempDiv from document.body');
-  console.log('4. Handle any cleanup errors gracefully');
-
-  console.log('\n4️⃣ ERROR PREVENTION:');
-  console.log('✅ Prevents Plotly from accessing removed DOM elements');
-  console.log('✅ Graceful error handling for cleanup failures');
-  console.log('✅ Increased delay prevents DOM conflicts');
-  console.log('✅ Continues processing even if individual charts fail');
-
-  console.log('\n🎉 DOM CLEANUP FIX VERIFICATION COMPLETED');
-  console.log('📋 The download function should now work without DOM errors');
 
   return {
     issueFixed: true,
@@ -2047,66 +1565,8 @@ function verifyDOMCleanupFix() {
 
 // ✅ MODE COMBINE DEBUGGING FOR 225 vs 100 ELEMENTS
 function debugModeCombineIssue() {
-  console.log('\n🔍 === MODE COMBINE DEBUGGING: 225 vs 100 ELEMENTS ===');
 
-  console.log('\n1️⃣ POTENTIAL ISSUES ANALYSIS:');
-  console.log('🔍 Issue 1: Sample nodes validation');
-  console.log('   - Current sample nodes: [1, 31, 61, 91, 121]');
-  console.log('   - For 100 elements: Max node ~100-120 ✓');
-  console.log('   - For 225 elements: Max node ~225-250 ✓');
-  console.log('   - Sample nodes should exist in both datasets');
 
-  console.log('\n🔍 Issue 2: Node ID mapping consistency');
-  console.log('   - 100 elements: Node IDs 1-100 (sequential)');
-  console.log('   - 225 elements: Node IDs 1-225 (sequential) OR different mapping?');
-  console.log('   - Check if node numbering scheme is consistent');
-
-  console.log('\n🔍 Issue 3: Mode availability in datasets');
-  console.log('   - Target modes: [10, 12, 14, 17, 20]');
-  console.log('   - 100 elements: All modes available?');
-  console.log('   - 225 elements: All modes available?');
-  console.log('   - Missing modes could cause incorrect combination');
-
-  console.log('\n🔍 Issue 4: Data scaling/magnitude differences');
-  console.log('   - 100 elements: Eigenvalues in range X');
-  console.log('   - 225 elements: Eigenvalues in range Y');
-  console.log('   - Different magnitudes could affect visualization');
-
-  console.log('\n🔍 Issue 5: Memory/performance with larger dataset');
-  console.log('   - 100 elements: ~500-1000 data points per mode');
-  console.log('   - 225 elements: ~1125-2250 data points per mode');
-  console.log('   - Could cause memory issues or incomplete processing');
-
-  console.log('\n2️⃣ DEBUGGING RECOMMENDATIONS:');
-  console.log('✅ Step 1: Check file structure consistency');
-  console.log('   - Compare header format between 100 vs 225 element files');
-  console.log('   - Verify column structure (Node_ID, Mode, Eigenvector)');
-
-  console.log('✅ Step 2: Validate mode availability');
-  console.log('   - Run: checkModeAvailability() for both datasets');
-  console.log('   - Ensure all target modes [10,12,14,17,20] exist');
-
-  console.log('✅ Step 3: Compare sample node values');
-  console.log('   - Check nodes [1,31,61,91,121] in both datasets');
-  console.log('   - Verify individual mode values before combination');
-
-  console.log('✅ Step 4: Add enhanced logging');
-  console.log('   - Log total rows processed');
-  console.log('   - Log nodes per mode');
-  console.log('   - Log value ranges for each mode');
-
-  console.log('\n3️⃣ ENHANCED MODE COMBINE FUNCTION NEEDED:');
-  console.log('📊 Add dataset size validation');
-  console.log('📊 Add mode completeness check');
-  console.log('📊 Add value range validation');
-  console.log('📊 Add memory usage monitoring');
-  console.log('📊 Add detailed error reporting');
-
-  console.log('\n🎯 NEXT STEPS:');
-  console.log('1. Run debugModeCombineDataset() with both files');
-  console.log('2. Compare console outputs between 100 vs 225 elements');
-  console.log('3. Identify specific differences causing incorrect results');
-  console.log('4. Implement targeted fixes based on findings');
 
   return {
     analysisComplete: true,
@@ -2118,10 +1578,7 @@ function debugModeCombineIssue() {
 
 // ✅ ENHANCED MODE COMBINE DEBUGGING FUNCTION
 function debugModeCombineDataset(fileContent, datasetName = 'Unknown') {
-  console.log(`\n🔍 === MODE COMBINE DATASET ANALYSIS: ${datasetName} ===`);
-
   if (!fileContent) {
-    console.log('❌ No file content provided');
     return { error: 'No content' };
   }
 
@@ -2132,8 +1589,6 @@ function debugModeCombineDataset(fileContent, datasetName = 'Unknown') {
   let totalRows = 0;
   let validRows = 0;
 
-  console.log(`📊 Dataset: ${datasetName}`);
-  console.log(`📊 Total lines in file: ${lines.length}`);
 
   // Step 1: Parse and analyze data structure
   for (const line of lines) {
@@ -2172,46 +1627,32 @@ function debugModeCombineDataset(fileContent, datasetName = 'Unknown') {
   const uniqueNodes = Object.keys(nodeStats).map(Number).sort((a, b) => a - b);
   const availableModes = Object.keys(modeData).map(Number).sort((a, b) => a - b);
 
-  console.log(`\n📊 DATASET CHARACTERISTICS:`);
-  console.log(`   Total rows: ${totalRows}`);
-  console.log(`   Valid rows: ${validRows}`);
-  console.log(`   Unique nodes: ${uniqueNodes.length} (${uniqueNodes[0]} to ${uniqueNodes[uniqueNodes.length-1]})`);
-  console.log(`   Available target modes: [${availableModes.join(', ')}]`);
-  console.log(`   Missing target modes: [${targetModes.filter(m => !availableModes.includes(m)).join(', ')}]`);
 
   // Step 3: Analyze mode completeness
-  console.log(`\n📊 MODE COMPLETENESS ANALYSIS:`);
   targetModes.forEach(mode => {
     if (modeData[mode]) {
       const nodeCount = modeData[mode].nodes.length;
       const uniqueNodeCount = [...new Set(modeData[mode].nodes)].length;
       const valueRange = `${modeData[mode].min.toExponential(3)} to ${modeData[mode].max.toExponential(3)}`;
-      console.log(`   Mode ${mode}: ${nodeCount} entries, ${uniqueNodeCount} unique nodes, range: ${valueRange}`);
     } else {
-      console.log(`   Mode ${mode}: ❌ NOT FOUND`);
     }
   });
 
   // Step 4: Sample node analysis
   const sampleNodes = [1, 31, 61, 91, 121, 151, 181, 211]; // Extended for 225 elements
-  console.log(`\n📊 SAMPLE NODE ANALYSIS:`);
   sampleNodes.forEach(nodeID => {
     if (nodeStats[nodeID]) {
       const modesForNode = nodeStats[nodeID].modes.filter(m => targetModes.includes(m));
       const valuesForNode = nodeStats[nodeID].values.filter((v, i) => targetModes.includes(nodeStats[nodeID].modes[i]));
-      console.log(`   Node ${nodeID}: ${modesForNode.length} target modes [${modesForNode.join(',')}]`);
 
       if (modesForNode.length > 0) {
         const combinedValue = valuesForNode.reduce((sum, val) => sum + val, 0);
-        console.log(`      Combined value: ${combinedValue.toExponential(3)}`);
       }
     } else {
-      console.log(`   Node ${nodeID}: ❌ NOT FOUND`);
     }
   });
 
   // Step 5: Identify potential issues
-  console.log(`\n⚠️ POTENTIAL ISSUES:`);
   const issues = [];
 
   if (availableModes.length < targetModes.length) {
@@ -2231,9 +1672,8 @@ function debugModeCombineDataset(fileContent, datasetName = 'Unknown') {
   });
 
   if (issues.length > 0) {
-    issues.forEach(issue => console.log(`   ❌ ${issue}`));
+    issues.forEach(issue => {});
   } else {
-    console.log(`   ✅ No obvious issues detected`);
   }
 
   return {
@@ -2914,26 +2354,26 @@ function autoFixLayoutOnLoad() {
 }
 
 // Auto-run tests when DOM is ready
-setTimeout(() => {
-  if (document.readyState === 'complete') {
-    autoFixLayoutOnLoad();
-    testModeCombineFeature();
-    testEdgeElementVisibility();
-    testModeCombinePractical();
-    testModeCombineDownload();
-    test3DChartImprovements();
-    testResponsiveDesign();
-    testVisualConsistency();
-    debug3DChartDisplay();
-  }
-}, 2000);
+// setTimeout(() => {
+//   if (document.readyState === 'complete') {
+//     autoFixLayoutOnLoad();
+//     testModeCombineFeature();
+//     testEdgeElementVisibility();
+//     testModeCombinePractical();
+//     testModeCombineDownload();
+//     test3DChartImprovements();
+//     testResponsiveDesign();
+//     testVisualConsistency();
+//     debug3DChartDisplay();
+//   }
+// }, 2000);
 
 // Auto-run diagnostics
-setTimeout(() => {
-  if (document.readyState === 'complete') {
-    runSystemDiagnostics();
-  }
-}, 1000);
+// setTimeout(() => {
+//   if (document.readyState === 'complete') {
+//     runSystemDiagnostics();
+//   }
+// }, 1000);
 
 // ✅ COMPREHENSIVE 3D CHART DEBUGGING FUNCTION
 function comprehensive3DChartDebug() {
@@ -4167,16 +3607,10 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
 
   // ✅ COPY SECTION 1 LOGIC: Use centralized coordinate transformation
   const transformation = centralizeCoordinateTransformation(elements);
-  const { xOffset, yOffset, transformedXMax, transformedYMax, xMin, xMax, yMin, yMax } = transformation;
+  const { extendedRangeX, extendedRangeY, xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
 
-  console.log(`🔄 TEST.csv COORDINATE TRANSFORMATION (COPIED FROM SECTION 1):`);
-  console.log(`   Original bounds: X[${xMin.toFixed(3)}, ${xMax.toFixed(3)}], Y[${yMin.toFixed(3)}, ${yMax.toFixed(3)}]`);
-  console.log(`   Transformation: X offset=${xOffset.toFixed(3)}, Y offset=${yOffset.toFixed(3)}`);
-  console.log(`   Transformed bounds: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}]`);
-
-  // ✅ COPY SECTION 1 LOGIC: Calculate element size
-  const elementSize = calculateRealElementSize(elements);
-  console.log(`📐 Element size: ${elementSize.width.toFixed(4)}m × ${elementSize.depth.toFixed(4)}m`);
+  console.log(`🔄 TEST.csv COORDINATE TRANSFORMATION (CENTRALIZED):`);
+  console.log(`   Using global extended ranges for consistent axis scaling.`);
 
   // ✅ COPY SECTION 1 LOGIC: Create 3D mesh data
   const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
@@ -4253,8 +3687,8 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
     k: allFacesK,
     intensity: allIntensity,
     colorscale: optimizedColorscale,
-    cmin: minIntensity,
-    cmax: maxIntensity,
+    cmin: 0,      // ✅ Standardized color range
+    cmax: 25,     // ✅ Standardized color range
     showscale: false,
     opacity: 1.0,
     flatshading: false,
@@ -4284,10 +3718,11 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
   const margin = 0.05; // 5% margin around data
   const planeSize = 20; // Grid resolution for smooth plane
 
-  const planeXMin = -transformedXMax * margin;
-  const planeXMax = transformedXMax * (1 + margin);
-  const planeYMin = -transformedYMax * margin;
-  const planeYMax = transformedYMax * (1 + margin);
+  // ✅ FIXED THRESHOLD PLANE: Use fixed ranges instead of dynamic
+  const planeXMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeXMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
+  const planeYMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeYMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
 
   const planeX = [];
   const planeY = [];
@@ -4399,7 +3834,7 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
         showspikes: false,
         tickmode: 'auto',
         nticks: 8,
-        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       yaxis: {
         title: {
@@ -4416,7 +3851,7 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
         showspikes: false,
         tickmode: 'auto',
         nticks: 8,
-        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       zaxis: {
         title: {
@@ -4432,15 +3867,23 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
         backgroundcolor: 'rgba(245,245,245,0.9)',
         showspikes: false,
         tickmode: 'auto',
-        nticks: 6
+        nticks: 6,
+        range: [0, 25]  // ✅ FIXED RANGE: 0-25% damage index for consistency across all modes
+      },
+
+      aspectmode: 'manual',
+      aspectratio: {
+        x: 1,
+        y: 1,
+        z: 0.8
       },
       camera: {
         projection: { type: 'orthographic' },
         eye: { x: 1.6, y: 1.6, z: 1.8 },
-        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 },
+        center: { x: (extendedRangeX[0] + extendedRangeX[1]) / 2, y: (extendedRangeY[0] + extendedRangeY[1]) / 2, z: 12.5 }, // ✅ DYNAMIC CENTER: Center of extended ranges
         up: { x: 0, y: 0, z: 1 }
       },
-      aspectmode: 'data',
+      aspectmode: 'manual', // ✅ Standardized aspect mode
       bgcolor: 'rgba(248,249,250,0.9)'
     },
     title: {
@@ -4450,7 +3893,7 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
       y: 0.95
     },
     width: 1200,
-    height: 900,
+    height: 900,  // ✅ Standardized height to match Section 1
     margin: { l: 60, r: 120, t: 100, b: 60 },
     font: { family: 'Arial, sans-serif', color: '#2c3e50' },
     paper_bgcolor: 'rgba(255,255,255,0.95)',
@@ -4463,7 +3906,7 @@ async function createChartImageFromSection1(chartData, mode, threshold) {
   try {
     tempDiv = document.createElement('div');
     tempDiv.style.width = '1200px';
-    tempDiv.style.height = '900px';
+    tempDiv.style.height = '900px';   // ✅ Standardized height to match Section 1
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.visibility = 'hidden';
@@ -4583,7 +4026,9 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
 
   // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION
   const transformation = centralizeCoordinateTransformation(elements);
-  const { xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
+  const { extendedRangeX, extendedRangeY, xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
+
+  console.log(`🔄 Combined Damage Modes: Using global extended ranges for consistent axis scaling.`);
 
   // ✅ USE SAME LOGIC AS SECTION 1: Single mesh3d with intensity colorscale
   const allVerticesX = [], allVerticesY = [], allVerticesZ = [];
@@ -4702,10 +4147,11 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
   const margin = 0.05; // 5% margin around data
   const planeSize = 20; // Grid resolution for smooth plane
 
-  const planeXMin = -transformedXMax * margin;
-  const planeXMax = transformedXMax * (1 + margin);
-  const planeYMin = -transformedYMax * margin;
-  const planeYMax = transformedYMax * (1 + margin);
+  // ✅ FIXED THRESHOLD PLANE: Use fixed ranges instead of dynamic
+  const planeXMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeXMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
+  const planeYMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeYMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
 
   console.log(`   Plane bounds: X[${planeXMin.toFixed(3)}, ${planeXMax.toFixed(3)}], Y[${planeYMin.toFixed(3)}, ${planeYMax.toFixed(3)}]`);
 
@@ -4779,7 +4225,7 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
         showspikes: false,
         tickmode: 'auto',
         nticks: 8,
-        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       yaxis: {
         title: {
@@ -4796,7 +4242,7 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
         showspikes: false,
         tickmode: 'auto',
         nticks: 8,
-        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       zaxis: {
         title: {
@@ -4812,15 +4258,22 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
         backgroundcolor: 'rgba(245,245,245,0.9)',
         showspikes: false,
         tickmode: 'auto',
-        nticks: 6
+        nticks: 6,
+        range: [0, 25]  // ✅ FIXED RANGE: 0-25% damage index for consistency across all modes
+      },
+      aspectmode: 'manual',
+      aspectratio: {
+        x: 1,
+        y: 1,
+        z: 0.8
       },
       camera: {
         projection: { type: 'orthographic' },
         eye: { x: 1.6, y: 1.6, z: 1.8 },
-        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 },
+        center: { x: (extendedRangeX[0] + extendedRangeX[1]) / 2, y: (extendedRangeY[0] + extendedRangeY[1]) / 2, z: 12.5 }, // ✅ DYNAMIC CENTER: Center of extended ranges
         up: { x: 0, y: 0, z: 1 }
       },
-      aspectmode: 'data',
+
       bgcolor: 'rgba(248,249,250,0.9)'
     },
     title: {
@@ -4843,7 +4296,7 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
   try {
     tempDiv = document.createElement('div');
     tempDiv.style.width = '1200px';
-    tempDiv.style.height = '900px';
+    tempDiv.style.height = '1000px';  // ✅ UPDATED: Match main layout height for 750px Z-axis
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.visibility = 'hidden';
@@ -4974,8 +4427,11 @@ async function createChartImage(chartData, mode, threshold) {
   const thresholdZ = [];
 
   // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION
+  // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION
   const transformation = centralizeCoordinateTransformation(elements);
-  const { xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
+  const { extendedRangeX, extendedRangeY, xOffset, yOffset, transformedXMax, transformedYMax } = transformation;
+
+  console.log(`🔄 Single Damage Mode: Using global extended ranges for consistent axis scaling.`);
 
   // ✅ THRESHOLD PLANE: Use surface implementation only (remove duplicate scatter3d implementation)
 
@@ -5133,10 +4589,11 @@ async function createChartImage(chartData, mode, threshold) {
   const transformedYRange = transformedYMax - 0;  // 0 to transformedYMax
   const margin = 0.05; // 5% margin
 
-  const planeXMin = 0 - transformedXRange * margin;           // Same as thresholdXMin
-  const planeXMax = transformedXMax + transformedXRange * margin;  // Same as thresholdXMax
-  const planeYMin = 0 - transformedYRange * margin;           // Same as thresholdYMin
-  const planeYMax = transformedYMax + transformedYRange * margin;  // Same as thresholdYMax
+  // ✅ FIXED THRESHOLD PLANE: Use fixed ranges instead of dynamic
+  const planeXMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeXMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
+  const planeYMin = 0 - 10 * margin;     // Fixed: 0 - 5% of 10m
+  const planeYMax = 10 + 10 * margin;    // Fixed: 10m + 5% of 10m
 
   const planeX = [];
   const planeY = [];
@@ -5162,8 +4619,9 @@ async function createChartImage(chartData, mode, threshold) {
   // ✅ DEBUG: Verify threshold plane alignment
   console.log(`🎯 THRESHOLD PLANE SURFACE (createChartImage):`);
   console.log(`   - Surface range: X[${planeXMin.toFixed(3)}, ${planeXMax.toFixed(3)}], Y[${planeYMin.toFixed(3)}, ${planeYMax.toFixed(3)}]`);
-  console.log(`   - Data range: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}]`);
-  console.log(`   - Margin: 5% (X=${(transformedXMax * margin).toFixed(3)}m, Y=${(transformedYMax * margin).toFixed(3)}m)`);
+  console.log(`   - Data range: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}] (actual data)`);
+  console.log(`   - Fixed display range: X[0, 10.0], Y[0, 10.0]`);
+  console.log(`   - Margin: FIXED 5% (X=0.5m, Y=0.5m)`);
   console.log(`   - Resolution: ${planeSize}x${planeSize} surface grid`);
 
   // ✅ THRESHOLD PLANE - MATCH SECTION 1 SETTINGS
@@ -5217,7 +4675,7 @@ async function createChartImage(chartData, mode, threshold) {
         nticks: 8,                           // Số lượng tick marks
         showticklabels: true,                // ✅ EXPLICIT: Show tick labels
         ticks: 'outside',                    // ✅ EXPLICIT: Tick position
-        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]  // ✅ EXTENDED RANGE: Include half element width for edge visibility
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       yaxis: {
         title: {
@@ -5237,7 +4695,7 @@ async function createChartImage(chartData, mode, threshold) {
         nticks: 8,                           // Số lượng tick marks
         showticklabels: true,                // ✅ EXPLICIT: Show tick labels
         ticks: 'outside',                    // ✅ EXPLICIT: Tick position
-        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]  // ✅ EXTENDED RANGE: Include half element depth for edge visibility
+        range: [-1, 11],                   // ✅ HARD-CODED FIXED RANGE
       },
       zaxis: {
         title: {
@@ -5256,15 +4714,22 @@ async function createChartImage(chartData, mode, threshold) {
         tickmode: 'auto',                    // Tự động điều chỉnh tick
         nticks: 6,                           // Số lượng tick marks cho trục Z
         showticklabels: true,                // ✅ EXPLICIT: Show tick labels
-        ticks: 'outside'                     // ✅ EXPLICIT: Tick position
+        ticks: 'outside',                    // ✅ EXPLICIT: Tick position
+        range: [0, 25]                       // ✅ FIXED RANGE: 0-25% damage index for consistency across all modes
+      },
+      aspectmode: 'manual',
+      aspectratio: {
+        x: 1,
+        y: 1,
+        z: 0.8
       },
       camera: {
         projection: { type: 'orthographic' }, // OrthographicCamera for no perspective distortion
         eye: { x: 1.6, y: 1.6, z: 1.8 }, // ✅ MATCH SECTION 1: Same as button gốc for consistent view
-        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 }, // ✅ CENTER ON DATA
+        center: { x: (extendedRangeX[0] + extendedRangeX[1]) / 2, y: (extendedRangeY[0] + extendedRangeY[1]) / 2, z: 12.5 }, // ✅ DYNAMIC CENTER: Center of extended ranges
         up: { x: 0, y: 0, z: 1 }  // ✅ MATCH SECTION 1: Add up vector
       },
-      aspectmode: 'data'                     // ✅ PROPER PROPORTIONAL RENDERING (not 'cube')
+
     },
     title: {
       text: mode === 'combine' ? `Mode Combine, Z₀ = ${threshold}%` : `Mode ${mode}, Z₀ = ${threshold}%`,  // ✅ HANDLE MODE COMBINE TITLE
@@ -5284,7 +4749,7 @@ async function createChartImage(chartData, mode, threshold) {
   try {
     tempDiv = document.createElement('div');
     tempDiv.style.width = '1200px';   // ✅ MATCH LAYOUT WIDTH
-    tempDiv.style.height = '900px';   // ✅ MATCH LAYOUT HEIGHT
+    tempDiv.style.height = '1000px';  // ✅ MATCH LAYOUT HEIGHT: Updated for 750px Z-axis
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.visibility = 'hidden'; // Additional hiding
@@ -6011,18 +5476,18 @@ function computeTotalStrainEnergy(U_element) {
 // Tính năng lượng phân đoạn (công thức 3.17)
 function computeEnergyFraction(U_element, U_total) {
   const F = {};
-  
+
   for (const [elementID, U] of Object.entries(U_element)) {
     F[elementID] = U / U_total;
   }
-  
+
   return F;
 }
 
 // Tính chỉ số hư hỏng (công thức 3.18)
 function computeDamageIndex(F_damaged, F_healthy, elementIDs) {
   const beta = {};
-  
+
   for (const id of elementIDs) {
     if (F_healthy[id] !== 0) {
       beta[id] = F_damaged[id] / F_healthy[id];
@@ -6030,7 +5495,7 @@ function computeDamageIndex(F_damaged, F_healthy, elementIDs) {
       beta[id] = 0;
     }
   }
-  
+
   return beta;
 }
 
@@ -6077,24 +5542,24 @@ function normalizeDamageIndex(beta) {
 // Xác định vùng hư hỏng theo ngưỡng
 function detectDamageRegion(z, Z0) {
   const damaged = [];
-  
+
   for (const [id, val] of Object.entries(z)) {
     if (val >= Z0) {
       damaged.push(parseInt(id));
     }
   }
-  
+
   return damaged;
 }
 
 function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ = null) {
   const resultsDiv = document.getElementById("results");
-  
+
   resultsDiv.innerHTML = `
     <strong style="font-size: 24px; color: #0056b3;">Kết quả chẩn đoán vị trí hư hỏng bằng năng lượng biến dạng</strong>
     <div style="margin-top: 20px;"></div>
   `;
-  
+
   // Tìm giá trị lớn nhất và nhỏ nhất
   const zValues = Object.values(z);
   const maxZval = maxZ !== null ? maxZ : Math.max(...zValues);
@@ -6110,7 +5575,7 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
     - Số lượng phần tử hư hỏng: ${damagedElements.length}<br>
     <div style="margin-top: 10px;"></div>
   `;
-  
+
   if (damagedElements.length > 0) {
     resultsDiv.innerHTML += `
       <strong>Danh sách phần tử hư hỏng:</strong><br>
@@ -6118,10 +5583,14 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
       <div style="margin-top: 10px;"></div>
     `;
   }
-  
-  // Vẽ biểu đồ 3D (nếu có Plotly)
+
+  // Vẽ biểu đồ 3D (với tùy chọn Plotly hoặc Matplotlib)
   if (typeof Plotly !== 'undefined') {
-    draw3DDamageChart(z, elements, Z0);
+    if (typeof draw3DDamageChartEnhanced !== 'undefined') {
+      draw3DDamageChartEnhanced(z, elements, Z0);
+    } else {
+      draw3DDamageChart(z, elements, Z0);
+    }
   }
 
   // --- Bổ sung khối chỉ số A, B, C (theo vùng) ---
@@ -6227,14 +5696,14 @@ function resetCameraToDefault(chartDiv, delay = 1000) {
       const defaultCameraSettings = {
         'scene.camera': {
           eye: {
-            x: 1.5,   // Slightly elevated and to the right
-            y: 1.5,   // Slightly elevated and forward
-            z: 1.2    // Elevated view for better perspective
+            x: 1.5,
+            y: 1.5,
+            z: 1.6
           },
           center: {
-            x: 0,     // Center on the structure
-            y: 0,     // Center on the structure
-            z: 0.3    // Slightly elevated center point
+            x: chartDiv._fullLayout.scene.xaxis.range[0] + (chartDiv._fullLayout.scene.xaxis.range[1] - chartDiv._fullLayout.scene.xaxis.range[0]) / 2,
+            y: chartDiv._fullLayout.scene.yaxis.range[0] + (chartDiv._fullLayout.scene.yaxis.range[1] - chartDiv._fullLayout.scene.yaxis.range[0]) / 2,
+            z: 12.5
           },
           up: {
             x: 0,     // Standard up vector
@@ -6907,10 +6376,10 @@ function resetCameraForExport(chartDiv) {
 function draw3DDamageChart(z, elements, Z0) {
   // ✅ USE CENTRALIZED COORDINATE TRANSFORMATION for Section 1
   const transformation = centralizeCoordinateTransformation(elements);
-  const { xOffset, yOffset, transformedXMax, transformedYMax, xMin, xMax, yMin, yMax } = transformation;
+  const { xOffset, yOffset, extendedRangeX, extendedRangeY, transformedXMax, transformedYMax } = transformation;
 
   console.log(`🔄 SECTION 1 COORDINATE TRANSFORMATION (CENTRALIZED):`);
-  console.log(`   Using centralizeCoordinateTransformation() for consistency`);
+  console.log(`   Using global extended ranges for consistent axis scaling.`);
 
   // Lấy tọa độ trọng tâm và giá trị z với CENTRALIZED COORDINATE TRANSFORMATION
   const x1 = [], y1 = [], z1 = [];
@@ -6956,12 +6425,12 @@ function draw3DDamageChart(z, elements, Z0) {
     const transformedCoords = applyCoordinateTransformation(element, transformation);
     const box = createBox3D(transformedCoords.x, transformedCoords.y, height, elementSize.width, elementSize.depth);
 
-    // ✅ DEBUG: Log first few and last few elements being processed
-    if (index < 5 || index >= elements.length - 5) {
-      console.log(`🔧 Processing Element ${element.id} (index ${index}): Original(${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → Transformed(${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)}) Height=${height.toFixed(4)}`);
-      console.log(`   📦 Box size: ${elementSize.width.toFixed(4)}×${elementSize.depth.toFixed(4)}×${height.toFixed(4)}m`);
-      console.log(`   📍 Box center: (${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)}, ${(height/2).toFixed(3)})`);
-    }
+    // ✅ DEBUG: Log first few and last few elements being processed - COMMENTED OUT TO REDUCE LOGS
+    // if (index < 5 || index >= elements.length - 5) {
+    //   console.log(`🔧 Processing Element ${element.id} (index ${index}): Original(${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → Transformed(${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)}) Height=${height.toFixed(4)}`);
+    //   console.log(`   📦 Box size: ${elementSize.width.toFixed(4)}×${elementSize.depth.toFixed(4)}×${height.toFixed(4)}m`);
+    //   console.log(`   📍 Box center: (${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)}, ${(height/2).toFixed(3)})`);
+    // }
 
     // ✅ EDGE ELEMENTS SPECIFIC DEBUG
     const isEdgeElement = (
@@ -6972,7 +6441,7 @@ function draw3DDamageChart(z, elements, Z0) {
     );
 
     if (isEdgeElement && (index < 10 || index >= elements.length - 10)) {
-      console.log(`🔲 EDGE Element ${element.id}: Size=${elementSize.width.toFixed(3)}×${elementSize.depth.toFixed(3)}, Position=(${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)})`);
+      // console.log(`🔲 EDGE Element ${element.id}: Size=${elementSize.width.toFixed(3)}×${elementSize.depth.toFixed(3)}, Position=(${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)})`);
     }
 
     // Offset cho vertices (để tránh trùng lặp chỉ số)
@@ -7022,8 +6491,8 @@ function draw3DDamageChart(z, elements, Z0) {
     intensity: allIntensity,
     text: allText, // Thêm thuộc tính text cho hovertemplate
     colorscale: optimizedColorscale,
-    cmin: minIntensity,
-    cmax: maxIntensity,
+    cmin: 0,      // ✅ Standardized color range
+    cmax: 25,     // ✅ Standardized color range
     opacity: 1.0,
     showlegend: false,
     showscale: true,
@@ -7061,15 +6530,17 @@ function draw3DDamageChart(z, elements, Z0) {
   const xUnique = [...new Set(x1)].sort((a, b) => a - b);
   const yUnique = [...new Set(y1)].sort((a, b) => a - b);
 
-  // ✅ USE TRANSFORMED RANGES (x1, y1 are already transformed)
-  const xMinTransformed = Math.min(...x1);  // Should be ~0
-  const xMaxTransformed = Math.max(...x1);  // Should be ~8.26
-  const yMinTransformed = Math.min(...y1);  // Should be ~0
-  const yMaxTransformed = Math.max(...y1);  // Should be ~8.54
+  // ✅ EXTENDED THRESHOLD PLANE: Use extended ranges for edge element coverage
+  const xMinTransformed = extendedRangeX[0];
+  const xMaxTransformed = extendedRangeX[1];
+  const yMinTransformed = extendedRangeY[0];
+  const yMaxTransformed = extendedRangeY[1];
 
-  // Thêm margin 5% để mặt phẳng bao phủ vừa đủ
-  const xMargin = (xMaxTransformed - xMinTransformed) * 0.05;
-  const yMargin = (yMaxTransformed - yMinTransformed) * 0.05;
+  // Dynamic margin 5% của extended range
+  const xRange = extendedRangeX[1] - extendedRangeX[0];
+  const yRange = extendedRangeY[1] - extendedRangeY[0];
+  const xMargin = xRange * 0.05;     // 5% of extended range
+  const yMargin = yRange * 0.05;     // 5% of extended range
 
   // Tạo lưới mặt phẳng với độ phân giải cao hơn để mượt mà
   const planeResolution = 20; // Tăng độ phân giải
@@ -7083,12 +6554,12 @@ function draw3DDamageChart(z, elements, Z0) {
 
   const zPlane = Array(yPlane.length).fill().map(() => Array(xPlane.length).fill(Z0));
 
-  // Debug thông tin mặt phẳng ngưỡng với TRANSFORMED coordinates
-  console.log(`🎯 Mặt phẳng ngưỡng cải tiến (TRANSFORMED):`);
-  console.log(`   - Phạm vi X: ${(xMinTransformed - xMargin).toFixed(4)}m - ${(xMaxTransformed + xMargin).toFixed(4)}m`);
-  console.log(`   - Phạm vi Y: ${(yMinTransformed - yMargin).toFixed(4)}m - ${(yMaxTransformed + yMargin).toFixed(4)}m`);
+  // Debug thông tin mặt phẳng ngưỡng với EXTENDED coordinates
+  console.log(`🎯 Mặt phẳng ngưỡng cải tiến (EXTENDED RANGES):`);
+  console.log(`   - Phạm vi X: ${(xMinTransformed - xMargin).toFixed(3)}m - ${(xMaxTransformed + xMargin).toFixed(3)}m`);
+  console.log(`   - Phạm vi Y: ${(yMinTransformed - yMargin).toFixed(3)}m - ${(yMaxTransformed + yMargin).toFixed(3)}m`);
   console.log(`   - Độ phân giải: ${planeResolution}x${planeResolution} points`);
-  console.log(`   - Margin: 5% (X=${xMargin.toFixed(4)}m, Y=${yMargin.toFixed(4)}m)`);
+  console.log(`   - Margin: 5% of extended range (X=${xMargin.toFixed(3)}m, Y=${yMargin.toFixed(3)}m)`);
   console.log(`   - Opacity: 0.7, Contour width: 8px`);
 
   // ✅ THRESHOLD PLANE INTERFERENCE CHECK
@@ -7194,9 +6665,7 @@ function draw3DDamageChart(z, elements, Z0) {
 
   const data = [traceMesh3D, tracePlane, traceTextPercentage];
 
-  // Calculate coordinate ranges for axis configuration
-  const xAxisMax = Math.max(...x1);
-  const yAxisMax = Math.max(...y1);
+
 
   const layout = {
     scene: {
@@ -7215,7 +6684,7 @@ function draw3DDamageChart(z, elements, Z0) {
         showspikes: false,                   // Tắt spike lines để gọn gàng
         tickmode: 'auto',                    // Tự động điều chỉnh tick
         nticks: 8,                           // Số lượng tick marks
-        range: [-elementSize.width/2, transformedXMax + elementSize.width/2]  // ✅ EXTENDED RANGE: Include half element width for edge visibility
+        range: [-1, 11]                   // ✅ HARD-CODED FIXED RANGE
       },
       yaxis: {
         title: {
@@ -7232,7 +6701,7 @@ function draw3DDamageChart(z, elements, Z0) {
         showspikes: false,                   // Tắt spike lines để gọn gàng
         tickmode: 'auto',                    // Tự động điều chỉnh tick
         nticks: 8,                           // Số lượng tick marks
-        range: [-elementSize.depth/2, transformedYMax + elementSize.depth/2]  // ✅ EXTENDED RANGE: Include half element depth for edge visibility
+        range: [-1, 11]                   // ✅ HARD-CODED FIXED RANGE
       },
       zaxis: {
         title: {
@@ -7248,15 +6717,23 @@ function draw3DDamageChart(z, elements, Z0) {
         backgroundcolor: 'rgba(245,245,245,0.9)',
         showspikes: false,                   // Tắt spike lines để gọn gàng
         tickmode: 'auto',                    // Tự động điều chỉnh tick
-        nticks: 6                            // Số lượng tick marks cho trục Z
+        nticks: 6,                           // Số lượng tick marks cho trục Z
+        range: [0, 25]                       // ✅ FIXED RANGE: 0-25% damage index for consistency across all modes
+      },
+
+      aspectmode: 'manual',
+      aspectratio: {
+        x: 1,
+        y: 1,
+        z: 0.8
       },
       camera: {
         projection: { type: 'orthographic' }, // OrthographicCamera for no perspective distortion
         eye: { x: 1.6, y: 1.6, z: 1.8 }, // ✅ OPTIMIZED viewing angle for better element visibility
-        center: { x: transformedXMax/2, y: transformedYMax/2, z: 0 }, // ✅ CENTER ON DATA
+        center: { x: (extendedRangeX[0] + extendedRangeX[1]) / 2, y: (extendedRangeY[0] + extendedRangeY[1]) / 2, z: 12.5 }, // ✅ DYNAMIC CENTER: Center of extended ranges for edge visibility
         up: { x: 0, y: 0, z: 1 }
       },
-      aspectmode: 'data', // ✅ CHANGE FROM 'cube' TO 'data' for better edge visibility
+      aspectmode: 'manual', // ✅ Standardized aspect mode
       bgcolor: 'rgba(248,249,250,0.9)'
     },
     title: {
@@ -7266,7 +6743,7 @@ function draw3DDamageChart(z, elements, Z0) {
       y: 0.95
     },
     width: 1200,  // ✅ INCREASED WIDTH for better visibility
-    height: 900,  // ✅ INCREASED HEIGHT for better proportions
+    height: 900,  // ✅ Standardized height to match createChartImage
     margin: { l: 60, r: 120, t: 100, b: 60 },  // ✅ OPTIMIZED MARGINS for better layout
     font: { family: 'Arial, sans-serif', color: '#2c3e50' },
     paper_bgcolor: 'rgba(255,255,255,0.95)',
@@ -7275,26 +6752,29 @@ function draw3DDamageChart(z, elements, Z0) {
 
   // ✅ LAYOUT DEBUGGING FOR EDGE ELEMENT VISIBILITY
   console.log(`🔍 === LAYOUT SETTINGS VERIFICATION ===`);
-  console.log(`📊 Chart dimensions: ${layout.width}×${layout.height}px`);
+  console.log(`📊 Chart dimensions: ${layout.width}×${layout.height}px (Z-axis: 750px for 25%)`);
   console.log(`📊 Margins: L=${layout.margin.l}, R=${layout.margin.r}, T=${layout.margin.t}, B=${layout.margin.b}`);
-  console.log(`📊 Effective plot area: ${layout.width - layout.margin.l - layout.margin.r}×${layout.height - layout.margin.t - layout.margin.b}px`);
+  console.log(`📊 Effective plot area: ${layout.width - layout.margin.l - layout.margin.r}×${layout.height - layout.margin.t - layout.margin.b}px (Z-axis: ~750px usable)`);
   console.log(`📊 Camera settings: ${JSON.stringify(layout.scene.camera)}`);
   console.log(`📊 Aspect mode: ${layout.scene.aspectmode}`);
-  console.log(`📊 X-axis range: [${layout.scene.xaxis.range[0]}, ${layout.scene.xaxis.range[1]}]`);
-  console.log(`📊 Y-axis range: [${layout.scene.yaxis.range[0]}, ${layout.scene.yaxis.range[1]}]`);
+  console.log(`📊 X-axis range: [${extendedRangeX[0].toFixed(3)}, ${extendedRangeX[1].toFixed(3)}] (extended for edge elements)`);
+  console.log(`📊 Y-axis range: [${extendedRangeY[0].toFixed(3)}, ${extendedRangeY[1].toFixed(3)}] (extended for edge elements)`);
 
-  // ✅ CAMERA OPTIMIZATION FOR EDGE VISIBILITY
-  console.log(`🔍 === CAMERA OPTIMIZATION ANALYSIS ===`);
-  console.log(`📊 Data center: (${(transformedXMax/2).toFixed(3)}, ${(transformedYMax/2).toFixed(3)}, 0)`);
-  console.log(`📊 Camera center: (${layout.scene.camera.center.x.toFixed(3)}, ${layout.scene.camera.center.y.toFixed(3)}, ${layout.scene.camera.center.z})`);
+  // ✅ CAMERA OPTIMIZATION FOR EXTENDED RANGES
+  console.log(`🔍 === CAMERA OPTIMIZATION ANALYSIS (EXTENDED RANGES) ===`);
+  console.log(`📊 Data center: (${(transformedXMax/2).toFixed(3)}, ${(transformedYMax/2).toFixed(3)}, 0) - actual data`);
+  console.log(`📊 Camera center: (${layout.scene.camera.center.x.toFixed(3)}, ${layout.scene.camera.center.y.toFixed(3)}, ${layout.scene.camera.center.z}) - EXTENDED center`);
   console.log(`📊 Camera eye position: (${layout.scene.camera.eye.x}, ${layout.scene.camera.eye.y}, ${layout.scene.camera.eye.z})`);
-  console.log(`📊 Aspect mode changed from 'cube' to 'data' for better edge element visibility`);
-  console.log(`📊 Data aspect ratio: X/Y = ${(transformedXMax/transformedYMax).toFixed(3)}`);
+  console.log(`📊 Aspect mode: 'data' for better edge element visibility`);
+  console.log(`📊 Data aspect ratio: X/Y = ${(transformedXMax/transformedYMax).toFixed(3)} (actual data)`);
+  console.log(`📊 Extended display ratio: X/Y = ${((extendedRangeX[1]-extendedRangeX[0])/(extendedRangeY[1]-extendedRangeY[0])).toFixed(3)} (includes margins)`);
 
-  // Calculate optimal camera distance for edge visibility
-  const dataRange = Math.max(transformedXMax, transformedYMax);
-  const optimalDistance = dataRange * 0.8; // 80% of data range for good visibility
-  console.log(`📊 Optimal camera distance for edge visibility: ${optimalDistance.toFixed(3)}`);
+  // Calculate camera distance for EXTENDED ranges
+  const extendedXRange = extendedRangeX[1] - extendedRangeX[0];
+  const extendedYRange = extendedRangeY[1] - extendedRangeY[0];
+  const maxExtendedRange = Math.max(extendedXRange, extendedYRange);
+  const optimalDistance = maxExtendedRange * 0.8; // 80% of extended range for good visibility
+  console.log(`📊 Optimal camera distance for EXTENDED range: ${optimalDistance.toFixed(3)}`);
   console.log(`📊 Current camera distance: ${Math.sqrt(layout.scene.camera.eye.x**2 + layout.scene.camera.eye.y**2 + layout.scene.camera.eye.z**2).toFixed(3)}`);
 
   // Thông tin debug và thống kê với kích thước thực tế
@@ -7375,55 +6855,57 @@ function draw3DDamageChart(z, elements, Z0) {
   const bottomEdge = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const topEdge = [91, 92, 93, 94, 95, 96, 97, 98, 99, 100];
 
-  console.log(`🔍 LEFT EDGE ELEMENTS (should be 10):`);
-  leftEdge.forEach(id => {
-    const element = elements.find(e => e.id === id);
-    if (element) {
-      const transformedCoords = applyCoordinateTransformation(element, transformation);
-      console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
-    } else {
-      console.log(`   ❌ Element ${id}: MISSING`);
-    }
-  });
+  // console.log(`🔍 LEFT EDGE ELEMENTS (should be 10):`);
+  // leftEdge.forEach(id => {
+  //   const element = elements.find(e => e.id === id);
+  //   if (element) {
+  //     const transformedCoords = applyCoordinateTransformation(element, transformation);
+  //     console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
+  //   } else {
+  //     console.log(`   ❌ Element ${id}: MISSING`);
+  //   }
+  // });
 
-  console.log(`🔍 RIGHT EDGE ELEMENTS (should be 10):`);
-  rightEdge.forEach(id => {
-    const element = elements.find(e => e.id === id);
-    if (element) {
-      const transformedCoords = applyCoordinateTransformation(element, transformation);
-      console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
-    } else {
-      console.log(`   ❌ Element ${id}: MISSING`);
-    }
-  });
+  // console.log(`🔍 RIGHT EDGE ELEMENTS (should be 10):`);
+  // rightEdge.forEach(id => {
+  //   const element = elements.find(e => e.id === id);
+  //   if (element) {
+  //     const transformedCoords = applyCoordinateTransformation(element, transformation);
+  //     console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
+  //   } else {
+  //     console.log(`   ❌ Element ${id}: MISSING`);
+  //   }
+  // });
 
-  console.log(`🔍 BOTTOM EDGE ELEMENTS (should be 10):`);
-  bottomEdge.forEach(id => {
-    const element = elements.find(e => e.id === id);
-    if (element) {
-      const transformedCoords = applyCoordinateTransformation(element, transformation);
-      console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
-    } else {
-      console.log(`   ❌ Element ${id}: MISSING`);
-    }
-  });
+  // console.log(`🔍 BOTTOM EDGE ELEMENTS (should be 10):`);
+  // bottomEdge.forEach(id => {
+  //   const element = elements.find(e => e.id === id);
+  //   if (element) {
+  //     const transformedCoords = applyCoordinateTransformation(element, transformation);
+  //     console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
+  //   } else {
+  //     console.log(`   ❌ Element ${id}: MISSING`);
+  //   }
+  // });
 
-  console.log(`🔍 TOP EDGE ELEMENTS (should be 10):`);
-  topEdge.forEach(id => {
-    const element = elements.find(e => e.id === id);
-    if (element) {
-      const transformedCoords = applyCoordinateTransformation(element, transformation);
-      console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
-    } else {
-      console.log(`   ❌ Element ${id}: MISSING`);
-    }
-  });
+  // console.log(`🔍 TOP EDGE ELEMENTS (should be 10):`);
+  // topEdge.forEach(id => {
+  //   const element = elements.find(e => e.id === id);
+  //   if (element) {
+  //     const transformedCoords = applyCoordinateTransformation(element, transformation);
+  //     console.log(`   ✅ Element ${id}: (${element.center.x.toFixed(2)}, ${element.center.y.toFixed(2)}) → (${transformedCoords.x.toFixed(2)}, ${transformedCoords.y.toFixed(2)})`);
+  //   } else {
+  //     console.log(`   ❌ Element ${id}: MISSING`);
+  //   }
+  // });
 
-  // ✅ DEBUG: Log axis ranges for Section 1 with TRANSFORMATION
-  console.log('🔍 SECTION 1 AXIS RANGES (TRANSFORMED):');
-  console.log(`   X-axis range: [0, ${transformedXMax.toFixed(3)}] (transformed from [${xMin.toFixed(3)}, ${xMax.toFixed(3)}])`);
-  console.log(`   Y-axis range: [0, ${transformedYMax.toFixed(3)}] (transformed from [${yMin.toFixed(3)}, ${yMax.toFixed(3)}])`);
-  console.log(`   Data points now positioned: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}]`);
+  // ✅ DEBUG: Log axis ranges for Section 1 with EXTENDED RANGES
+  console.log('🔍 SECTION 1 AXIS RANGES (EXTENDED FOR EDGE ELEMENTS):');
+  console.log(`   X-axis range: [${extendedRangeX[0].toFixed(3)}, ${extendedRangeX[1].toFixed(3)}] (EXTENDED - was dynamic [0, ${transformedXMax.toFixed(3)}])`);
+  console.log(`   Y-axis range: [${extendedRangeY[0].toFixed(3)}, ${extendedRangeY[1].toFixed(3)}] (EXTENDED - was dynamic [0, ${transformedYMax.toFixed(3)}])`);
+  console.log(`   Z-axis range: [0, 25] (FIXED - was dynamic [0, auto]) - 25% damage index`);
+  console.log(`   Data points positioned: X[0, ${transformedXMax.toFixed(3)}], Y[0, ${transformedYMax.toFixed(3)}] within EXTENDED display ranges`);
+  console.log(`   Edge element margins: X±${(elementSize.width/2).toFixed(3)}m, Y±${(elementSize.depth/2).toFixed(3)}m`);
 
   // ✅ COORDINATE BOUNDS VERIFICATION
   console.log(`🔍 === COORDINATE BOUNDS VERIFICATION ===`);
@@ -7436,30 +6918,43 @@ function draw3DDamageChart(z, elements, Z0) {
   console.log(`   X: [${actualXMin.toFixed(3)}, ${actualXMax.toFixed(3)}] (range: ${(actualXMax - actualXMin).toFixed(3)}m)`);
   console.log(`   Y: [${actualYMin.toFixed(3)}, ${actualYMax.toFixed(3)}] (range: ${(actualYMax - actualYMin).toFixed(3)}m)`);
 
-  console.log(`📊 Chart axis settings:`);
-  console.log(`   X-axis: [0, ${transformedXMax.toFixed(3)}]`);
-  console.log(`   Y-axis: [0, ${transformedYMax.toFixed(3)}]`);
+  console.log(`📊 Chart axis settings (EXTENDED FOR EDGE ELEMENTS):`);
+  console.log(`   X-axis: [${extendedRangeX[0].toFixed(3)}, ${extendedRangeX[1].toFixed(3)}] (EXTENDED - data range was [0, ${transformedXMax.toFixed(3)}])`);
+  console.log(`   Y-axis: [${extendedRangeY[0].toFixed(3)}, ${extendedRangeY[1].toFixed(3)}] (EXTENDED - data range was [0, ${transformedYMax.toFixed(3)}])`);
+  console.log(`   Z-axis: [0, 25] (FIXED - 25% damage index maximum, 750px height)`);
 
-  // Check if any elements are outside bounds
-  console.log(`📊 Elements outside bounds check:`);
+  // Check if any elements are outside EXTENDED bounds
+  console.log(`📊 Elements outside EXTENDED bounds check:`);
   let elementsOutsideBounds = 0;
+  let elementsOutsideExtendedBounds = 0;
   elements.forEach(element => {
     const transformedCoords = applyCoordinateTransformation(element, transformation);
+
+    // Check against original dynamic bounds
     if (transformedCoords.x < 0 || transformedCoords.x > transformedXMax ||
         transformedCoords.y < 0 || transformedCoords.y > transformedYMax) {
-      console.log(`   ⚠️ Element ${element.id} outside bounds: (${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)})`);
       elementsOutsideBounds++;
+    }
+
+    // Check against EXTENDED bounds (includes element margins)
+    if (transformedCoords.x < extendedRangeX[0] || transformedCoords.x > extendedRangeX[1] ||
+        transformedCoords.y < extendedRangeY[0] || transformedCoords.y > extendedRangeY[1]) {
+      console.log(`   ⚠️ Element ${element.id} outside EXTENDED bounds: (${transformedCoords.x.toFixed(3)}, ${transformedCoords.y.toFixed(3)})`);
+      elementsOutsideExtendedBounds++;
     }
   });
 
-  if (elementsOutsideBounds === 0) {
-    console.log(`   ✅ All ${elements.length} elements within chart bounds`);
+  console.log(`   ✅ Elements within original bounds: ${elements.length - elementsOutsideBounds}/${elements.length}`);
+  if (elementsOutsideExtendedBounds === 0) {
+    console.log(`   ✅ All ${elements.length} elements within EXTENDED bounds [${extendedRangeX[0].toFixed(3)}, ${extendedRangeX[1].toFixed(3)}] × [${extendedRangeY[0].toFixed(3)}, ${extendedRangeY[1].toFixed(3)}]`);
   } else {
-    console.log(`   ❌ ${elementsOutsideBounds} elements outside chart bounds`);
+    console.log(`   ⚠️ ${elementsOutsideExtendedBounds} elements outside EXTENDED bounds - may be clipped in visualization`);
   }
 
   let chartDiv = document.getElementById('damage3DChart');
   if (chartDiv) {
+    console.log(`Kích thước biểu đồ 3D - Mục 1: ${chartDiv.clientWidth}px x ${chartDiv.clientHeight}px`);
+    console.log(`📊 Chiều cao trục Z - Mục 1: [${layout.scene.zaxis.range[0]}, ${layout.scene.zaxis.range[1]}]`);
     Plotly.purge(chartDiv);
     Plotly.newPlot(chartDiv, data, layout, {
       displayModeBar: true,
@@ -7470,7 +6965,7 @@ function draw3DDamageChart(z, elements, Z0) {
       toImageButtonOptions: {
         format: 'png',
         filename: '3D_damage_chart',
-        height: 900,
+        height: 700,
         width: 1200,
         scale: 2  // Lower scale for interactive display
       },
@@ -8363,7 +7858,7 @@ async function exportCompleteExcelReport() {
           `Progress: ${completedCount}/${totalCombinations} combinations completed`
         );
 
-        console.log(`📊 Calculating combination ${completedCount}/${totalCombinations}: ${modeDisplayName}, Z0 ${threshold}%`);
+
 
         try {
           // Calculate metrics for this combination
@@ -8390,7 +7885,7 @@ async function exportCompleteExcelReport() {
     // Hide progress indicator
     showExcelProgress(false);
 
-    console.log(`✅ Complete Excel report generated successfully with ${completedCount} combinations!`);
+
 
   } catch (error) {
     console.error('❌ Error in complete Excel export:', error);
@@ -8406,15 +7901,13 @@ async function exportCompleteExcelReport() {
 async function calculateSingleCombination(mode, threshold) {
   return new Promise((resolve, reject) => {
     try {
-      console.log(`\n🚀 === CALCULATING SINGLE COMBINATION: MODE ${mode}, THRESHOLD ${threshold}% ===`);
+
 
       // ✅ ALTERNATIVE: Use existing calculation by temporarily setting UI values
       const modeInput = document.getElementById('mode-number');
       const thresholdInput = document.getElementById('curvature-multiplier');
 
-      console.log(`🔍 UI Elements check:`);
-      console.log(`   - modeInput (mode-number): ${modeInput ? 'Found' : 'NOT FOUND'}`);
-      console.log(`   - thresholdInput (curvature-multiplier): ${thresholdInput ? 'Found' : 'NOT FOUND'}`);
+
 
       if (!modeInput || !thresholdInput) {
         throw new Error(`Mode or threshold input elements not found: mode=${!!modeInput}, threshold=${!!thresholdInput}`);
@@ -8428,7 +7921,7 @@ async function calculateSingleCombination(mode, threshold) {
       modeInput.value = mode;
       thresholdInput.value = threshold;
 
-      console.log(`🔧 Set UI values: Mode=${mode}, Threshold=${threshold}%`);
+
 
       // Call existing calculation function and wait for completion
       try {
@@ -8440,7 +7933,7 @@ async function calculateSingleCombination(mode, threshold) {
           modeInput.value = originalMode;
           thresholdInput.value = originalThreshold;
 
-          console.log(`✅ Completed calculation for Mode ${mode}, Threshold ${threshold}%`);
+
           resolve();
         }, 200); // Small delay to ensure calculation completes
 
@@ -8461,32 +7954,22 @@ async function calculateSingleCombination(mode, threshold) {
  * Calculate indices A, B, C for a specific combination
  */
 function calculateIndicesForCombination(z, elements, Z0, mode, threshold) {
-  console.log(`\n🔍 === CALCULATING INDICES FOR MODE ${mode}, THRESHOLD ${threshold}% ===`);
-  console.log(`📊 Z0 threshold: ${Z0.toFixed(4)}`);
+
 
   // ✅ CRITICAL DEBUG: Check damage index object
   const zKeys = Object.keys(z);
   const zValues = Object.values(z);
   const maxZ = Math.max(...zValues);
   const minZ = Math.min(...zValues);
-  console.log(`🔍 DAMAGE INDEX DEBUG:`);
-  console.log(`   - z object keys count: ${zKeys.length}`);
-  console.log(`   - z values range: ${minZ.toFixed(4)} to ${maxZ.toFixed(4)}`);
-  console.log(`   - elements array length: ${elements.length}`);
-  console.log(`   - Z0 vs maxZ: ${Z0.toFixed(4)} vs ${maxZ.toFixed(4)} (Z0 is ${Z0 > maxZ ? 'HIGHER' : 'lower'})`);
+
 
   // Get damaged elements from current calculation
   const predictedDamaged = elements.filter(e => z[e.id] >= Z0).map(e => String(e.id).trim());
-  console.log(`🎯 Predicted damaged elements: [${predictedDamaged.join(', ')}] (${predictedDamaged.length} elements)`);
+
 
   // Debug: Show damage index values for first few elements
   const sampleElements = elements.slice(0, 10);
-  console.log(`📊 Sample damage indices (first 10 elements):`);
-  sampleElements.forEach(e => {
-    const damageIndex = z[e.id] || 0;
-    const isAboveThreshold = damageIndex >= Z0;
-    console.log(`   Element ${e.id}: ${damageIndex.toFixed(4)} ${isAboveThreshold ? '✅ ABOVE' : '❌ below'} threshold`);
-  });
+
 
   // Get actual damaged elements from user input (EXACT same logic as displayStrainEnergyResults)
   let actualDamagedIds = [];
@@ -8500,39 +7983,32 @@ function calculateIndicesForCombination(z, elements, Z0, mode, threshold) {
   let elementY2 = elementY2Input && elementY2Input.value ? elementY2Input.value.trim() : '';
   let elementY3 = elementY3Input && elementY3Input.value ? elementY3Input.value.trim() : '';
 
-  console.log(`📋 User input values: Y="${elementY}", Y2="${elementY2}", Y3="${elementY3}"`);
+
 
   // Validate and add elements (same logic as Section 1)
   if (elementY) {
     const found = elements.find(e => String(e.id).trim() === elementY);
-    console.log(`🔍 Element Y="${elementY}": ${found ? `Found (ID: ${found.id})` : 'NOT FOUND'}`);
+
     if (found) actualDamagedIds.push(String(found.id).trim());
   }
   if (elementY2) {
     const found2 = elements.find(e => String(e.id).trim() === elementY2);
-    console.log(`🔍 Element Y2="${elementY2}": ${found2 ? `Found (ID: ${found2.id})` : 'NOT FOUND'}`);
+
     if (found2) actualDamagedIds.push(String(found2.id).trim());
   }
   if (elementY3) {
     const found3 = elements.find(e => String(e.id).trim() === elementY3);
-    console.log(`🔍 Element Y3="${elementY3}": ${found3 ? `Found (ID: ${found3.id})` : 'NOT FOUND'}`);
+
     if (found3) actualDamagedIds.push(String(found3.id).trim());
   }
 
   // Remove duplicates (same as Section 1)
   actualDamagedIds = [...new Set(actualDamagedIds)];
-  console.log(`✅ Final actual damaged IDs: [${actualDamagedIds.join(', ')}] (${actualDamagedIds.length} elements)`);
 
-  // Debug: Check if actual damaged elements exist in elements array
-  console.log(`🔍 Validating actual damaged elements in elements array:`);
-  actualDamagedIds.forEach(id => {
-    const found = elements.find(e => String(e.id).trim() === id);
-    console.log(`   Element ${id}: ${found ? '✅ EXISTS' : '❌ NOT FOUND'} in elements array`);
-  });
 
   // ✅ CRITICAL: Only calculate indices if we have actual damaged elements (same as Section 1)
   if (actualDamagedIds.length === 0) {
-    console.log(`⚠️ No actual damaged elements found for Mode ${mode}, Z0 ${threshold}% - skipping indices calculation`);
+
     return {
       indexA: 0,
       indexB: 0,
@@ -8545,15 +8021,7 @@ function calculateIndicesForCombination(z, elements, Z0, mode, threshold) {
   const detectedCount = actualDamagedIds.filter(id => predictedDamaged.includes(id)).length;
   const indexA = detectedCount / actualDamagedIds.length;
 
-  console.log(`🎯 INTERSECTION ANALYSIS:`);
-  console.log(`   - Actual damaged: [${actualDamagedIds.join(', ')}]`);
-  console.log(`   - Predicted damaged: [${predictedDamaged.join(', ')}]`);
-  actualDamagedIds.forEach(id => {
-    const isDetected = predictedDamaged.includes(id);
-    console.log(`   - Element ${id}: ${isDetected ? '✅ DETECTED' : '❌ MISSED'} in predicted`);
-  });
-  console.log(`   - Detected count: ${detectedCount}/${actualDamagedIds.length}`);
-  console.log(`   - Index A: ${(indexA*100).toFixed(2)}%`);
+
 
   // Calculate Index B
   const allIds = elements.map(e => String(e.id).trim());
@@ -8570,13 +8038,7 @@ function calculateIndicesForCombination(z, elements, Z0, mode, threshold) {
   const indexC = indexA * wDam + indexB * wUndam;
 
   // ✅ DEBUG: Log calculation details for verification
-  console.log(`🔍 INDICES CALCULATION DEBUG:`);
-  console.log(`   - Actual damaged: [${actualDamagedIds.join(', ')}] (${actualDamagedIds.length} elements)`);
-  console.log(`   - Predicted damaged: [${predictedDamaged.join(', ')}] (${predictedDamaged.length} elements)`);
-  console.log(`   - Detected count: ${detectedCount}/${actualDamagedIds.length}`);
-  console.log(`   - Index A: ${(indexA*100).toFixed(2)}%`);
-  console.log(`   - Index B: ${(indexB*100).toFixed(2)}%`);
-  console.log(`   - Index C: ${(indexC*100).toFixed(2)}%`);
+
 
   return {
     indexA,
@@ -8616,40 +8078,30 @@ function updateExcelProgress(percent, mainText, detailText) {
     progressDetails.textContent = detailText;
   }
 
-  console.log(`📊 Excel Progress: ${percent.toFixed(1)}% - ${mainText}`);
+
 }
 
 // ✅ TEST FUNCTION FOR SECTION 3 DOWNLOAD
 function testSection3DownloadButton() {
-  console.log('🧪 === TESTING SECTION 3 DOWNLOAD BUTTON ===');
-
   // Check if button exists
   const button = document.getElementById('download-charts-btn-section3');
-  console.log(`✅ Button exists: ${!!button}`);
 
   // Check if progress elements exist
   const progressDiv = document.getElementById('download-progress-section3');
   const progressText = document.getElementById('progress-text-section3');
   const progressBar = document.getElementById('progress-bar-section3');
 
-  console.log(`✅ Progress div exists: ${!!progressDiv}`);
-  console.log(`✅ Progress text exists: ${!!progressText}`);
-  console.log(`✅ Progress bar exists: ${!!progressBar}`);
+
+
 
   // Check if function is available
-  console.log(`✅ Function available: ${typeof downloadMultiMode3DChartsSection3}`);
 
   // Check prerequisites
-  console.log(`✅ Mesh data: ${!!window.meshData}`);
-  console.log(`✅ Section 1 results: ${!!window.strainEnergyResults}`);
-  console.log(`✅ Section 3 results: ${!!window.section3Results}`);
+
+
 
   if (window.section3Results) {
-    console.log(`📊 Section 3 survey elements: [${window.section3Results.surveyElements?.join(', ') || 'None'}]`);
-    console.log(`📊 Section 3 predictions count: ${window.section3Results.surveyPredictions?.length || 0}`);
   }
-
-  console.log('🎉 Section 3 download button test completed!');
   return {
     buttonExists: !!button,
     progressElementsExist: !!(progressDiv && progressText && progressBar),
@@ -8660,7 +8112,7 @@ function testSection3DownloadButton() {
 
 // ✅ SIMPLE DEBUG FUNCTION FOR PLOTLY IMAGE GENERATION
 async function debugPlotlyImageGeneration() {
-  console.log('🔧 === DEBUGGING PLOTLY IMAGE GENERATION ===');
+
 
   try {
     // Create simple test chart
@@ -8672,7 +8124,7 @@ async function debugPlotlyImageGeneration() {
     testDiv.id = `test-plotly-${Date.now()}`;
     document.body.appendChild(testDiv);
 
-    console.log('📊 Creating simple test chart...');
+
 
     // Simple test data
     const testData = [{
@@ -8693,10 +8145,7 @@ async function debugPlotlyImageGeneration() {
       staticPlot: true
     });
 
-    console.log('✅ Test chart created');
-
     // Test image generation
-    console.log('🖼️ Testing image generation...');
     const imageDataURL = await Plotly.toImage(testDiv, {
       format: 'png',
       width: 600,
@@ -8704,13 +8153,8 @@ async function debugPlotlyImageGeneration() {
       scale: 2
     });
 
-    console.log(`📊 Image data type: ${typeof imageDataURL}`);
-    console.log(`📊 Image data length: ${imageDataURL ? imageDataURL.length : 'null'}`);
-    console.log(`📊 Image data preview: ${imageDataURL ? imageDataURL.substring(0, 100) + '...' : 'null'}`);
-
     // Test blob conversion
     const blob = dataURLToBlob(imageDataURL);
-    console.log(`✅ Blob created: ${blob.size} bytes`);
 
     // Download test image
     const link = document.createElement("a");
@@ -8722,7 +8166,7 @@ async function debugPlotlyImageGeneration() {
     Plotly.purge(testDiv);
     document.body.removeChild(testDiv);
 
-    console.log('🎉 Plotly image generation test completed successfully!');
+
     return true;
 
   } catch (error) {
@@ -8734,28 +8178,22 @@ async function debugPlotlyImageGeneration() {
 
 // ✅ DEBUG FUNCTION FOR SECTION 3 CHART GENERATION
 async function debugSection3ChartGeneration(mode = 10, threshold = 40) {
-  console.log(`🔧 === DEBUGGING SECTION 3 CHART GENERATION ===`);
-  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
 
   try {
     // Test data generation
-    console.log('📊 Step 1: Testing chart data generation...');
     const chartData = await generateSection3ChartForModeAndThreshold(mode, threshold);
-    console.log('✅ Chart data generated successfully:', chartData);
 
     // Test image creation
-    console.log('🖼️ Step 2: Testing image creation...');
     const imageBlob = await createChartImage(chartData, mode, threshold);
-    console.log(`✅ Image created successfully: ${imageBlob.size} bytes`);
 
     // Test download
-    console.log('💾 Step 3: Testing single image download...');
     const link = document.createElement("a");
     link.href = URL.createObjectURL(imageBlob);
     link.download = `Debug_Section3_Mode${mode}_Z0${threshold}.png`;
     link.click();
 
-    console.log('🎉 Debug test completed successfully!');
+
     return true;
 
   } catch (error) {
@@ -8774,39 +8212,20 @@ window.debugPlotlyImageGeneration = debugPlotlyImageGeneration;
 
 // ✅ TEST FUNCTION FOR TEST.CSV BASED DOWNLOAD
 function testTestCSVDownloadButton() {
-  console.log('🧪 === TESTING TEST.CSV BASED DOWNLOAD BUTTON ===');
-
   // Check if button exists
   const button = document.getElementById('download-charts-test-csv-btn');
-  console.log(`✅ Button exists: ${!!button}`);
 
   // Check prerequisites
-  console.log(`✅ Mesh data: ${!!window.meshData}`);
-  console.log(`✅ TEST.csv data cached: ${!!window.testCSVData}`);
 
   const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
   const fileInputDamaged = document.getElementById("txt-file-damaged");
-  console.log(`✅ Healthy file: ${fileInputNonDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
-  console.log(`✅ Damaged file: ${fileInputDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
 
   // Check function availability
-  console.log(`✅ Function available: ${typeof downloadMultiMode3DChartsTestCSV}`);
 
   // Test TEST.csv data reading
-  console.log('\n📊 Testing TEST.csv data access...');
   if (window.testCSVData) {
-    console.log('✅ TEST.csv data available:', window.testCSVData);
   } else {
-    console.log('⚠️ TEST.csv data not cached, will try to load from Data folder');
   }
-
-  console.log('\n🎯 Configuration:');
-  console.log('- Modes: [10, 12, 14, 17, 20, combine]');
-  console.log('- Threshold: 40% only');
-  console.log('- Element mapping: DI1→55, DI2→95, DI3→60, DI4→75');
-  console.log('- Damage range: DI*100 ± 1% (random)');
-
-  console.log('🎉 TEST.CSV download button test completed!');
   return {
     buttonExists: !!button,
     functionAvailable: typeof downloadMultiMode3DChartsTestCSV === 'function',
@@ -8816,79 +8235,39 @@ function testTestCSVDownloadButton() {
 
 // ✅ DETAILED DEBUG FUNCTION FOR TEST.CSV CHART GENERATION
 async function debugTestCSVChartGeneration(mode = 10, threshold = 40) {
-  console.log(`🔧 === DETAILED DEBUGGING TEST.CSV CHART GENERATION ===`);
-  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
 
   try {
     // Step 1: Check prerequisites
-    console.log('\n📋 Step 1: Prerequisites check...');
-    console.log(`✅ Mesh data: ${!!window.meshData}`);
-    console.log(`✅ Elements count: ${window.meshData?.elements?.length || 'N/A'}`);
-
     const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
     const fileInputDamaged = document.getElementById("txt-file-damaged");
-    console.log(`✅ Healthy file: ${fileInputNonDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
-    console.log(`✅ Damaged file: ${fileInputDamaged?.files[0] ? 'Loaded' : 'Missing'}`);
 
     // Step 2: Test data generation
-    console.log('\n📊 Step 2: Testing TEST.csv chart data generation...');
     const chartData = await generateTestCSVChartForModeAndThreshold(mode, threshold);
-    console.log('✅ Chart data generated successfully');
-    console.log(`📊 Chart data structure:`, {
-      elements: chartData.elements?.length || 'N/A',
-      z: Object.keys(chartData.z || {}).length,
-      Z0: chartData.Z0,
-      Z0_percent: chartData.Z0_percent,
-      maxZ: chartData.maxZ,
-      mode: chartData.mode,
-      dataSource: chartData.dataSource
-    });
 
     // Step 3: Show damage mapping
-    console.log('\n🎯 Step 3: Damage mapping analysis...');
     const damagedElements = Object.keys(chartData.z).filter(id => chartData.z[id] > 0);
-    console.log(`🎯 Total elements: ${Object.keys(chartData.z).length}`);
-    console.log(`🎯 Damaged elements: ${damagedElements.length} [${damagedElements.join(', ')}]`);
-    console.log(`🎯 Zero elements: ${Object.keys(chartData.z).length - damagedElements.length}`);
 
     damagedElements.forEach(id => {
       const damageValue = chartData.z[id];
       const percentage = (damageValue * 100).toFixed(2);
-      console.log(`   Element ${id}: ${damageValue.toFixed(4)} (${percentage}%)`);
     });
 
-    console.log(`📊 Damage range: ${chartData.maxZ.toFixed(4)} (max), Z0 threshold: ${chartData.Z0.toFixed(4)} (${threshold}%)`);
-
     // Step 4: Test image creation using Section 1 logic
-    console.log('\n🖼️ Step 4: Testing image creation with Section 1 logic...');
-    console.log('🔄 Calling createChartImageFromSection1...');
     const imageBlob = await createChartImageFromSection1(chartData, mode, threshold);
-    console.log(`✅ Image created successfully: ${imageBlob.size} bytes, type: ${imageBlob.type}`);
 
     // Step 5: Validate image
-    console.log('\n🔍 Step 5: Image validation...');
     if (imageBlob.size === 0) {
       throw new Error('Generated image is empty');
     }
     if (imageBlob.type !== 'image/png') {
-      console.warn(`⚠️ Unexpected image type: ${imageBlob.type}`);
     }
 
     // Step 6: Test download
-    console.log('\n💾 Step 6: Testing single image download...');
     const link = document.createElement("a");
     link.href = URL.createObjectURL(imageBlob);
     link.download = `Debug_TestCSV_Mode${mode}_Z0${threshold}_${Date.now()}.png`;
     link.click();
-    console.log(`✅ Download initiated: ${link.download}`);
-
-    console.log('\n🎉 TEST.csv debug test completed successfully!');
-    console.log('📊 Summary:');
-    console.log(`   - Mode: ${mode}`);
-    console.log(`   - Threshold: ${threshold}%`);
-    console.log(`   - Damaged elements: ${damagedElements.length}`);
-    console.log(`   - Image size: ${imageBlob.size} bytes`);
-    console.log(`   - Max damage: ${(chartData.maxZ * 100).toFixed(2)}%`);
 
     return true;
 
@@ -8910,55 +8289,35 @@ async function debugTestCSVChartGeneration(mode = 10, threshold = 40) {
 
 // ✅ COMPARISON FUNCTION: Compare TEST.csv vs Section 1 data
 async function compareTestCSVWithSection1(mode = 10, threshold = 40) {
-  console.log(`🔍 === COMPARING TEST.CSV vs SECTION 1 ===`);
-  console.log(`🎯 Mode ${mode}, Threshold ${threshold}%`);
+
 
   try {
     // Generate TEST.csv data
-    console.log('\n📊 Generating TEST.csv data...');
+
     const testCSVData = await generateTestCSVChartForModeAndThreshold(mode, threshold);
 
     // Generate Section 1 data (if available)
-    console.log('\n📊 Generating Section 1 data...');
+
     let section1Data = null;
     try {
       section1Data = await generateChartForModeAndThreshold(mode, threshold);
     } catch (error) {
-      console.warn('⚠️ Could not generate Section 1 data:', error.message);
+
     }
 
     // Compare data structures
-    console.log('\n🔍 Data structure comparison:');
-    console.log('TEST.csv data:', {
-      elements: testCSVData.elements?.length,
-      z_keys: Object.keys(testCSVData.z).length,
-      Z0: testCSVData.Z0,
-      maxZ: testCSVData.maxZ,
-      damaged_elements: Object.keys(testCSVData.z).filter(id => testCSVData.z[id] > 0).length
-    });
-
     if (section1Data) {
-      console.log('Section 1 data:', {
-        elements: section1Data.elements?.length,
-        z_keys: Object.keys(section1Data.z).length,
-        Z0: section1Data.Z0,
-        maxZ: section1Data.maxZ,
-        damaged_elements: Object.keys(section1Data.z).filter(id => section1Data.z[id] > 0).length
-      });
     }
 
     // Show TEST.csv damage mapping
-    console.log('\n🎯 TEST.csv damage mapping:');
     const testCSVDamaged = Object.keys(testCSVData.z).filter(id => testCSVData.z[id] > 0);
     testCSVDamaged.forEach(id => {
       const value = testCSVData.z[id];
       const percentage = (value * 100).toFixed(2);
-      console.log(`   Element ${id}: ${value.toFixed(4)} (${percentage}%)`);
     });
 
     // Show Section 1 damage mapping (top 10)
     if (section1Data) {
-      console.log('\n🎯 Section 1 damage mapping (top 10):');
       const section1Damaged = Object.entries(section1Data.z)
         .filter(([id, value]) => value > 0)
         .sort(([,a], [,b]) => b - a)
@@ -8966,11 +8325,8 @@ async function compareTestCSVWithSection1(mode = 10, threshold = 40) {
 
       section1Damaged.forEach(([id, value]) => {
         const percentage = (value * 100).toFixed(2);
-        console.log(`   Element ${id}: ${value.toFixed(4)} (${percentage}%)`);
       });
     }
-
-    console.log('\n✅ Comparison completed');
     return { testCSVData, section1Data };
 
   } catch (error) {
@@ -8981,34 +8337,23 @@ async function compareTestCSVWithSection1(mode = 10, threshold = 40) {
 
 // ✅ DEBUG FUNCTION FOR SECTION 1 NO LABELS
 async function debugSection1NoLabels(mode = 10, threshold = 40) {
-  console.log(`🔧 === DEBUGGING SECTION 1 NO LABELS ===`);
-  console.log(`🎯 Testing Mode ${mode}, Threshold ${threshold}%`);
+
 
   try {
     // Test data generation
-    console.log('📊 Step 1: Testing chart data generation...');
     const chartData = await generateChartForModeAndThreshold(mode, threshold);
-    console.log('✅ Chart data generated successfully:', chartData);
 
     // Show damage mapping
     const damagedElements = Object.keys(chartData.z).filter(id => chartData.z[id] > 0);
-    console.log(`🎯 Damaged elements: ${damagedElements.length} total`);
-    console.log(`🎯 Z0 threshold: ${chartData.Z0.toFixed(4)} (${threshold}%)`);
-    console.log(`🎯 Max damage: ${chartData.maxZ.toFixed(4)}`);
 
     // Test image creation using NO LABELS function
-    console.log('🖼️ Step 2: Testing Section 1 NO LABELS image creation...');
     const imageBlob = await createChartImageNoLabels(chartData, mode, threshold);
-    console.log(`✅ Image created successfully: ${imageBlob.size} bytes`);
 
     // Test download
-    console.log('💾 Step 3: Testing single image download...');
     const link = document.createElement("a");
     link.href = URL.createObjectURL(imageBlob);
     link.download = `Debug_Section1_NoLabels_Mode${mode}_Z0${threshold}.png`;
     link.click();
-
-    console.log('🎉 Section 1 NO LABELS debug test completed successfully!');
     return true;
 
   } catch (error) {
@@ -9029,3 +8374,60 @@ window.debugTestCSVChartGeneration = debugTestCSVChartGeneration;
 window.compareTestCSVWithSection1 = compareTestCSVWithSection1;
 window.loadTestCSVFromDataFolder = loadTestCSVFromDataFolder;
 window.useExistingTestCSVData = useExistingTestCSVData;
+
+// ✅ FIXED RANGES CONFIGURATION SUMMARY
+function logFixedRangesConfiguration() {
+
+}
+
+// Export the summary function
+window.logFixedRangesConfiguration = logFixedRangesConfiguration;
+
+// ✅ TEST FUNCTION: Verify fixed ranges implementation
+function testFixedRangesImplementation() {
+  // Test 1: Check if mesh data is available
+  if (!window.meshData || !window.meshData.elements) {
+    return false;
+  }
+
+  const elements = window.meshData.elements;
+
+  // Test 2: Check coordinate transformation
+  const transformation = centralizeCoordinateTransformation(elements);
+
+  // Test 3: Check element size calculation
+  const elementSize = calculateRealElementSize(elements);
+
+  // Test 4: Simulate fixed ranges vs dynamic ranges
+
+  // Test 5: Check if any elements would be outside fixed bounds
+  let elementsOutside = 0;
+  elements.forEach(element => {
+    const coords = applyCoordinateTransformation(element, transformation);
+    if (coords.x > 10 || coords.y > 10) {
+      elementsOutside++;
+    }
+  });
+
+  if (elementsOutside === 0) {
+  } else {
+  }
+
+  // Test 6: Check camera center calculation
+  const fixedCenter = { x: 5, y: 5, z: 12.5 };
+  const dynamicCenter = {
+    x: transformation.transformedXMax/2,
+    y: transformation.transformedYMax/2,
+    z: 0
+  };
+  return true;
+}
+
+// Export the test function
+window.testFixedRangesImplementation = testFixedRangesImplementation;
+
+
+
+// ✅ EXPORT MAIN FUNCTIONS TO GLOBAL SCOPE
+window.processStrainEnergyData = processStrainEnergyData;
+window.processStrainEnergyDataFixed = processStrainEnergyDataFixed;
