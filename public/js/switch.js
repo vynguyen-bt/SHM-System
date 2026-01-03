@@ -3,304 +3,14 @@ function switchToPartA() {
   partA.style.display = partA.style.display === "block" ? "none" : "block";
 }
 
-function switchToPartB() {
-  var partB = document.getElementById("partB");
-  partB.style.display = partB.style.display === "block" ? "none" : "block";
-
-  // Khởi tạo mục 2 và cập nhật danh sách phần tử hư hỏng từ mục 1
-  if (typeof initializeSection2 === 'function') {
-    setTimeout(initializeSection2, 100); // Delay nhỏ để đảm bảo UI đã render
-  }
-
-  // Tự động tạo và download TEST.csv và TRAIN.csv khi mở Section 2
-  if (partB.style.display === "block") {
-    setTimeout(() => {
-      // ✅ NEW: Use Simulation.txt data to create TEST.csv with proper mapping
-      
-
-      // Check if Simulation.txt is available
-      const fileInputSimulation = document.getElementById("txt-file-simulation");
-      let simulationData = {};
-      let numDamageIndices = 2; // Default for 2 elements
-
-      if (fileInputSimulation && fileInputSimulation.files[0]) {
-        try {
-          // Parse simulation file synchronously if possible
-          const file = fileInputSimulation.files[0];
-          const reader = new FileReader();
-          reader.onload = function(event) {
-            try {
-              const simulationContent = event.target.result;
-              simulationData = parseSimulationFile(simulationContent);
-              numDamageIndices = Object.keys(simulationData).length;
-
-              
-
-              // Create TEST.csv with simulation data
-              createTestCsvWithSimulationData(simulationData, numDamageIndices);
-
-            } catch (error) {
-              
-              createDefaultTestCsv();
-            }
-          };
-          reader.readAsText(file);
-        } catch (error) {
-          
-          createDefaultTestCsv();
-        }
-      } else {
-        
-        createDefaultTestCsv();
-      }
-
-      function createTestCsvWithSimulationData(simulationData, numDI) {
-        
-
-        let testCsvContent = "Case";
-
-        // Add 121 feature columns
-        for (let i = 1; i <= 121; i++) {
-          testCsvContent += ",U" + i;
-        }
-
-        // Add DI columns based on simulation data
-        for (let i = 1; i <= numDI; i++) {
-          testCsvContent += ",DI" + i;
-        }
-        testCsvContent += "\n";
-
-        // Add data row
-        testCsvContent += "0"; // Case number
-
-        // ✅ FIXED: Add feature values from real Damage.txt data instead of random
-        
-
-        // Get Damage.txt file and parse it
-        const fileInputDamaged = document.getElementById("txt-file-damaged");
-        if (fileInputDamaged && fileInputDamaged.files[0]) {
-          const file = fileInputDamaged.files[0];
-          const reader = new FileReader();
-          reader.onload = function(event) {
-            const damageContent = event.target.result;
-
-            // Get mode from Section 1 results
-            const modeUsed = window.strainEnergyResults?.modeUsed || 12;
-            
-
-            try {
-              // Parse real damage data
-              const damageData = parseModeShapeFile(damageContent, modeUsed);
-              const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
-
-              
-
-              // Generate features from real data
-              for (let i = 1; i <= 121; i++) {
-                let featureValue = 0; // Default zero value
-
-                if (i <= nodeIDs.length) {
-                  const nodeID = nodeIDs[i - 1]; // U1=nodeIDs[0], U2=nodeIDs[1], etc.
-                  const rawValue = damageData[nodeID];
-
-                  if (rawValue !== undefined && !isNaN(rawValue)) {
-                    featureValue = rawValue;
-
-                    // Log first 10 for verification
-                    if (i <= 10) {
-                      
-                    }
-                  }
-                }
-
-                testCsvContent += "," + featureValue.toFixed(6);
-              }
-
-              // Continue with DI values and download
-              finishTestCsvGeneration();
-
-            } catch (error) {
-              
-              generateFallbackFeatures();
-            }
-          };
-          reader.readAsText(file);
-        } else {
-          
-          generateFallbackFeatures();
-        }
-
-        function generateFallbackFeatures() {
-          
-          for (let i = 1; i <= 121; i++) {
-            const value = (Math.random() * 0.001).toFixed(6);
-            testCsvContent += "," + value;
-          }
-          finishTestCsvGeneration();
-        }
-
-        function finishTestCsvGeneration() {
-          // Add DI values from simulation data
-          const simulationElements = Object.keys(simulationData).map(id => parseInt(id));
-          for (let i = 0; i < numDI; i++) {
-            const elementID = simulationElements[i];
-            const damageValue = simulationData[elementID] || 0;
-
-            // Apply mapping for logging
-            let displayElementID = elementID;
-            if (elementID === 2134) displayElementID = 55;
-            else if (elementID === 2174) displayElementID = 95;
-
-            
-            testCsvContent += "," + damageValue.toFixed(4);
-          }
-          testCsvContent += "\n";
-
-          // Download TEST.csv
-          const testBlob = new Blob([testCsvContent], { type: "text/csv" });
-          const testLink = document.createElement("a");
-          testLink.href = URL.createObjectURL(testBlob);
-          testLink.download = "TEST.csv";
-          testLink.click();
-
-          
-        }
-      }
-
-      function createDefaultTestCsv() {
-        
-
-        let testCsvContent = "Case";
-
-        // Add 121 feature columns
-        for (let i = 1; i <= 121; i++) {
-          testCsvContent += ",U" + i;
-        }
-
-        // Add single DI column
-        testCsvContent += ",DI1\n";
-
-        // Add data row
-        testCsvContent += "0"; // Case number
-
-        // ✅ FIXED: Try to use real Damage.txt data, fallback to random if not available
-        const fileInputDamaged = document.getElementById("txt-file-damaged");
-        if (fileInputDamaged && fileInputDamaged.files[0]) {
-          
-
-          const file = fileInputDamaged.files[0];
-          const reader = new FileReader();
-          reader.onload = function(event) {
-            const damageContent = event.target.result;
-            const modeUsed = window.strainEnergyResults?.modeUsed || 12;
-
-            try {
-              const damageData = parseModeShapeFile(damageContent, modeUsed);
-              const nodeIDs = Object.keys(damageData).map(id => parseInt(id)).sort((a, b) => a - b);
-
-              
-
-              // Add real feature values
-              for (let i = 1; i <= 121; i++) {
-                let featureValue = 0;
-                if (i <= nodeIDs.length) {
-                  const nodeID = nodeIDs[i - 1];
-                  const rawValue = damageData[nodeID];
-                  if (rawValue !== undefined && !isNaN(rawValue)) {
-                    featureValue = rawValue;
-                  }
-                }
-                testCsvContent += "," + featureValue.toFixed(6);
-              }
-
-              // Add default DI1 value
-              const defaultDamageValue = 0.05;
-              testCsvContent += "," + defaultDamageValue.toFixed(4) + "\n";
-
-              // Download TEST.csv
-              const testBlob = new Blob([testCsvContent], { type: "text/csv" });
-              const testLink = document.createElement("a");
-              testLink.href = URL.createObjectURL(testBlob);
-              testLink.download = "TEST.csv";
-              testLink.click();
-
-              
-
-            } catch (error) {
-              
-              generateRandomFeatures();
-            }
-          };
-          reader.readAsText(file);
-        } else {
-          
-          generateRandomFeatures();
-        }
-
-        function generateRandomFeatures() {
-          // Add feature values (small random values)
-          for (let i = 1; i <= 121; i++) {
-            const value = (Math.random() * 0.001).toFixed(6);
-            testCsvContent += "," + value;
-          }
-
-          // Add default DI1 value
-          const defaultDamageValue = 0.05;
-          testCsvContent += "," + defaultDamageValue.toFixed(4) + "\n";
-
-          // Download TEST.csv
-          const testBlob = new Blob([testCsvContent], { type: "text/csv" });
-          const testLink = document.createElement("a");
-          testLink.href = URL.createObjectURL(testBlob);
-          testLink.download = "TEST.csv";
-          testLink.click();
-
-          
-        }
-      }
-
-      // 3. Tạo TRAIN.csv từ các file training cases
-      setTimeout(() => {
-        createTrainCsvFromUploadedFiles();
-      }, 1000); // Delay để TEST.csv download xong trước
-
-    }, 500); // Delay để đảm bảo UI đã render
-  }
-}
 
 function switchToPartB1() {
   var partB1 = document.getElementById("partB1");
   partB1.style.display = partB1.style.display === "block" ? "none" : "block";
 }
 
-function switchToPartB3() {
-  var partB3 = document.getElementById("partB3");
-  partB3.style.display = partB3.style.display === "block" ? "none" : "block";
 
-  // Khởi tạo mục 3 và cập nhật danh sách phần tử hư hỏng từ mục 1
-  if (typeof initializeSection3 === 'function') {
-    setTimeout(initializeSection3, 100); // Delay nhỏ để đảm bảo UI đã render
-  }
-}
 
-function switchToPartB3New() {
-  var partB3New = document.getElementById("partB3New");
-  if (partB3New) {
-    partB3New.style.display = partB3New.style.display === "block" ? "none" : "block";
-  } else {
-    
-  }
-
-  // Khởi tạo mục 3 mới và cập nhật danh sách phần tử hư hỏng từ mục 1
-  if (typeof initializeSection3New === 'function') {
-    setTimeout(initializeSection3New, 100); // Delay nhỏ để đảm bảo UI đã render
-  }
-}
-
-function switchToPartB4() {
-  var partB4 = document.getElementById("partB4");
-  partB4.style.display = partB4.style.display === "block" ? "none" : "block";
-}
 
 // Calculate damage value for specific element ID
 function calculateDamageValueForElement(elementId) {
@@ -472,17 +182,27 @@ function createSampleTrainCsv() {
 }
 
 window.onload = function () {
-  // ✅ SAFE ELEMENT HIDING: Check if elements exist before accessing
-  const elementsToHide = ["partB4", "partB3", "partB1", "partA", "partB"];
+  // ✅ Ẩn các mục khác, nhưng để Mục 1 (partA) hiển thị sẵn
+  const elementsToHide = ["partB1"]; // Chỉ ẩn partB1 nếu có
 
   elementsToHide.forEach(elementId => {
     const element = document.getElementById(elementId);
     if (element && element.style) {
       element.style.display = "none";
-    } else if (!element) {
-      
     }
   });
 
-  
+  // ✅ Hiển thị sẵn Mục 1
+  const partA = document.getElementById("partA");
+  if (partA && partA.style) {
+    partA.style.display = "block";
+  }
+
+  // ✅ Khóa giá trị mặc định: Z0 = 40% và phần tử khảo sát 1 = 55
+  try {
+    const sel = document.getElementById('curvature-multiplier');
+    if (sel) sel.value = '40';
+    const inp = document.getElementById('element-y');
+    if (inp) inp.value = '55';
+  } catch (e) { /* no-op */ }
 };

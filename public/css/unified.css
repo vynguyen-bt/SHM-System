@@ -16,21 +16,21 @@
   --warning-yellow: #ffc117;
   --success-green: #28a745;
   --danger-red: #dc3545;
-  
+
   /* Typography Scale */
-  --font-size-xl: 32px;      /* Main title */
-  --font-size-lg: 26px;      /* Section titles */
-  --font-size-md: 20px;      /* H2 titles */
-  --font-size-sm: 16px;      /* H3, buttons, labels */
-  --font-size-xs: 14px;      /* Body text, inputs */
-  --font-size-xxs: 12px;     /* Notes, small text */
-  
+  --font-size-xl: 36px;      /* Cỡ Lớn: Tiêu đề chính */
+  --font-size-lg: 21px;      /* Cỡ Vừa: Tiêu đề mục & phụ */
+  --font-size-md: 21px;      /* Cỡ Vừa: Tiêu đề mục & phụ */
+  --font-size-sm: 18px;      /* Cỡ Cơ bản: Nội dung, nút, nhãn */
+  --font-size-xs: 18px;      /* Cỡ Cơ bản: Nội dung, nút, nhãn */
+  --font-size-xxs: 18px;     /* Cỡ Cơ bản: Nội dung, nút, nhãn */
+
   /* Font Weights */
   --font-weight-bold: 700;
   --font-weight-semibold: 600;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  
+
   /* Spacing Scale */
   --spacing-xs: 5px;
   --spacing-sm: 10px;
@@ -38,12 +38,12 @@
   --spacing-lg: 20px;
   --spacing-xl: 25px;
   --spacing-xxl: 30px;
-  
+
   /* Border Radius */
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
   --border-radius-lg: 8px;
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 4px var(--shadow-color);
   --shadow-md: 0 4px 6px var(--shadow-color);
@@ -81,7 +81,7 @@ h1 {
 .container h1 {
   text-align: right;
   color: #0056b3;
-  font-size: 24px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   margin: 0 0 25px 0;
   padding: 0;
@@ -90,7 +90,7 @@ h1 {
 /* Subsection Titles - Restored from backup */
 .container h2 {
   color: #495057;
-  font-size: 20px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   margin: 20px 0 15px 0;
   padding: 10px 0;
@@ -100,7 +100,7 @@ h1 {
 /* Sub-subsection Titles - Restored from backup */
 .container h3 {
   color: #6c757d;
-  font-size: 18px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   margin: 15px 0 10px 0;
 }
@@ -134,7 +134,7 @@ h1 {
 
 /* ===== FORM ELEMENTS - RESTORED FROM BACKUP ===== */
 label {
-  font-size: 16px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   display: block;
   margin: 10px 0 5px;
@@ -150,7 +150,7 @@ button:not(.button-open) {
   border-radius: 5px;
   border: 1px solid #ccc;
   display: block;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-family: Arial, sans-serif;
   box-sizing: border-box; /* Ensure padding is included in width */
 }
@@ -329,48 +329,44 @@ button:disabled {
   box-shadow: none;
 }
 
-/* Primary Navigation Buttons - COMPACT RIGHT-ALIGNED WITH PERFECT SPACING */
+/* Primary Navigation Buttons - WIDER (not full width), WRAP LONG TITLES */
 .button-open {
-  /* SIZE PROPERTIES - COMPACT & CONSISTENT */
-  width: 320px !important;           /* Fixed width for perfect consistency */
-  height: 40px !important;           /* Reduced height for compact look */
-  min-width: 320px !important;
-  max-width: 320px !important;
+  /* SIZE: wider but not full row */
+  width: 690px !important;           /* cố định để lề trái các mục bằng nhau */
+  min-width: 690px !important;
+  max-width: 690px !important;
+  height: auto !important;
   min-height: 40px !important;
-  max-height: 40px !important;
+  max-height: none !important;
 
-  /* SPACING PROPERTIES - CONSISTENT VERTICAL SPACING */
-  padding: 0 16px !important;        /* Remove vertical padding for perfect centering */
-  margin: 15px 0 0 auto !important;  /* Consistent 15px spacing between buttons */
+  /* SPACING */
+  padding: 10px 16px !important;     /* padding dọc dễ đọc */
+  margin: 15px 0 0 auto !important;  /* vẫn căn phải vùng nút như layout cũ */
 
-  /* TYPOGRAPHY PROPERTIES */
+  /* TYPOGRAPHY */
   font-size: var(--font-size-sm) !important;
-  line-height: 40px !important;      /* Line-height = height for perfect vertical centering */
+  line-height: 1.3 !important;       /* cho phép wrap nhiều dòng */
   font-weight: var(--font-weight-semibold) !important;
 
-  /* VISUAL PROPERTIES */
+  /* VISUAL */
   background-color: var(--primary-blue-dark) !important;
   color: white !important;
   border: none !important;
   border-radius: var(--border-radius-sm) !important;
   box-shadow: var(--shadow-sm) !important;
 
-  /* LAYOUT PROPERTIES - PERFECT CENTERING */
-  display: block !important;         /* Block for full width control */
-  text-align: center !important;     /* Horizontal centering */
+  /* LAYOUT */
+  display: flex !important;          /* giữ căn giữa dọc */
+  align-items: center !important;
+  justify-content: flex-start !important; /* text bên trái */
+  text-align: left !important;
   text-decoration: none !important;
   box-sizing: border-box !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  overflow: hidden !important;       /* Prevent text overflow */
-  white-space: nowrap !important;    /* Keep text on single line */
-  text-overflow: ellipsis !important; /* Add ellipsis if text too long */
-
-  /* VERTICAL CENTERING WITH LEFT-ALIGNED TEXT */
-  display: flex !important;          /* Use flexbox for perfect centering */
-  align-items: center !important;    /* Vertical centering */
-  justify-content: flex-start !important; /* Left-aligned text */
-  text-align: left !important;       /* Left-aligned text */
+  overflow: visible !important;      /* không cắt chữ */
+  white-space: normal !important;    /* cho wrap */
+  text-overflow: clip !important;    /* không ellipsis */
 }
 
 /* First button - No top margin for consistent spacing */
@@ -482,10 +478,10 @@ button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onc
 /* NUCLEAR OPTION - Maximum specificity for button mục 2 - PERFECT SPACING & CENTERING */
 html body div.main-part button.button-open[onclick*="switchToPartB()"][onclick*="processFilestrain"][onclick*="processFileTest"] {
   /* SIZE PROPERTIES - COMPACT & CONSISTENT */
-  width: 320px !important;           /* Fixed width matching other buttons */
+  width: 450px !important;           /* Fixed width matching other buttons */
   height: 40px !important;           /* Compact height */
-  min-width: 320px !important;
-  max-width: 320px !important;
+  min-width: 450px !important;
+  max-width: 450px !important;
   min-height: 40px !important;
   max-height: 40px !important;
 
@@ -580,23 +576,23 @@ button[onclick*="Test"] {
   body {
     padding: var(--spacing-sm);
   }
-  
+
   .container {
     padding: var(--spacing-md);
   }
-  
+
   h1 {
     font-size: calc(var(--font-size-xl) * 0.8);
   }
-  
+
   .container h1 {
-    font-size: calc(var(--font-size-lg) * 0.9);
+    font-size: 18px; /* Approx. 70% of tablet main title */
   }
-  
+
   .button-open {
-    width: 280px !important;          /* Slightly smaller on tablet */
-    min-width: 280px !important;
-    max-width: 280px !important;
+    width: 400px !important;          /* Adjusted for tablet */
+    min-width: 400px !important;
+    max-width: 400px !important;
     height: 38px !important;          /* Slightly smaller height */
     font-size: var(--font-size-xs) !important;
     line-height: 38px !important;     /* Line-height = height for vertical centering */
@@ -607,7 +603,7 @@ button[onclick*="Test"] {
   .button-open:first-of-type {
     margin-top: 0 !important;         /* First button no top margin on tablet */
   }
-  
+
   input, select, button {
     max-width: 100%;
   }
@@ -617,15 +613,15 @@ button[onclick*="Test"] {
   h1 {
     font-size: calc(var(--font-size-xl) * 0.7);
   }
-  
+
   .container h1 {
-    font-size: calc(var(--font-size-lg) * 0.8);
+    font-size: 16px; /* Approx. 70% of mobile main title */
   }
-  
+
   .button-open {
-    width: 240px !important;          /* Smaller on mobile */
-    min-width: 240px !important;
-    max-width: 240px !important;
+    width: 95% !important;           /* Use percentage for mobile */
+    min-width: 95% !important;
+    max-width: 95% !important;
     height: 36px !important;          /* Smaller height for mobile */
     font-size: var(--font-size-xxs) !important;
     line-height: 36px !important;     /* Line-height = height for vertical centering */
@@ -647,3 +643,135 @@ button[onclick*="Test"] {
   position: relative !important;
   margin: var(--spacing-lg) 0 !important;
 }
+
+
+
+
+
+/* ===== CHẾ ĐỘ GIẢM MẬT ĐỘ: density-compact =====
+   Mục tiêu: giao diện gọn – ít khoảng trắng – dễ đọc, không phá vỡ bố cục cũ */
+body.density-compact {
+  /* Ghi đè thang khoảng cách */
+  --spacing-xs: 4px;
+  --spacing-sm: 6px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+}
+
+/* Khoảng cách vùng bao */
+body.density-compact .container { padding: 12px !important; }
+
+/* Tiêu đề trang và tiêu đề phần/mục */
+body.density-compact h1 { margin-bottom: 12px !important; }
+body.density-compact .container h1 { margin: 14px 0 !important; }
+body.density-compact .container h2 { margin: 12px 0 8px !important; padding: 6px 0 !important; }
+body.density-compact .container h3 { margin: 8px 0 6px !important; }
+
+/* Khoảng cách phần tử văn bản/biểu mẫu */
+body.density-compact p,
+body.density-compact label,
+body.density-compact input,
+body.density-compact select,
+body.density-compact button:not(.button-open) { margin-bottom: 8px !important; }
+
+/* Bảng */
+body.density-compact table th,
+body.density-compact table td { padding: 8px !important; }
+
+/* Biểu đồ */
+body.density-compact .chart-container,
+body.density-compact #damage3DChart { margin: 12px 0 !important; }
+
+/* Nút tiêu đề mục: giữ width 690px, căn phải; chữ căn trái và cho phép wrap */
+body.density-compact .button-open {
+  margin-top: 10px !important;
+  height: auto !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  width: 690px !important;
+  min-width: 690px !important;
+  max-width: 690px !important;
+  margin-left: auto !important;
+  text-align: left !important;
+}
+
+/* Nhóm nút nhỏ */
+body.density-compact .button-container { gap: 6px !important; }
+
+/* ===== Responsive cho chế độ compact ===== */
+@media (max-width: 768px) {
+  body.density-compact .container { padding: 10px !important; }
+  body.density-compact .button-open { margin-top: 8px !important; }
+}
+
+@media (max-width: 480px) {
+  /* Nút tiêu đề mục chiếm 95% chiều ngang, vẫn căn phải */
+  body.density-compact .button-open {
+    width: 95% !important;
+    min-width: 95% !important;
+    max-width: 95% !important;
+    margin-left: auto !important;
+  }
+}
+
+
+/* ===== Compact mạnh hơn: density-compact + .tight =====
+   Dùng khi cần giảm chiều cao trang tối đa mà vẫn đọc dễ dàng */
+body.density-compact.tight {
+  /* Có thể giữ nguyên biến, chỉ siết margin/padding thực tế */
+}
+body.density-compact.tight .container { padding: 10px !important; }
+body.density-compact.tight h1 { margin-bottom: 8px !important; }
+body.density-compact.tight .container h1 { margin: 10px 0 !important; }
+body.density-compact.tight .container h2 { margin: 10px 0 6px !important; padding: 4px 0 !important; }
+body.density-compact.tight .container h3 { margin: 6px 0 4px !important; }
+body.density-compact.tight p,
+body.density-compact.tight label,
+body.density-compact.tight input,
+body.density-compact.tight select,
+body.density-compact.tight button:not(.button-open) { margin-bottom: 6px !important; }
+body.density-compact.tight table th,
+body.density-compact.tight table td { padding: 6px !important; }
+body.density-compact.tight .chart-container,
+body.density-compact.tight #damage3DChart { margin: 8px 0 !important; }
+body.density-compact.tight .button-open { margin-top: 8px !important; line-height: 1.25 !important; }
+/* Giảm nhẹ padding của .btn để bớt cao, trừ .button-open đã xử lý riêng */
+body.density-compact.tight .btn { padding: 6px 10px !important; }
+
+
+/* ===== ĐỒNG BỘ CÁC BUTTON CHỨC NĂNG (KHÔNG BAO GỒM .button-open) ===== */
+/* Màu nền theo nút "Tính MAC" (#17a2b8), kích thước gọn, căn trái, nằm bên trái */
+.container button:not(.button-open) {
+  background-color: #17a2b8 !important;  /* đồng bộ màu */
+  color: #fff !important;
+  border: none !important;
+  /* Gọn và đồng nhất kích thước */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important; /* chữ căn trái */
+  height: 34px !important;
+  line-height: 1.2 !important;
+  padding: 6px 12px !important;
+  width: auto !important;
+  min-width: 160px !important;          /* đủ dài để không quá nhỏ */
+  max-width: none !important;
+  margin: 6px 6px 6px 0 !important;      /* nằm trái, có khoảng cách nhỏ giữa các nút */
+  text-align: left !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: var(--border-radius-sm) !important;
+}
+.container button:not(.button-open):hover {
+  background-color: #138aa2 !important;  /* tối hơn khi hover */
+  box-shadow: var(--shadow-md) !important;
+}
+.container button:not(.button-open):active {
+  transform: translateY(0) !important;
+  box-shadow: none !important;
+}
+
+/* Trong chế độ compact/tight: giữ cùng kích thước nhưng sát hơn một chút */
+body.density-compact .container button:not(.button-open) { margin: 6px 6px 6px 0 !important; }
+body.density-compact.tight .container button:not(.button-open) { margin: 4px 6px 4px 0 !important; height: 32px !important; padding: 4px 10px !important; }

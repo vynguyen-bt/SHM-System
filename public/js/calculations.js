@@ -209,104 +209,7 @@ function calculateIndexC() {
   )}%<br>`;
 }
 
-function processDataX() {
-  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
-  const fileInputDamaged = document.getElementById("txt-file-damaged");
-  const modeNumberInput = document.getElementById("mode-number");
-  const resultsDiv = document.getElementById("resultsX");
-
-  const modeNumber = parseInt(modeNumberInput.value);
-  const deltaX2 = deltaX * deltaX;
-
-  if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
-    alert("Vui lòng tải lên cả hai tệp TXT (Không hư hỏng và Hư hỏng)!");
-    return;
-  }
-
-  const fileNonDamaged = fileInputNonDamaged.files[0];
-  const fileDamaged = fileInputDamaged.files[0];
-
-  function readFile(file, callback) {
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const lines = event.target.result.trim().split("\n");
-      const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].trim().split(/\s+/);
-        if (parts.length === 3) {
-          const mode = parseInt(parts[1]);
-          const eigenValue = parseFloat(parts[2].replace(",", "."));
-          if (mode === modeNumber) {
-            data.push(eigenValue);
-          }
-        }
-      }
-      callback(data);
-    };
-    reader.readAsText(file);
-  }
-
-  readFile(fileNonDamaged, function (modeShapeNonDamaged) {
-    const normNonDamaged = Math.sqrt(
-      modeShapeNonDamaged.reduce((sum, value) => sum + value * value, 0)
-    );
-    const normalizedModeShapeNonDamaged = modeShapeNonDamaged.map(
-      (value) => value / normNonDamaged
-    );
-
-    readFile(fileDamaged, function (modeShapeDamaged) {
-      const normDamaged = Math.sqrt(
-        modeShapeDamaged.reduce((sum, value) => sum + value * value, 0)
-      );
-      const normalizedModeShapeDamaged = modeShapeDamaged.map(
-        (value) => value / normDamaged
-      );
-
-      for (let i = 0; i < normalizedModeShapeDamaged.length; i++) {
-        if (
-          Math.sign(normalizedModeShapeDamaged[i]) !==
-          Math.sign(normalizedModeShapeNonDamaged[i])
-        ) {
-          normalizedModeShapeDamaged[i] *= -1;
-        }
-      }
-
-      let curvaturesNonDamaged = [];
-      let curvaturesDamaged = [];
-      curvaturesDifference = [];
-
-      for (let i = 0; i < normalizedModeShapeNonDamaged.length; i++) {
-        let u_0_non =
-          i === 0
-            ? normalizedModeShapeNonDamaged[1]
-            : normalizedModeShapeNonDamaged[i - 1];
-        let u_1_non = normalizedModeShapeNonDamaged[i];
-        let u_2_non =
-          i === normalizedModeShapeNonDamaged.length - 1
-            ? normalizedModeShapeNonDamaged[i - 1]
-            : normalizedModeShapeNonDamaged[i + 1];
-        let u_0_dam =
-          i === 0
-            ? normalizedModeShapeDamaged[1]
-            : normalizedModeShapeDamaged[i - 1];
-        let u_1_dam = normalizedModeShapeDamaged[i];
-        let u_2_dam =
-          i === normalizedModeShapeDamaged.length - 1
-            ? normalizedModeShapeDamaged[i - 1]
-            : normalizedModeShapeDamaged[i + 1];
-        let k_i_non = (u_2_non - 2 * u_1_non + u_0_non) / deltaX2;
-        curvaturesNonDamaged.push(k_i_non);
-        let k_i_dam = (u_2_dam - 2 * u_1_dam + u_0_dam) / deltaX2;
-        curvaturesDamaged.push(k_i_dam);
-        let curvatureDifference = Math.abs(k_i_dam - k_i_non);
-        curvaturesDifference.push(curvatureDifference);
-      }
-
-      maxCurvature = Math.max(...curvaturesDifference);
-      calculateAllIndexesX();
-    });
-  });
-}
+// processDataX function - DELETED (Mục 4)
 
 function calculateAllIndexesX() {
   calculateProjectionLengthX();
@@ -628,26 +531,35 @@ function parseSElementFile(content) {
         });
     }
 
-    // ✅ DEBUG: Detailed coordinate analysis
-    const xCoords = nodes.map(n => n.x);
-    const yCoords = nodes.map(n => n.y);
-    const xMin = Math.min(...xCoords);
-    const xMax = Math.max(...xCoords);
-    const yMin = Math.min(...yCoords);
-    const yMax = Math.max(...yCoords);
-    const xUnique = [...new Set(xCoords)].sort((a, b) => a - b);
-    const yUnique = [...new Set(yCoords)].sort((a, b) => a - b);
-
-
-
-    // ✅ GRID COMPLETENESS CHECK
-
-
     // Tạo lưới phần tử từ các node
     const elements = createElementsFromNodes(nodes);
 
+    // Store element-to-node mapping globally
+    window.elementToNodesMap = new Map(elements.map(el => [el.id, el.nodes]));
+    console.log('🗺️ Element-to-node map created and stored globally:', window.elementToNodesMap);
+
+    // Also update window.meshData to be consistent
+    if (window.meshData) {
+        window.meshData.nodes = nodes;
+        window.meshData.elements = elements;
+    } else {
+        window.meshData = { nodes, elements };
+    }
+
     return { nodes, elements };
 }
+
+// ✅ Initialize global variables on script load
+function initializeGlobals() {
+    if (!window.elementToNodesMap) {
+        window.elementToNodesMap = new Map();
+    }
+    if (!window.meshData) {
+        window.meshData = { nodes: [], elements: [] };
+    }
+}
+
+initializeGlobals();
 
 // Tạo phần tử từ lưới node
 function createElementsFromNodes(nodes) {
@@ -710,39 +622,53 @@ function createElementsFromNodes(nodes) {
 
 // Đọc mode shape (Healthy/Damage) dạng: { nodeID: value } với mode filtering
 function parseModeShapeFile(content, selectedMode) {
-
-
     // ✅ SPECIAL HANDLING FOR MODE COMBINE
     if (selectedMode === 'combine') {
         return parseModeShapeFileCombine(content);
     }
 
-    const lines = content.trim().split('\n');
+    const lines = content.trim().split('\n').filter(line => line.trim() !== '');
     const nodeValues = {};
-    let modeDataFound = 0;
-    let totalRows = 0;
+
+    if (lines.length === 0) {
+        throw new Error("File content is empty.");
+    }
+
+    // Auto-detect structure based on the first data line.
+    const firstDataLineParts = lines[0].trim().split(/\s+/);
+    const hasModeColumn = firstDataLineParts.length >= 3;
 
     for (const line of lines) {
         const parts = line.trim().split(/\s+/);
-        if (parts.length >= 3) {
-            totalRows++;
-            const nodeID = Number(parts[0]);
-            const mode = Number(parts[1]);
-            const eigenValue = Number(parts[2].replace(',', '.'));
+        let nodeID, mode, eigenValue;
 
-            // ✅ FILTER BY SELECTED MODE
+        if (hasModeColumn) {
+            // Assumed structure: Node_ID Mode EigenVector_UZ
+            if (parts.length < 3) continue; // Skip malformed lines
+            nodeID = Number(parts[0]);
+            mode = Number(parts[1]);
+            eigenValue = Number(parts[2].replace(',', '.'));
+
             if (mode === selectedMode) {
+                if (!isNaN(nodeID) && !isNaN(eigenValue)) {
+                    nodeValues[nodeID] = eigenValue;
+                }
+            }
+        } else {
+            // Assumed structure: Node_ID EigenVector_UZ
+            // All data is considered to belong to the selectedMode.
+            if (parts.length < 2) continue; // Skip malformed lines
+            nodeID = Number(parts[0]);
+            eigenValue = Number(parts[1].replace(',', '.'));
+
+            if (!isNaN(nodeID) && !isNaN(eigenValue)) {
                 nodeValues[nodeID] = eigenValue;
-                modeDataFound++;
             }
         }
     }
 
-
-
-    // Validate that mode data was found
-    if (modeDataFound === 0) {
-        throw new Error(`Mode ${selectedMode} not found in file. Available modes may be different.`);
+    if (Object.keys(nodeValues).length === 0) {
+        throw new Error(`Mode ${selectedMode} not found in file or file format is incorrect. Please check the data.`);
     }
 
     return nodeValues;
@@ -814,17 +740,32 @@ function parseModeShapeFileCombine(content) {
 
 
     allNodeIDs.forEach(nodeID => {
-        let combinedValue = 0;
+        // Tổng hợp theo phương thức cấu hình (algebraic | abs | rms)
+        let sum = 0;
+        let sumAbs = 0;
+        let sumSquares = 0;
         let modesContributing = 0;
 
         availableModes.forEach(mode => {
             if (modeData[mode][nodeID] !== undefined) {
-                combinedValue += modeData[mode][nodeID];
+                const v = modeData[mode][nodeID];
+                sum += v;               // cộng đại số
+                sumAbs += Math.abs(v);   // tổng trị tuyệt đối
+                sumSquares += v * v;    // bình phương và cộng dồn
                 modesContributing++;
             }
         });
 
-        // Store combined value
+        // Kết quả theo phương thức
+        const method = (typeof localStorage !== 'undefined' && localStorage.getItem('shm.combine.method')) || 'abs';
+        let combinedValue;
+        if (method === 'algebraic') {
+          combinedValue = sum;
+        } else if (method === 'abs') {
+          combinedValue = sumAbs;
+        } else {
+          combinedValue = Math.sqrt(sumSquares / Math.max(1, modesContributing));
+        }
         combinedNodeValues[nodeID] = combinedValue;
         if (combinedValue !== 0) {
             combinedDataPoints++;
@@ -938,7 +879,10 @@ function parseModeShapeFileCombineEnhanced(content) {
     let nodesWithAllModes = 0;
 
     allNodeIDs.forEach(nodeID => {
-        let combinedValue = 0;
+        // Tổng hợp theo phương thức cấu hình (algebraic | abs | rms)
+        let sum = 0;
+        let sumAbs = 0;
+        let sumSquares = 0;
         let modesContributing = 0;
         const nodeContributions = [];
 
@@ -946,13 +890,22 @@ function parseModeShapeFileCombineEnhanced(content) {
             const nodeIndex = modeData[mode].nodes.indexOf(nodeID);
             if (nodeIndex !== -1) {
                 const value = modeData[mode].values[nodeIndex];
-                combinedValue += value;
+                algebraicSum += value; // cộng đại số
                 modesContributing++;
                 nodeContributions.push(`M${mode}:${value.toExponential(2)}`);
             }
         });
 
-        // Store combined value
+        // Kết quả theo phương thức
+        const method = (typeof localStorage !== 'undefined' && localStorage.getItem('shm.combine.method')) || 'abs';
+        let combinedValue;
+        if (method === 'algebraic') {
+          combinedValue = sum;
+        } else if (method === 'abs') {
+          combinedValue = sumAbs;
+        } else {
+          combinedValue = Math.sqrt(sumSquares / Math.max(1, modesContributing));
+        }
         combinedNodeValues[nodeID] = combinedValue;
 
         if (combinedValue !== 0) {
@@ -1342,6 +1295,7 @@ function processStrainEnergyData() {
         maxZ: maxZ,
         damagedElements: damagedElements,
         modeUsed: modeNumber, // ✅ TRACK WHICH MODE WAS USED
+        nodeValues: nodeValuesDamaged, // ✅ STORE THE EIGENVECTORS FOR CSV CREATION
         chartSettings: chartSettings
       };
 
@@ -2663,173 +2617,6 @@ function testSimple3DChart() {
   }
 }
 
-// MULTI-MODE 3D CHARTS DOWNLOAD FUNCTIONALITY FOR SECTION 3
-async function downloadMultiMode3DChartsSection3() {
-  console.log('📊 === STARTING SECTION 3 MULTI-MODE 3D CHARTS DOWNLOAD ===');
-
-  // Configuration - 6 modes with only 40% threshold
-  const targetModes = [10, 12, 14, 17, 20, 'combine'];
-  const targetThresholds = [40]; // Only 40% threshold for Section 3
-  const totalCharts = targetModes.length * targetThresholds.length;
-
-  console.log(`🎯 Target modes: [${targetModes.join(', ')}]`);
-  console.log(`📊 Target thresholds: [${targetThresholds.join('%, ')}%]`);
-  console.log(`📈 Total charts to generate: ${totalCharts} (Section 3 - Improvement Metrics)`);
-
-  // Enhanced prerequisites validation
-  console.log('🔍 Validating prerequisites for Section 3 download...');
-
-  if (!window.meshData) {
-    alert("❌ Please load SElement.txt file first!");
-    return;
-  }
-  console.log('✅ Mesh data available');
-
-  if (!window.strainEnergyResults || !window.strainEnergyResults.elements) {
-    alert("❌ Please run Section 1 (Damage Location Detection) first!");
-    return;
-  }
-  console.log('✅ Section 1 results available');
-
-  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
-  const fileInputDamaged = document.getElementById("txt-file-damaged");
-
-  if (!fileInputNonDamaged?.files[0] || !fileInputDamaged?.files[0]) {
-    alert("❌ Please load both Healthy.txt and Damage.txt files first!");
-    return;
-  }
-  console.log('✅ Mode shape files available');
-
-  // Check Section 3 specific data
-  if (!window.section3Results) {
-    console.warn('⚠️ No Section 3 results found - will use Section 1 data as fallback');
-  } else {
-    console.log('✅ Section 3 results available');
-    console.log(`📊 Survey elements: ${window.section3Results.surveyElements?.length || 0}`);
-    console.log(`📊 Survey predictions: ${window.section3Results.surveyPredictions?.length || 0}`);
-  }
-
-  // UI setup
-  const downloadBtn = document.getElementById("download-charts-btn-section3");
-  const progressDiv = document.getElementById("download-progress-section3");
-  const progressText = document.getElementById("progress-text-section3");
-  const progressBar = document.getElementById("progress-bar-section3");
-
-  downloadBtn.disabled = true;
-  downloadBtn.textContent = "Generating Charts...";
-  if (progressDiv && progressDiv.style) {
-    progressDiv.style.display = "block";
-  }
-
-  try {
-    // Initialize ZIP
-    const zip = new JSZip();
-    let chartCount = 0;
-
-    // Generate charts for each mode and threshold combination
-    for (const mode of targetModes) {
-      console.log(`\n🎵 Processing Mode ${mode} for Section 3...`);
-
-      // Validate mode exists in files
-      const modeExists = await validateModeExists(mode, fileInputNonDamaged.files[0], fileInputDamaged.files[0]);
-      if (!modeExists) {
-        console.warn(`⚠️ Mode ${mode} not found in files, skipping...`);
-        continue;
-      }
-
-      for (const threshold of targetThresholds) {
-        chartCount++;
-        const progress = (chartCount / totalCharts) * 100;
-
-        progressText.textContent = `Generating chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`;
-        if (progressBar && progressBar.style) {
-          progressBar.style.width = `${progress}%`;
-        }
-
-        console.log(`📊 Generating Section 3 chart ${chartCount}/${totalCharts}: Mode ${mode}, Z0 ${threshold}%`);
-
-        try {
-          // Generate chart data using Section 3 improvement metrics
-          console.log(`🔄 Generating Section 3 chart data for Mode ${mode}, Z0 ${threshold}%...`);
-          const chartData = await generateSection3ChartForModeAndThreshold(mode, threshold);
-
-          if (!chartData || !chartData.elements) {
-            throw new Error(`Invalid chart data generated for Mode ${mode}`);
-          }
-
-          console.log(`📊 Chart data generated successfully: ${chartData.elements.length} elements, ${chartData.validPredictions || 'unknown'} valid predictions`);
-
-          // Create chart image with enhanced error handling
-          console.log(`🖼️ Creating chart image for Mode ${mode}, Z0 ${threshold}%...`);
-          const imageBlob = await createChartImage(chartData, mode, threshold);
-
-          if (!imageBlob || imageBlob.size === 0) {
-            throw new Error(`Failed to create image for Mode ${mode}`);
-          }
-
-          // Add to ZIP with proper filename
-          const filename = mode === 'combine'
-            ? `3D_Damage_ModeCombine_Z0${threshold.toString().padStart(2, '0')}.png`
-            : `3D_Damage_Mode${mode}_Z0${threshold.toString().padStart(2, '0')}.png`;
-          zip.file(filename, imageBlob);
-
-          console.log(`✅ Added ${filename} to ZIP (Section 3) - Size: ${imageBlob.size} bytes`);
-
-          // Delay to prevent DOM conflicts
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-        } catch (error) {
-          console.error(`❌ Error generating Section 3 chart for Mode ${mode}, Z0 ${threshold}%:`, error);
-          console.error(`❌ Error details:`, error.stack);
-          console.error(`❌ Error type: ${error.constructor.name}`);
-
-          // Try to add error info to progress
-          if (progressText) {
-            progressText.textContent = `Error with Mode ${mode} - continuing...`;
-          }
-
-          // Continue with other charts even if one fails
-          console.log(`⚠️ Skipping Mode ${mode}, Z0 ${threshold}% and continuing...`);
-
-          // Shorter delay for failed attempts
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-    }
-
-    // Generate and download ZIP
-    progressText.textContent = "Creating ZIP file...";
-    if (progressBar && progressBar.style) {
-      progressBar.style.width = "100%";
-    }
-
-    console.log('📦 Creating Section 3 ZIP file...');
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-
-    // Download ZIP
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(zipBlob);
-    link.download = `SHM_Section3_3D_Charts_${new Date().toISOString().slice(0, 10)}.zip`;
-    link.click();
-
-    console.log(`🎉 Successfully generated and downloaded ${chartCount} Section 3 charts!`);
-    alert(`Successfully generated ${chartCount} Section 3 3D charts!\nDownload started automatically.`);
-
-  } catch (error) {
-    console.error('❌ Error during Section 3 multi-mode chart generation:', error);
-    alert(`Error generating Section 3 charts: ${error.message}`);
-  } finally {
-    // Reset UI
-    downloadBtn.disabled = false;
-    downloadBtn.textContent = "Download Multi-Mode 3D Charts";
-    if (progressDiv && progressDiv.style) {
-      progressDiv.style.display = "none";
-    }
-    if (progressBar && progressBar.style) {
-      progressBar.style.width = "0%";
-    }
-  }
-}
 
 // MULTI-MODE 3D CHARTS DOWNLOAD FUNCTIONALITY (TEST.CSV BASED)
 async function downloadMultiMode3DChartsTestCSV() {
@@ -3154,127 +2941,6 @@ function readFileAsText(file) {
   });
 }
 
-// HELPER FUNCTION: Generate Section 3 chart data for specific mode and threshold
-async function generateSection3ChartForModeAndThreshold(mode, thresholdPercent) {
-  console.log(`🧮 Generating Section 3 data for Mode ${mode}, Z0 ${thresholdPercent}%...`);
-
-  // Check if Section 3 has been run and has data
-  if (!window.section3Results || !window.section3Results.surveyElements) {
-    console.warn('⚠️ No Section 3 results found, using Section 1 data as fallback');
-    return await generateChartForModeAndThreshold(mode, thresholdPercent);
-  }
-
-  // Validate prerequisites
-  if (!window.meshData || !window.meshData.elements) {
-    throw new Error('Mesh data not available. Please load SElement.txt first.');
-  }
-
-  const { nodes, elements, dx, dy } = window.meshData;
-  const nu = parseFloat(document.getElementById("poisson-ratio").value) || 0.2;
-
-  // Validate file inputs
-  const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
-  const fileInputDamaged = document.getElementById("txt-file-damaged");
-
-  if (!fileInputNonDamaged?.files[0] || !fileInputDamaged?.files[0]) {
-    throw new Error('Healthy.txt and Damage.txt files are required');
-  }
-
-  let healthyContent, damagedContent;
-  try {
-    healthyContent = await readFileAsText(fileInputNonDamaged.files[0]);
-    damagedContent = await readFileAsText(fileInputDamaged.files[0]);
-  } catch (error) {
-    throw new Error(`Failed to read mode shape files: ${error.message}`);
-  }
-
-  // Parse mode-specific data with error handling
-  let nodeValuesHealthy, nodeValuesDamaged;
-  try {
-    nodeValuesHealthy = parseModeShapeFile(healthyContent, mode);
-    nodeValuesDamaged = parseModeShapeFile(damagedContent, mode);
-  } catch (error) {
-    throw new Error(`Failed to parse mode ${mode}: ${error.message}`);
-  }
-
-  console.log(`📊 Section 3 Mode ${mode}: Healthy nodes=${Object.keys(nodeValuesHealthy).length}, Damaged nodes=${Object.keys(nodeValuesDamaged).length}`);
-
-  // Validate parsed data
-  if (Object.keys(nodeValuesHealthy).length === 0 || Object.keys(nodeValuesDamaged).length === 0) {
-    throw new Error(`No valid node data found for mode ${mode}`);
-  }
-
-  // ✅ SECTION 3 MODIFICATION: Use improvement metrics instead of strain energy calculation
-  const z = {};
-
-  // Get Section 3 survey elements and their predictions
-  const surveyElements = window.section3Results.surveyElements || [];
-  const surveyPredictions = window.section3Results.surveyPredictions || [];
-
-  console.log(`📊 Section 3 survey elements: [${surveyElements.join(', ')}]`);
-  console.log(`📊 Section 3 predictions: [${surveyPredictions.map(p => typeof p === 'number' ? p.toFixed(2) : p).join(', ')}]%`);
-
-  // Validate Section 3 data
-  if (surveyElements.length === 0 || surveyPredictions.length === 0) {
-    console.warn('⚠️ No Section 3 survey data, using fallback');
-    return await generateChartForModeAndThreshold(mode, thresholdPercent);
-  }
-
-  // Initialize all elements with 0
-  elements.forEach(element => {
-    z[element.id] = 0;
-  });
-
-  // Apply Section 3 improvement metrics to survey elements only
-  let validPredictions = 0;
-  surveyElements.forEach((elementId, index) => {
-    if (index < surveyPredictions.length) {
-      let predictionValue = surveyPredictions[index];
-
-      // Handle nested arrays or objects
-      if (Array.isArray(predictionValue)) {
-        predictionValue = predictionValue[0];
-      }
-      if (typeof predictionValue === 'object' && predictionValue !== null) {
-        predictionValue = predictionValue.prediction || predictionValue.value || 0;
-      }
-
-      // Ensure it's a number and convert to 0-1 scale
-      predictionValue = parseFloat(predictionValue) || 0;
-
-      // Validate prediction value
-      if (predictionValue >= 0 && predictionValue <= 100) {
-        z[elementId] = predictionValue / 100; // Convert percentage to 0-1 scale
-        validPredictions++;
-        console.log(`🎯 Section 3 element ${elementId}: ${predictionValue.toFixed(2)}% → ${z[elementId].toFixed(4)}`);
-      } else {
-        console.warn(`⚠️ Invalid prediction value for element ${elementId}: ${predictionValue}`);
-        z[elementId] = 0;
-      }
-    }
-  });
-
-  if (validPredictions === 0) {
-    throw new Error('No valid Section 3 predictions found');
-  }
-
-  // Calculate Z0 based on threshold and Section 3 data
-  const zValues = Object.values(z).filter(v => v > 0);
-  const maxZ = zValues.length > 0 ? Math.max(...zValues) : 0.01;
-  const Z0 = maxZ * thresholdPercent / 100;
-
-  console.log(`✅ Section 3 Mode ${mode}, Z0 ${thresholdPercent}%: maxZ=${maxZ.toFixed(4)}, Z0=${Z0.toFixed(4)}, validPredictions=${validPredictions}`);
-
-  return {
-    elements,
-    z,
-    Z0,
-    mode,
-    thresholdPercent,
-    dataSource: 'Section3_ImprovementMetrics',
-    validPredictions
-  };
-}
 
 // HELPER FUNCTION: Generate TEST.csv based chart data for specific mode and threshold
 async function generateTestCSVChartForModeAndThreshold(mode, thresholdPercent) {
@@ -4392,7 +4058,9 @@ async function createChartImageNoLabels(chartData, mode, threshold) {
 }
 
 // HELPER FUNCTION: Create chart image from data (original)
-async function createChartImage(chartData, mode, threshold) {
+async function createChartImage(chartData, mode, threshold, options = {}) {
+  // Thêm tùy chọn để tùy biến ảnh xuất ra (showThresholdPlane, title)
+  const { showThresholdPlane = true, title = null } = options;
   console.log(`📸 Creating image for Mode ${mode}, Z0 ${threshold}%...`);
 
   // Validate input data
@@ -4649,8 +4317,11 @@ async function createChartImage(chartData, mode, threshold) {
     }
   };
 
-  // Combine all traces (mesh3d + text labels + threshold plane)
-  const traces = [traceMesh3D, ...textLabels, thresholdPlane];
+  // Combine all traces (mesh3d + text labels + threshold plane if enabled)
+  const traces = [traceMesh3D, ...textLabels];
+  if (showThresholdPlane) {
+    traces.push(thresholdPlane);
+  }
 
   console.log(`📝 Section 3 Text labels: ${textLabels.length} damaged elements above threshold`);
 
@@ -4732,8 +4403,8 @@ async function createChartImage(chartData, mode, threshold) {
 
     },
     title: {
-      text: mode === 'combine' ? `Mode Combine, Z₀ = ${threshold}%` : `Mode ${mode}, Z₀ = ${threshold}%`,  // ✅ HANDLE MODE COMBINE TITLE
-      font: { family: 'Times New Roman, serif', size: 30, color: '#1a252f', weight: 'bold' }  // ✅ TIMES + REDUCED: 36→30
+      text: title || (mode === 'combine' ? `Mode Combine, Z₀ = ${threshold}%` : `Mode ${mode}, Z₀ = ${threshold}%`), // Sử dụng title tùy chỉnh nếu có
+      font: { family: 'Times New Roman, serif', size: 30, color: '#1a252f', weight: 'bold' }
     },
     width: 1200,                             // ✅ INCREASED WIDTH to match main chart
     height: 900,                             // ✅ INCREASED HEIGHT to match main chart
@@ -5351,24 +5022,24 @@ function calculateRealElementSize(elements) {
     gridSpacingY = yCoords[1] - yCoords[0]; // Khoảng cách đều giữa các node
   }
 
+  // ✅ Force grid spacing to be uniform by taking the minimum
+  const uniformGridSpacing = Math.min(gridSpacingX, gridSpacingY);
+
   // Kích thước element thực tế = kích thước lưới (vì mỗi element chiếm 1 ô lưới)
   // Sử dụng 95% để có khe hở nhỏ giữa các elements cho visualization rõ ràng
-  const realWidth = gridSpacingX * 0.95;
-  const realDepth = gridSpacingY * 0.95;
+  const elementRenderSize = uniformGridSpacing * 0.95;
 
-  // Đảm bảo elements có hình vuông (width = depth) bằng cách lấy giá trị nhỏ hơn
-  const squareSize = Math.min(realWidth, realDepth);
-
-  console.log(`🔧 Kích thước element thực tế:`);
-  console.log(`   Grid spacing: X=${gridSpacingX.toFixed(4)}m, Y=${gridSpacingY.toFixed(4)}m`);
-  console.log(`   Element size: ${squareSize.toFixed(4)}m × ${squareSize.toFixed(4)}m (square)`);
+  console.log(`🔧 Kích thước element thực tế (đồng nhất):`);
+  console.log(`   Original Grid spacing: X=${gridSpacingX.toFixed(4)}m, Y=${gridSpacingY.toFixed(4)}m`);
+  console.log(`   Uniform Grid spacing: ${uniformGridSpacing.toFixed(4)}m`);
+  console.log(`   Element size: ${elementRenderSize.toFixed(4)}m × ${elementRenderSize.toFixed(4)}m (square)`);
   console.log(`   Visualization ratio: 95% (5% gap for clarity)`);
 
   return {
-    width: squareSize,
-    depth: squareSize,
-    gridSpacingX: gridSpacingX,
-    gridSpacingY: gridSpacingY
+    width: elementRenderSize,
+    depth: elementRenderSize,
+    gridSpacingX: uniformGridSpacing, // Return uniform spacing
+    gridSpacingY: uniformGridSpacing  // Return uniform spacing
   };
 }
 
@@ -5556,7 +5227,7 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
   const resultsDiv = document.getElementById("results");
 
   resultsDiv.innerHTML = `
-    <strong style="font-size: 24px; color: #0056b3;">Kết quả chẩn đoán vị trí hư hỏng bằng năng lượng biến dạng</strong>
+    <strong style="font-size: 24px; color: #0056b3;">Kết quả chẩn đoán vị trí hư hỏng bằng phương pháp hiệu độ cong dạng dao động</strong>
     <div style="margin-top: 20px;"></div>
   `;
 
@@ -5586,10 +5257,13 @@ function displayStrainEnergyResults(z, elements, Z0 = 2, Z0_percent = null, maxZ
 
   // Vẽ biểu đồ 3D (với tùy chọn Plotly hoặc Matplotlib)
   if (typeof Plotly !== 'undefined') {
-    if (typeof draw3DDamageChartEnhanced !== 'undefined') {
-      draw3DDamageChartEnhanced(z, elements, Z0);
-    } else {
-      draw3DDamageChart(z, elements, Z0);
+    draw3DDamageChart(z, elements, Z0);
+    // Tự động vẽ biểu đồ 3D gốc và chuẩn hóa
+    if (typeof callNew3DPlotForSection1 === 'function') {
+        callNew3DPlotForSection1();
+    }
+    if (typeof callNormalized3DPlotForSection1 === 'function') {
+        callNormalized3DPlotForSection1();
     }
   }
 
@@ -6969,12 +6643,29 @@ function draw3DDamageChart(z, elements, Z0) {
         width: 1200,
         scale: 2  // Lower scale for interactive display
       },
-      // ✅ REDUCE CANVAS READBACK OPERATIONS
+      // ✅ REDUCE CANVAS READBACK OPERATIONS - Tối ưu hóa Canvas2D
       doubleClick: 'reset',
       showTips: false,
-      scrollZoom: true
+      scrollZoom: true,
+      // ✅ FIX Canvas2D Warning: Cho phép đọc dữ liệu Canvas nhiều lần
+      webglContextAttributes: {
+        willReadFrequently: true
+      }
     }).then(() => {
       console.log('✅ Biểu đồ 3D với visualization cải tiến đã được render thành công');
+
+    // Optimize canvas for frequent readback operations to address Plotly warning
+    setTimeout(() => {
+        const canvas = document.querySelector('#damage-chart .gl-canvas-context');
+        if (canvas) {
+            // This approach of re-getting the context might not work as the context is already created by Plotly.
+            // However, this is the most direct way to attempt to influence it without modifying Plotly's source.
+            const gl = canvas.getContext('webgl', { willReadFrequently: true });
+            if (gl) {
+                console.log('Applied willReadFrequently optimization to WebGL context.');
+            }
+        }
+    }, 1000); // Delay to ensure canvas is created
       console.log('📷 Camera: OrthographicCamera (no perspective distortion)');
       console.log('🎨 Colorscale: Green-to-Red gradient');
       console.log('💡 Lighting: No shadows (ambient=1.0, diffuse=0)');
@@ -7927,15 +7618,28 @@ async function calculateSingleCombination(mode, threshold) {
       try {
         processStrainEnergyData();
 
-        // Wait a bit for calculation to complete
+        // Wait a bit for calculation to complete and then resolve with the result
         setTimeout(() => {
-          // Restore original values
-          modeInput.value = originalMode;
-          thresholdInput.value = originalThreshold;
+          try {
+            // Lấy kết quả từ biến global sau khi processStrainEnergyData đã chạy
+            const results = window.strainEnergyResults;
+            if (!results) {
+              throw new Error('Calculation did not produce results.');
+            }
 
+            // Trả về đối tượng chứa thông tin cần thiết
+            resolve({
+              damagedElements: results.damagedElements || []
+            });
 
-          resolve();
-        }, 200); // Small delay to ensure calculation completes
+          } catch (e) {
+            reject(e);
+          } finally {
+            // Luôn khôi phục lại giá trị UI ban đầu
+            modeInput.value = originalMode;
+            thresholdInput.value = originalThreshold;
+          }
+        }, 500); // Tăng thời gian chờ để đảm bảo file được đọc và xử lý xong
 
       } catch (error) {
         // Restore original values on error
@@ -8081,34 +7785,6 @@ function updateExcelProgress(percent, mainText, detailText) {
 
 }
 
-// ✅ TEST FUNCTION FOR SECTION 3 DOWNLOAD
-function testSection3DownloadButton() {
-  // Check if button exists
-  const button = document.getElementById('download-charts-btn-section3');
-
-  // Check if progress elements exist
-  const progressDiv = document.getElementById('download-progress-section3');
-  const progressText = document.getElementById('progress-text-section3');
-  const progressBar = document.getElementById('progress-bar-section3');
-
-
-
-
-  // Check if function is available
-
-  // Check prerequisites
-
-
-
-  if (window.section3Results) {
-  }
-  return {
-    buttonExists: !!button,
-    progressElementsExist: !!(progressDiv && progressText && progressBar),
-    functionAvailable: typeof downloadMultiMode3DChartsSection3 === 'function',
-    prerequisitesMet: !!(window.meshData && window.strainEnergyResults)
-  };
-}
 
 // ✅ SIMPLE DEBUG FUNCTION FOR PLOTLY IMAGE GENERATION
 async function debugPlotlyImageGeneration() {
@@ -8176,38 +7852,6 @@ async function debugPlotlyImageGeneration() {
   }
 }
 
-// ✅ DEBUG FUNCTION FOR SECTION 3 CHART GENERATION
-async function debugSection3ChartGeneration(mode = 10, threshold = 40) {
-
-
-  try {
-    // Test data generation
-    const chartData = await generateSection3ChartForModeAndThreshold(mode, threshold);
-
-    // Test image creation
-    const imageBlob = await createChartImage(chartData, mode, threshold);
-
-    // Test download
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(imageBlob);
-    link.download = `Debug_Section3_Mode${mode}_Z0${threshold}.png`;
-    link.click();
-
-
-    return true;
-
-  } catch (error) {
-    console.error('❌ Debug test failed:', error);
-    console.error('❌ Error stack:', error.stack);
-    return false;
-  }
-}
-
-// ✅ EXPORT SECTION 3 DOWNLOAD FUNCTION
-window.downloadMultiMode3DChartsSection3 = downloadMultiMode3DChartsSection3;
-window.generateSection3ChartForModeAndThreshold = generateSection3ChartForModeAndThreshold;
-window.testSection3DownloadButton = testSection3DownloadButton;
-window.debugSection3ChartGeneration = debugSection3ChartGeneration;
 window.debugPlotlyImageGeneration = debugPlotlyImageGeneration;
 
 // ✅ TEST FUNCTION FOR TEST.CSV BASED DOWNLOAD
@@ -8429,5 +8073,758 @@ window.testFixedRangesImplementation = testFixedRangesImplementation;
 
 
 // ✅ EXPORT MAIN FUNCTIONS TO GLOBAL SCOPE
+
+// ================== Gộp 3 hành động vào 1 lần bấm ==================
+// Hàm lõi: chỉ thực hiện tính toán và vẽ, không quản lý nút bấm
+async function _internal_runCalculations() {
+  console.log('🚀 Bắt đầu tính toán hiệu độ cong và vẽ biểu đồ 3D...');
+  if (typeof processStrainEnergyData === 'function') {
+    await processStrainEnergyData();
+  } else {
+    console.error('❌ Hàm processStrainEnergyData không tồn tại.');
+    throw new Error('Hàm tính toán chính không được tìm thấy.');
+  }
+  console.log('✅ Hoàn tất một lượt vẽ biểu đồ.');
+}
+
+// Hàm điều phối: chạy 2 lần với độ trễ 3 giây và quản lý trạng thái nút bấm
+async function runCalculationsTwice() {
+  const button = document.querySelector('button[onclick="runCalculationsTwice()"]');
+  if (button && button.disabled) {
+    console.log('⚠️ Đang xử lý, vui lòng đợi...');
+    return;
+  }
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Đang chạy lần 1...';
+    }
+
+    // Lần 1
+    await _internal_runCalculations();
+
+    if (button) {
+      button.textContent = 'Đợi 1.5s...';
+    }
+
+    // Chờ 1.5 giây
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    if (button) {
+      button.textContent = 'Đang chạy lần 2...';
+    }
+
+    // Lần 2
+    await _internal_runCalculations();
+
+  } catch (error) {
+    console.error('❌ Đã xảy ra lỗi trong quá trình chạy 2 lần:', error);
+    alert('Đã có lỗi xảy ra. Vui lòng kiểm tra console (F12) để biết chi tiết.');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Tính toán';
+    }
+  }
+}
+
+// ================== Tải hàng loạt 5 ngưỡng ==================
+async function runBatchDownload() {
+  const batchButton = document.getElementById('batch-download-btn');
+  if (batchButton && batchButton.disabled) {
+    console.log('⚠️ Đang xử lý tải hàng loạt, vui lòng đợi...');
+    return;
+  }
+
+  const thresholds = [10, 20, 30, 40, 50];
+  const z0Input = document.getElementById('curvature-multiplier');
+
+  try {
+    if (batchButton) {
+      batchButton.disabled = true;
+    }
+
+    for (let i = 0; i < thresholds.length; i++) {
+      const threshold = thresholds[i];
+      const progressText = `ngưỡng ${i + 1}/${thresholds.length} (${threshold}%)`;
+
+      // 1. Cập nhật giá trị ngưỡng Z₀ trên UI
+      if (z0Input) {
+        z0Input.value = threshold;
+        z0Input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      // --- Chạy 2 lần, cách nhau 3 giây ---
+      // Lần 1
+      if (batchButton) batchButton.textContent = `Đang chạy lần 1/${progressText}`;
+      await _internal_runCalculations();
+
+      // Đợi 1.5 giây
+      if (batchButton) batchButton.textContent = `Đợi 1.5s... (${progressText})`
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Lần 2
+      if (batchButton) batchButton.textContent = `Đang chạy lần 2/${progressText}`;
+      await _internal_runCalculations();
+      // --- Kết thúc chạy 2 lần ---
+
+      // Tải xuống ảnh sau khi đã chạy xong lần 2
+      if (batchButton) batchButton.textContent = `Đang tải ảnh... (${progressText})`
+      if (typeof downloadBothChartsSection1 === 'function') {
+        await downloadBothChartsSection1();
+      } else {
+        console.warn('⚠️ Hàm downloadBothChartsSection1 không tồn tại.');
+      }
+
+      // Chờ một chút trước khi bắt đầu vòng lặp tiếp theo
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+  } catch (error) {
+    console.error('❌ Đã xảy ra lỗi trong quá trình tải hàng loạt:', error);
+  } finally {
+    if (batchButton) {
+      batchButton.disabled = false;
+      batchButton.textContent = 'Tải 5 ngưỡng (10-50%)';
+    }
+    console.log('✅ Hoàn tất quá trình tải hàng loạt.');
+  }
+}
+
+
 window.processStrainEnergyData = processStrainEnergyData;
 window.processStrainEnergyDataFixed = processStrainEnergyDataFixed;
+window.runCalculationsTwice = runCalculationsTwice;
+window.exportABC_CSV = exportABC_CSV;
+window.runBatchDownload = runBatchDownload;
+
+
+
+/**
+ * Calculates the dot product of two vectors.
+ * @param {number[]} vectorA - The first vector.
+ * @param {number[]} vectorB - The second vector.
+ * @returns {number} The dot product.
+ */
+function dotProduct(vectorA, vectorB) {
+  if (vectorA.length !== vectorB.length) {
+    throw new Error("Vectors must have the same length for dot product.");
+  }
+  let result = 0;
+  for (let i = 0; i < vectorA.length; i++) {
+    result += vectorA[i] * vectorB[i];
+  }
+  return result;
+}
+
+/**
+ * Calculates and displays the Modal Assurance Criterion (MAC) between healthy and damaged mode shapes.
+ */
+/**
+ * Core logic to calculate MAC value for a specific mode.
+ * @param {string} healthyText - The content of the healthy file.
+ * @param {string} damagedText - The content of the damaged file.
+ * @param {number} modeNumber - The mode to calculate for.
+ * @returns {number} The calculated MAC value.
+ */
+function getMACValue(healthyText, damagedText, modeNumber) {
+    const healthyNodes = parseModeShapeFile(healthyText, modeNumber);
+    const damagedNodes = parseModeShapeFile(damagedText, modeNumber);
+    const commonNodeIds = Object.keys(healthyNodes).filter(id => damagedNodes.hasOwnProperty(id));
+
+    if (commonNodeIds.length === 0) {
+        throw new Error(`No common nodes found for Mode ${modeNumber}`);
+    }
+
+    const healthyVector = commonNodeIds.map(id => healthyNodes[id]);
+    const damagedVector = commonNodeIds.map(id => damagedNodes[id]);
+
+    const dotAB = dotProduct(healthyVector, damagedVector);
+
+    const dotAA = dotProduct(healthyVector, healthyVector);
+    const dotBB = dotProduct(damagedVector, damagedVector);
+
+    if (dotAA === 0 || dotBB === 0) {
+        return 0; // Return 0 if any vector is a zero vector
+    }
+
+    return Math.pow(dotAB, 2) / (dotAA * dotBB);
+}
+
+/**
+ * Calculates MAC for a single, user-selected mode and displays it.
+ */
+function calculateMAC() {
+    const table = document.getElementById("mac-table");
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = '<tr><td colspan="2">Calculating...</td></tr>';
+    table.style.display = "table";
+
+    try {
+        const modeValue = document.getElementById("mode-number").value;
+        if (!modeValue) throw new Error("Please select a mode.");
+        const modeNumber = parseInt(modeValue);
+
+        const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+        const fileInputDamaged = document.getElementById("txt-file-damaged");
+        if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+            throw new Error("Please upload both Healthy and Damage files.");
+        }
+
+        const readerHealthy = new FileReader();
+        readerHealthy.onload = (e1) => {
+            const readerDamaged = new FileReader();
+            readerDamaged.onload = (e2) => {
+                try {
+                    const macValue = getMACValue(e1.target.result, e2.target.result, modeNumber);
+                    tbody.innerHTML = `<tr><td>${modeNumber}</td><td>${macValue.toFixed(8)}</td></tr>`;
+                } catch (error) {
+                    tbody.innerHTML = `<tr><td colspan="2" style="color: red;">Error: ${error.message}</td></tr>`;
+                }
+            };
+            readerDamaged.readAsText(fileInputDamaged.files[0]);
+        };
+        readerHealthy.readAsText(fileInputNonDamaged.files[0]);
+
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="2" style="color: red;">Error: ${error.message}</td></tr>`;
+    }
+}
+
+/**
+ * Calculates MAC for all available modes and displays them in a table.
+ */
+async function calculateAllMACs() {
+    const table = document.getElementById("mac-table");
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = '<tr><td colspan="2">Reading files and identifying modes...</td></tr>';
+    table.style.display = "table";
+
+    try {
+        const fileInputNonDamaged = document.getElementById("txt-file-non-damaged");
+        const fileInputDamaged = document.getElementById("txt-file-damaged");
+        if (!fileInputNonDamaged.files[0] || !fileInputDamaged.files[0]) {
+            throw new Error("Please upload both Healthy and Damage files.");
+        }
+
+        const healthyText = await fileInputNonDamaged.files[0].text();
+        const damagedText = await fileInputDamaged.files[0].text();
+
+        // Extract all unique modes from the healthy file
+        const lines = healthyText.trim().split('\n');
+        const modes = [...new Set(lines.slice(1).map(line => line.trim().split(/\s+/)[1]).filter(Boolean).map(Number))];
+        if (modes.length === 0) {
+             // Fallback for 2-column format
+            const hasModeColumn = lines[0].trim().split(/\s+/).length >= 3;
+            if (!hasModeColumn) modes.push(1); // Assume mode 1 if no mode column
+            else throw new Error("No modes found in the healthy file.");
+        }
+
+        tbody.innerHTML = ''; // Clear the table for new results
+        for (const mode of modes.sort((a, b) => a - b)) {
+            try {
+                const macValue = getMACValue(healthyText, damagedText, mode);
+                tbody.innerHTML += `<tr><td>${mode}</td><td>${macValue.toFixed(8)}</td></tr>`;
+            } catch (error) {
+                tbody.innerHTML += `<tr><td>${mode}</td><td style="color: red;">${error.message}</td></tr>`;
+            }
+        }
+
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="2" style="color: red;">Error: ${error.message}</td></tr>`;
+    }
+}
+
+// EXPORT TO GLOBAL SCOPE
+
+// ================== Tính toán và Xuất báo cáo chỉ số A, B, C ra CSV ==================
+async function exportABC_CSV() {
+  const button = document.getElementById('export-abc-csv-btn');
+  if (button && button.disabled) {
+    console.log('⚠️ Đang xử lý, vui lòng đợi...');
+    return;
+  }
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Bắt đầu tính toán...';
+    }
+
+    // --- 1. Tính toán tất cả các chỉ số ---
+    const modes = [10, 12, 14, 17, 20, 'combine'];
+    const thresholds = [10, 20, 30, 40, 50];
+    const totalCombinations = modes.length * thresholds.length;
+    let completedCount = 0;
+
+    // Xóa dữ liệu cũ trước khi tính toán
+    window.section1MetricsData = null;
+
+    for (const mode of modes) {
+      for (const threshold of thresholds) {
+        completedCount++;
+        const progressPercent = (completedCount / totalCombinations) * 100;
+        if (button) {
+          button.textContent = `Đang tính... ${completedCount}/${totalCombinations} (${progressPercent.toFixed(0)}%)`;
+        }
+        // Hàm này sẽ tự động tính và lưu kết quả vào window.section1MetricsData
+        await calculateSingleCombination(mode, threshold);
+      }
+    }
+
+    if (button) {
+      button.textContent = 'Đang tạo file CSV...';
+    }
+
+    // --- 2. Xuất dữ liệu đã tính ra CSV ---
+    if (!window.section1MetricsData) {
+      throw new Error("Dữ liệu không được tạo sau khi tính toán.");
+    }
+
+    const data = window.section1MetricsData;
+    let csvContent = "data:text/csv;charset=utf-8,";
+
+    const header = ['Z₀', 'Chỉ số'];
+    modes.forEach(mode => {
+      header.push(mode === 'combine' ? 'Mode CB' : `Mode ${mode}`);
+    });
+    csvContent += header.join(',') + '\r\n';
+
+    // ✅ Định dạng 2 chữ số thập phân; dấu thập phân là '.'; giá trị không hợp lệ → ô trống
+    const fmt2 = (val) => {
+      const num = Number(val);
+      return Number.isFinite(num) ? num.toFixed(2) : '';
+    };
+    let hasAnyNumeric = false;
+
+    thresholds.forEach(threshold => {
+      ['A', 'B', 'C'].forEach((index, index_idx) => {
+        const row = [];
+        row.push(index_idx === 0 ? `${threshold}%` : '');
+        row.push(index);
+
+        modes.forEach(mode => {
+          const key = mode === 'combine' ? `modecombine_z0${threshold}` : `mode${mode}_z0${threshold}`;
+          const metrics = data.metrics[key];
+          let valueStr = '';
+          if (metrics) {
+            // ✅ Định dạng 2 chữ số thập phân cho A/B/C (đơn vị %), dùng dấu chấm làm dấu thập phân
+            switch (index) {
+              case 'A': valueStr = fmt2(metrics.indexA * 100); break;
+              case 'B': valueStr = fmt2(metrics.indexB * 100); break;
+              case 'C': valueStr = fmt2(metrics.indexC * 100); break;
+            }
+          }
+          if (valueStr !== '') hasAnyNumeric = true;
+          row.push(valueStr);
+        });
+        csvContent += row.join(',') + '\r\n';
+      });
+    });
+
+    // ✅ Nếu không có dữ liệu hợp lệ thì cảnh báo và không tạo file CSV
+    if (!hasAnyNumeric) {
+      alert('Không có dữ liệu hợp lệ để xuất CSV.');
+      return;
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "ABC_Indices_Report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log('✅ Hoàn tất tính toán và xuất báo cáo CSV.');
+
+  } catch (error) {
+    console.error('❌ Lỗi khi tính toán và xuất CSV:', error);
+    alert('Đã có lỗi xảy ra. Vui lòng kiểm tra console (F12) để biết chi tiết.');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Xuất báo cáo CSV (A, B, C)';
+    }
+  }
+}
+
+
+// ==========================
+// ✅ CẬP NHẬT DROPDOWN MODE DỰA TRÊN DỮ LIỆU TẢI LÊN (Healthy.txt & Damage.txt)
+// - Chỉ hiển thị mode là giao nhau của 2 tệp
+// - Hỗ trợ hiển thị/ẩn "Mode Combine (CB)" theo quy tắc
+// - Xử lý định dạng: tab/space, dấu phẩy thập phân, bỏ qua dòng lỗi
+// - Bất đồng bộ, không chặn UI
+// ==========================
+(function() {
+  // Tạo/giữ cache kết quả quét để tránh đọc lại khi không cần
+  window.modeScanCache = window.modeScanCache || { healthy: null, damaged: null };
+
+  // Danh sách mode mục tiêu cho Mode Combine (CB)
+  const CB_TARGET_MODES = new Set([10, 12, 14, 17, 20]);
+
+  // Tạo label trạng thái cạnh dropdown nếu chưa có
+  function ensureModeStatusElement() {
+    const select = document.getElementById('mode-number');
+    if (!select) return null;
+    let span = document.getElementById('mode-status');
+    if (!span) {
+      span = document.createElement('small');
+      span.id = 'mode-status';
+      span.style.marginLeft = '10px';
+      span.style.color = '#6c757d';
+      select.parentNode.insertBefore(span, select.nextSibling);
+    }
+    return span;
+  }
+
+  // Hiển thị trạng thái cho người dùng
+  function setModeStatus(message, color = '#6c757d') {
+    const span = ensureModeStatusElement();
+    if (span) {
+      span.textContent = message || '';
+      span.style.color = color;
+    }
+  }
+
+  // Parse nội dung tệp để lấy tập mode hợp lệ
+  function extractModesFromContent(content, sourceName = 'Unknown') {
+    const modes = new Set();
+    if (!content) return { modes, hasAny: false };
+
+    const lines = content.split(/\r?\n/);
+    for (let idx = 0; idx < lines.length; idx++) {
+      const raw = lines[idx];
+      if (!raw) continue;
+      const line = raw.trim();
+      if (!line) continue;
+
+      // Bỏ qua header
+      if (/node_id|mode/i.test(line)) continue;
+
+      const parts = line.split(/\s+/);
+      if (parts.length < 3) {
+        // Bỏ qua dòng lỗi, log cảnh báo để debug
+        if (idx < 5) console.warn(`⚠️ [${sourceName}] Dòng ${idx+1} sai định dạng:`, line);
+        continue;
+      }
+
+      const nodeId = Number(parts[0]);
+      const mode = Number(parts[1]);
+      const valStr = parts[2].replace(',', '.');
+      const uz = Number(valStr);
+
+      // Kiểm tra điều kiện hợp lệ
+      if (!Number.isFinite(nodeId) || nodeId <= 0 || !Number.isInteger(mode) || mode <= 0 || !Number.isFinite(uz)) {
+        // Bỏ qua dòng lỗi
+        continue;
+      }
+      modes.add(mode);
+    }
+    return { modes, hasAny: modes.size > 0 };
+  }
+
+  // Đọc tệp từ input và trích xuất set mode (Promise)
+  function scanModesFromFileInput(inputId, label) {
+    return new Promise((resolve) => {
+      const input = document.getElementById(inputId);
+      if (!input || !input.files || !input.files[0]) {
+        resolve({ modes: new Set(), hasAny: false });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const { modes, hasAny } = extractModesFromContent(e.target.result, label);
+        resolve({ modes, hasAny });
+      };
+      reader.onerror = () => {
+        console.error(`❌ Lỗi đọc tệp ${label}`);
+        resolve({ modes: new Set(), hasAny: false });
+      };
+      reader.readAsText(input.files[0]);
+    });
+  }
+
+  // Hàm chính: cập nhật dropdown theo giao 2 tập mode
+  async function updateModeDropdown() {
+    const select = document.getElementById('mode-number');
+    if (!select) return;
+
+    try {
+      setModeStatus('Đang phân tích mode…');
+
+      // Đọc bất đồng bộ 2 tệp
+      const [healthy, damaged] = await Promise.all([
+        scanModesFromFileInput('txt-file-non-damaged', 'Healthy.txt'),
+        scanModesFromFileInput('txt-file-damaged', 'Damage.txt')
+      ]);
+
+      // Lưu cache
+      window.modeScanCache.healthy = healthy;
+      window.modeScanCache.damaged = damaged;
+
+      // Tạo giao tập mode
+      const inter = new Set();
+      healthy.modes.forEach(m => { if (damaged.modes.has(m)) inter.add(m); });
+
+      // Chuẩn bị danh sách option mới
+      const modesArr = Array.from(inter).sort((a,b) => a-b);
+
+      // Xác định hiển thị Mode Combine (CB)
+      const hasAnyCBTarget = modesArr.some(m => CB_TARGET_MODES.has(m));
+      const hasMode1Both = healthy.modes.has(1) && damaged.modes.has(1);
+      const showCombine = hasAnyCBTarget || hasMode1Both;
+
+      // Giữ lựa chọn hiện tại nếu còn hợp lệ
+      const prevValue = select.value;
+
+      // Xóa toàn bộ options cũ
+      while (select.options.length) select.remove(0);
+
+      if (modesArr.length === 0) {
+        // Không có giao
+        const placeholder = document.createElement('option');
+        placeholder.textContent = '— Chưa có mode hợp lệ —';
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        select.add(placeholder);
+        select.disabled = true;
+
+        if (healthy.hasAny && damaged.hasAny) {
+          setModeStatus('Không tìm thấy mode chung giữa hai tệp.', '#dc3545');
+        } else {
+          setModeStatus('Mode chỉ có trong một tệp. Cần mode xuất hiện trong cả Healthy và Damage.', '#fd7e14');
+        }
+        return;
+      }
+
+      // Có mode hợp lệ → bật dropdown
+      select.disabled = false;
+      setModeStatus('Đã cập nhật danh sách mode.');
+
+      // Thêm các mode số
+      modesArr.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = String(m);
+        opt.textContent = `Mode ${m}`;
+        select.add(opt);
+      });
+
+      // Thêm Mode Combine (CB) nếu đủ điều kiện
+      if (showCombine) {
+        const optCB = document.createElement('option');
+        optCB.value = 'combine';
+
+
+
+        optCB.textContent = 'Mode Combine (CB)';
+        select.add(optCB);
+      }
+
+      // Khôi phục lựa chọn nếu còn hợp lệ
+      const validValues = new Set(modesArr.map(String));
+      if (showCombine) validValues.add('combine');
+
+      if (prevValue && validValues.has(prevValue)) {
+        select.value = prevValue;
+      } else {
+        // Mặc định chọn mode nhỏ nhất
+        select.value = String(modesArr[0]);
+      }
+
+      // ✅ Kích hoạt các nút phụ thuộc vào dữ liệu Mục 1
+      const exportDamageListBtn = document.getElementById('export-all-modes-damage-list-btn');
+      const trainAndPredictBtn = document.querySelector('button[onclick="trainAndPredict()"]');
+      const hasMeshData = window.meshData && window.meshData.elements && window.meshData.elements.length > 0;
+      const hasHealthyModes = window.modeScanCache.healthy && window.modeScanCache.healthy.hasAny;
+      const hasDamagedModes = window.modeScanCache.damaged && window.modeScanCache.damaged.hasAny;
+      const conditionsMet = hasMeshData && hasHealthyModes && hasDamagedModes;
+
+      if (exportDamageListBtn) {
+          exportDamageListBtn.disabled = !conditionsMet;
+          if(conditionsMet) console.log('✅ Nút "Xuất DS hư hỏng" đã được kích hoạt.');
+      }
+      if (trainAndPredictBtn) {
+          trainAndPredictBtn.disabled = !conditionsMet;
+          if(conditionsMet) console.log('✅ Nút "Dự đoán mức độ hư hỏng" (Mục 2) đã được kích hoạt.');
+      }
+
+    } catch (err) {
+      console.error('❌ Lỗi cập nhật dropdown mode:', err);
+      setModeStatus('Lỗi cập nhật mode. Vui lòng kiểm tra tệp.', '#dc3545');
+    }
+  }
+
+  // Lập lịch cập nhật (gom nhiều lời gọi gần nhau)
+  let updateTimer = null;
+  window.scheduleUpdateModeDropdown = function() {
+    if (updateTimer) clearTimeout(updateTimer);
+
+
+
+
+
+
+    updateTimer = setTimeout(updateModeDropdown, 150);
+
+
+
+  };
+
+  // Gắn sự kiện khi người dùng đổi file thủ công
+  window.addEventListener('load', () => {
+    const healthyInput = document.getElementById('txt-file-non-damaged');
+    const damagedInput = document.getElementById('txt-file-damaged');
+    if (healthyInput) healthyInput.addEventListener('change', window.scheduleUpdateModeDropdown);
+    if (damagedInput) damagedInput.addEventListener('change', window.scheduleUpdateModeDropdown);
+  });
+})();
+
+window.calculateMAC = calculateMAC;
+window.calculateAllMACs = calculateAllMACs;
+
+
+// ================== Xuất Danh sách Hư hỏng Tất cả Mode tại Z₀=40% ==================
+
+/**
+ * Lấy danh sách các mode hợp lệ (giao của Healthy và Damage) để xuất báo cáo.
+ * Bao gồm cả 'combine' nếu đủ điều kiện.
+ * @returns {Promise<Array<string|number>>} Danh sách các mode hợp lệ.
+ */
+async function getValidModesForExport() {
+  // Sử dụng cache nếu có để tăng tốc, nếu không thì quét lại file
+  const healthyModes = window.modeScanCache.healthy ? window.modeScanCache.healthy.modes : (await scanModesFromFileInput('txt-file-non-damaged', 'Healthy.txt')).modes;
+  const damagedModes = window.modeScanCache.damaged ? window.modeScanCache.damaged.modes : (await scanModesFromFileInput('txt-file-damaged', 'Damage.txt')).modes;
+
+  const inter = new Set();
+  healthyModes.forEach(m => { if (damagedModes.has(m)) inter.add(m); });
+
+  const modesArr = Array.from(inter).sort((a, b) => a - b);
+
+  // Kiểm tra điều kiện cho 'Mode Combine'
+  const CB_TARGET_MODES = new Set([10, 12, 14, 17, 20]);
+  const hasAnyCBTarget = modesArr.some(m => CB_TARGET_MODES.has(m));
+  const hasMode1Both = healthyModes.has(1) && damagedModes.has(1);
+  if (hasAnyCBTarget || hasMode1Both) {
+    modesArr.push('combine');
+  }
+
+  return modesArr;
+}
+
+/**
+ * Định dạng kết quả danh sách hư hỏng thành chuỗi TXT.
+ * @param {Map<string, number[]>} results - Map chứa kết quả với key là tên mode và value là mảng ID phần tử.
+ * @param {number} threshold - Ngưỡng Z₀ đã sử dụng.
+ * @returns {string} Nội dung file TXT.
+ */
+function formatDamageListToTxt(results, threshold) {
+  let content = `DANH SÁCH PHẦN TỬ HƯ HỎNG (Ngưỡng Z₀ = ${threshold}%)\r\n`;
+  content += '============================================\r\n\r\n';
+
+  results.forEach((elements, modeName) => {
+    content += `${modeName}:\r\n`;
+    if (elements.length > 0) {
+      // Định dạng danh sách phần tử, xuống dòng sau mỗi 15 phần tử cho dễ đọc
+      let line = '';
+      elements.sort((a, b) => a - b).forEach((el, index) => {
+        line += el + ', ';
+        if ((index + 1) % 15 === 0) {
+          content += line.slice(0, -2) + '\r\n';
+          line = '';
+        }
+      });
+      if (line) {
+        content += line.slice(0, -2) + '\r\n';
+      }
+    } else {
+      content += '(Không có phần tử nào hư hỏng ở ngưỡng này)\r\n';
+    }
+    content += '\r\n--------------------------------------------\r\n\r\n';
+  });
+
+  content += '============================================\r\n';
+  return content;
+}
+
+/**
+ * Xử lý việc xuất danh sách phần tử hư hỏng cho tất cả các mode hợp lệ tại Z₀=40%.
+ */
+async function exportAllModesDamageList() {
+  const button = document.getElementById('export-all-modes-damage-list-btn');
+  if (button && button.disabled) {
+    console.log('⚠️ Đang xử lý, vui lòng đợi...');
+    return;
+  }
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Đang xử lý... (0%)';
+    }
+
+    // 1. Xác định các mode hợp lệ
+    const modes = await getValidModesForExport();
+    if (modes.length === 0) {
+      alert('Không tìm thấy mode chung hợp lệ giữa Healthy.txt và Damage.txt.');
+      return;
+    }
+
+    const Z0_FIXED_THRESHOLD = 40;
+    const results = new Map();
+    let completedCount = 0;
+
+    // 2. Lặp qua từng mode và tính toán trong nền
+    for (const mode of modes) {
+      const modeName = mode === 'combine' ? 'Mode Combine (CB)' : `Mode ${mode}`;
+      console.log(`Processing ${modeName} for damage list export...`);
+
+      try {
+        // Hàm calculateSingleCombination đã được thiết kế để tính toán mà không cập nhật UI
+        const calculationResult = await calculateSingleCombination(mode, Z0_FIXED_THRESHOLD);
+        results.set(modeName, calculationResult.damagedElements || []);
+      } catch (e) {
+        console.warn(`⚠️ Lỗi khi xử lý ${modeName}:`, e.message);
+        results.set(modeName, ['Lỗi xử lý']); // Ghi nhận lỗi vào kết quả
+      }
+
+      completedCount++;
+      const progressPercent = (completedCount / modes.length) * 100;
+      if (button) {
+        button.textContent = `Đang xử lý... (${progressPercent.toFixed(0)}%)`;
+      }
+    }
+
+    // 3. Tạo nội dung file TXT
+    const fileContent = formatDamageListToTxt(results, Z0_FIXED_THRESHOLD);
+
+    // 4. Tạo và tải file
+    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'DanhSachHuHong_TatCaMode_Z0-40.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    alert('Đã xuất thành công danh sách phần tử hư hỏng.');
+
+  } catch (error) {
+    console.error('❌ Lỗi khi xuất danh sách hư hỏng:', error);
+    alert('Đã có lỗi xảy ra khi xuất file. Vui lòng kiểm tra console (F12).');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Xuất DS hư hỏng (tất cả mode, Z₀=40%)';
+    }
+  }
+}
+
+
+
+// Export hàm ra global scope để onclick có thể gọi
+window.exportAllModesDamageList = exportAllModesDamageList;

@@ -11,6 +11,8 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Phục vụ static cho toàn bộ thư mục public (bao gồm cả favicon.ico)
+app.use(express.static(path.join(__dirname, '../public')));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
@@ -82,22 +84,22 @@ app.post('/upload-files', upload.fields([
         return res.status(400).json({ error: 'Test file must have at least 2 lines (header + data)' });
       }
       
-      // Check column count - minimum 653 (Case + U1-U651 + at least 1 DI)
+      // Check column count - minimum 123 (Case + U1-U121 + at least 1 DI)
       const trainCols = trainLines[0].split(',').length;
       const testCols = testLines[0].split(',').length;
 
       console.log(`✓ Training data: ${trainLines.length - 1} rows, ${trainCols} columns`);
       console.log(`✓ Test data: ${testLines.length - 1} rows, ${testCols} columns`);
 
-      if (trainCols < 653) {
+      if (trainCols < 123) {
         return res.status(400).json({
-          error: `Training file must have at least 653 columns (Case + U1-U651 + DI1+). Current: ${trainCols}`
+          error: `Training file must have at least 123 columns (Case + U1-U121 + DI1+). Current: ${trainCols}`
         });
       }
 
-      if (testCols < 653) {
+      if (testCols < 123) {
         return res.status(400).json({
-          error: `Test file must have at least 653 columns (Case + U1-U651 + DI1+). Current: ${testCols}`
+          error: `Test file must have at least 123 columns (Case + U1-U121 + DI1+). Current: ${testCols}`
         });
       }
 
@@ -107,14 +109,16 @@ app.post('/upload-files', upload.fields([
         });
       }
 
-      // Calculate number of damage indices
-      const numDamageIndices = trainCols - 652;
+      // Tính số lượng cột DI và số features động
+      const numDamageIndices = trainCols - 122;
+      const numFeatures = trainCols - 1 - numDamageIndices; // Case + Features + DI
       console.log(`✓ Detected ${numDamageIndices} damage indices`);
+      console.log(`✓ Detected ${numFeatures} feature columns`);
 
-      // Store metadata
+      // Lưu metadata
       global.datasetInfo = {
-        numFeatures: 651,
-        numDamageIndices: numDamageIndices,
+        numFeatures,
+        numDamageIndices,
         totalColumns: trainCols
       };
       
@@ -127,8 +131,8 @@ app.post('/upload-files', upload.fields([
       model = {
         trained: true,
         timestamp: new Date().toISOString(),
-        features: 651,
-        outputs: 10
+        features: (global.datasetInfo && global.datasetInfo.numFeatures) ? global.datasetInfo.numFeatures : 121,
+        outputs: (global.datasetInfo && global.datasetInfo.numDamageIndices) ? global.datasetInfo.numDamageIndices : 1
       };
       
       res.json({
@@ -177,25 +181,27 @@ app.post('/predict', (req, res) => {
     
     console.log(`✓ Test data: ${dataRows.length} samples, ${header.length} features`);
     
-    if (header.length < 653) {
+    if (header.length < 123) {
       return res.status(400).json({
-        error: `Test file must have at least 653 columns. Current: ${header.length}`
+        error: `Test file must have at least 123 columns. Current: ${header.length}`
       });
     }
 
-    // Get number of damage indices dynamically
-    const numDamageIndices = global.datasetInfo ? global.datasetInfo.numDamageIndices : (header.length - 652);
+    // Tính số DI và số features động từ header
+    const numDamageIndices = global.datasetInfo ? global.datasetInfo.numDamageIndices : (header.length - 122);
+    const numFeatures = global.datasetInfo ? global.datasetInfo.numFeatures : (header.length - 1 - numDamageIndices);
     console.log(`✓ Using ${numDamageIndices} damage indices for prediction`);
+    console.log(`✓ Using ${numFeatures} feature columns for prediction`);
 
-    // Generate realistic predictions
+    // Tạo chẩn đoán mô phỏng
     console.log('✓ Generating predictions...');
     const predictions = [];
 
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i].split(',');
 
-      // Extract features (U1-U651, columns 1-651)
-      const features = row.slice(1, 652).map(val => parseFloat(val) || 0);
+      // Trích xuất features động: U1..U{numFeatures}
+      const features = row.slice(1, 1 + numFeatures).map(val => parseFloat(val) || 0);
 
       // Generate realistic damage predictions for dynamic number of indices
       const prediction = [];
@@ -241,10 +247,17 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Route favicon (phòng trường hợp static không bắt kịp)
+app.get('/favicon.ico', (req, res) => {
+  const iconPath = path.join(__dirname, '../public', 'favicon.ico');
+  if (fs.existsSync(iconPath)) return res.sendFile(iconPath);
+  return res.status(204).end(); // không có icon cũng không lỗi
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('🚀 SHM-BIM-FEM Backend Server Started');
-  console.log('📊 Supports 651 features (U1-U651) + 10 damage indices (DI1-DI10)');
+  console.log('📊 Supports 121 features (U1-U121) + dynamic damage indices (DI1+)');
   console.log(`🌐 Server running on http://localhost:${PORT}`);
   console.log('🔧 Node.js version - compatible with 662-column CSV format');
   console.log('='.repeat(60));

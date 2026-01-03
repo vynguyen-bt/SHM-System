@@ -1,5 +1,0 @@
-Flask
-tensorflow
-pandas
-scikit-learn
-flask-cors

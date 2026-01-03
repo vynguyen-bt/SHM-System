@@ -75,6 +75,12 @@ function loadFile(file, inputId) {
     dataTransfer.items.add(newFile);
     input.files = dataTransfer.files;
 
+    // ✅ Gọi cập nhật dropdown Mode ngay sau khi gán file vào input
+    if (typeof window.scheduleUpdateModeDropdown === 'function' &&
+        (inputId === 'txt-file-non-damaged' || inputId === 'txt-file-damaged')) {
+      window.scheduleUpdateModeDropdown();
+    }
+
     if (inputId === "txt-file-delta-x") {
       readDeltaX();
       readDeltaX2();

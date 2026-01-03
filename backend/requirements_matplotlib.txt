@@ -1,6 +1,0 @@
-Flask
-Flask-CORS
-matplotlib
-numpy
-Pillow
-Werkzeug

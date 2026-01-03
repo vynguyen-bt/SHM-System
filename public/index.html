@@ -18,12 +18,66 @@
         image-rendering: -webkit-optimize-contrast;
         image-rendering: optimize-contrast;
       }
-      
+
+      /* Lăn mượt khi nhảy đến các mục */
+      html { scroll-behavior: smooth; }
+
+
+      /* Chừa khoảng trống cho thanh điều hướng cố định */
+      body.has-quick-nav { padding-top: 56px; }
+
+
       #damage3DChart {
         max-width: 100%;
         height: auto;
       }
+
+      /* Ẩn/hiện chung */
+      .is-hidden { display: none !important; }
+
+      /* Menu Tùy chọn hiển thị */
+      .ui-visibility-wrap { position: relative; display: inline-block; float: right; }
+      #ui-visibility-toggle-btn { white-space: nowrap; }
+      #ui-visibility-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        z-index: 1000;
+        min-width: 260px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 8px 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,.08);
+        display: none;
+        max-height: 60vh;
+        overflow: auto;
+      }
+      #ui-visibility-menu label { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+
+
+
+      /* Phần B — Ẩn mặc định nội dung các mục (tránh FOUC), toggle JS sẽ bật khi người dùng bấm */
+      .main-part > .body-part {
+        display: none;               /* không dùng !important để JS có thể hiển thị lại */
+      }
     </style>
+
+    <script>
+      // Áp dụng CSS ẩn ngay khi tải (tránh FOUC)
+      (function(){
+        try {
+          const getBool = (v) => v === 'true' || v === true;
+          const abHidden = getBool(localStorage.getItem('shm.ui.hide.actionButtons'));
+          const css = [];
+          if (abHidden) css.push('#batch-download-btn,#export-abc-csv-btn,#export-all-modes-damage-list-btn,#download-2d-image-btn,#download-3d-chart-btn-section1,#download-3d-chart-btn-section1-normalized,#download-3d-chart-btn-section1-both,#download-charts-btn,#download-charts-test-csv-btn{display:none!important}');
+          if (css.length){
+            const st = document.createElement('style'); st.textContent = css.join('\n'); document.head.appendChild(st);
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <script src="js/ui_visibility_toggle.js?v=ui_vis_v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -39,11 +93,75 @@
         }
       }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script>
+      // Chế độ mật độ giao diện: compact/tight
+      // Key mới: 'shm.ui.densityLevel' = 'normal' | 'compact' | 'tight'
+      (function(){
+        try {
+          var level = localStorage.getItem('shm.ui.densityLevel');
+          // Mặc định dùng 'tight' để giảm chiều cao tối đa
+          if (level === null) level = 'tight';
+          function applyLevel(lv){
+            var isCompact = (lv === 'compact' || lv === 'tight');
+            var isTight = (lv === 'tight');
+            document.body.classList.toggle('density-compact', isCompact);
+            document.body.classList.toggle('tight', isTight);
+          }
+          document.addEventListener('DOMContentLoaded', function(){ applyLevel(level); });
+          // API công khai để đổi nhanh
+          window.setDensityLevel = function(lv){
+            if (!lv) return;
+            localStorage.setItem('shm.ui.densityLevel', lv);
+            applyLevel(lv);
+          };
+          // Tương thích hàm cũ setDensityMode('compact'|'normal')
+          window.setDensityMode = function(mode){
+            var lv = (mode === 'compact') ? 'compact' : 'normal';
+            localStorage.setItem('shm.ui.densityLevel', lv);
+            applyLevel(lv);
+          };
+        } catch(e) {}
+      })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
-  <body>
-    <h1>HỆ THỐNG CHẨN ĐOÁN HƯ HỎNG KẾT CẤU - SHM</h1>
+  <body class="density-compact has-quick-nav">
+    <h1>HỆ THỐNG SHM PHÂN TÍCH</h1>
+    <!-- Nút sổ/thu gọn tất cả mục -->
+    <div class="container" style="margin: 10px 0;">
+    <!-- Thanh điều hướng nhanh tới các mục -->
+    <div class="container-fluid" id="quick-nav" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #fff; padding: 6px 12px; border-bottom: 1px solid #dee2e6; width: 100%;">
+      <span style="margin-right: 8px; font-weight: 600;">Đi tới:</span>
+      <button class="btn btn-outline-secondary btn-sm" onclick="jumpTo('partB1','switchToPartB1')">0</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="jumpTo('partA','switchToPartA')">1</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="jumpTo('partVR','openVRViewer')">5</button>
+    </div>
+
+    <script>
+      // Cuộn mượt tới khu vực có id, tự mở mục nếu đang bị ẩn
+      function jumpTo(targetId, openFnName){
+        try {
+          var el = document.getElementById(targetId);
+          if (!el) return;
+          var isHidden = window.getComputedStyle(el).display === 'none';
+          if (isHidden && typeof window[openFnName] === 'function') {
+            // Gọi hàm mở mục nếu có (các hàm hiện có là kiểu toggle)
+            window[openFnName]();
+          }
+          // Dùng setTimeout để đảm bảo mục đã mở xong trước khi cuộn
+          setTimeout(function(){
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
+        } catch(e) {
+          // Bỏ qua lỗi im lặng để không ảnh hưởng UX
+        }
+      }
+    </script>
+
+      <button id="toggle-all-sections-btn" class="btn btn-outline-secondary btn-sm" onclick="toggleAllSections()">
+        Sổ ra tất cả mục
+      </button>
+    </div>
     <div class="main-part">
       <button onclick="switchToPartB1()" class="button-open">
         0. Mô phỏng hư hỏng
@@ -64,6 +182,7 @@
             />
             <label for="folder-input"
               ><strong>Tải thư mục dữ liệu:</strong></label
+
             >
             <input
               type="file"
@@ -72,43 +191,54 @@
               directory
               multiple
             />
-            <label for="survey-index"
-              ><strong>Nhập phần tử mô phỏng 1:</strong></label
-            >
-            <input type="number" id="survey-index" min="1" />
-            <label for="damage-value"
-              ><strong>Nhập mức độ hư hỏng 1 (%):</strong></label
-            >
-            <input type="number" id="damage-value" min="0" />
-            <label for="survey-index2"
-              ><strong>Nhập phần tử mô phỏng 2:</strong></label
-            >
-            <input type="number" id="survey-index2" min="1" />
-            <label for="damage-value2"
-              ><strong>Nhập mức độ hư hỏng 2 (%):</strong></label
-            >
-            <input type="number" id="damage-value2" min="0" />
-            <label for="survey-index3"
-              ><strong>Nhập phần tử mô phỏng 3:</strong></label
-            >
-            <input type="number" id="survey-index3" min="1" />
-            <label for="damage-value3"
-              ><strong>Nhập mức độ hư hỏng 3 (%):</strong></label
-            >
-            <input type="number" id="damage-value3" min="0" />
-            <button onclick="exportValue()">Xuất dữ liệu</button>
+            <div class="row">
+              <!-- Cột cho Phần tử 1 -->
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="survey-index"><strong>Nhập phần tử mô phỏng 1:</strong></label>
+                  <input type="number" id="survey-index" class="form-control" min="1" />
+                </div>
+                <div class="form-group">
+                  <label for="damage-value"><strong>Nhập mức độ hư hỏng 1 (%):</strong></label>
+                  <input type="number" id="damage-value" class="form-control" min="0" />
+                </div>
+              </div>
+              <!-- Cột cho Phần tử 2 -->
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="survey-index2"><strong>Nhập phần tử mô phỏng 2:</strong></label>
+                  <input type="number" id="survey-index2" class="form-control" min="1" />
+                </div>
+                <div class="form-group">
+                  <label for="damage-value2"><strong>Nhập mức độ hư hỏng 2 (%):</strong></label>
+                  <input type="number" id="damage-value2" class="form-control" min="0" />
+                </div>
+              </div>
+              <!-- Cột cho Phần tử 3 -->
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="survey-index3"><strong>Nhập phần tử mô phỏng 3:</strong></label>
+                  <input type="number" id="survey-index3" class="form-control" min="1" />
+                </div>
+                <div class="form-group">
+                  <label for="damage-value3"><strong>Nhập mức độ hư hỏng 3 (%):</strong></label>
+                  <input type="number" id="damage-value3" class="form-control" min="0" />
+                </div>
+              </div>
+            </div>
+            <button onclick="exportValue()" class="btn btn-primary mt-3">Xuất dữ liệu</button>
           </div>
         </div>
       </div>
     </div>
     <div class="main-part">
       <button onclick="switchToPartA()" class="button-open">
-        1. Chẩn đoán vị trí hư hỏng kết cấu
+        1. Phát hiện vị trí hư hỏng bằng phương pháp hiệu độ cong dạng dao động
       </button>
       <div class="body-part">
         <div id="partA">
           <div class="container">
-            <h1>1. Chẩn đoán vị trí hư hỏng kết cấu</h1>
+            <h1>1. Phát hiện vị trí hư hỏng bằng phương pháp hiệu độ cong dạng dao động</h1>
             <label for="txt-file-non-damaged" style="display: none"
               >Tải dữ liệu dạng dao động (Không hư hỏng, TXT file):</label
             >
@@ -131,13 +261,6 @@
               type="file"
               id="txt-file-simulation"
               accept=".txt"
-              style="display: none"
-            />
-            <input
-              type="file"
-              id="txt-file-training"
-              accept=".txt"
-              multiple
               style="display: none"
             />
             <h2>Thông số chẩn đoán</h2>
@@ -165,18 +288,20 @@
               <option value="18">Mode 18</option>
               <option value="19">Mode 19</option>
               <option value="20">Mode 20</option>
-              <option value="combine">Mode Combine (10+12+14+17+20)</option>
+              <option value="combine">Mode CB</option>
             </select>
             <label for="curvature-multiplier"
               ><strong>Nhập ngưỡng hư hỏng Z₀ (% giá trị Z lớn nhất):</strong></label
             >
-            <input
-              type="number"
-              id="curvature-multiplier"
-              value="50"
-              step="0.1"
-              min="0"
-            />
+            <!-- Đổi từ input number sang select cố định các mức Z₀; giữ nguyên id để tương thích code hiện tại -->
+            <select id="curvature-multiplier">
+              <option value="10">10%</option>
+              <option value="20">20%</option>
+              <option value="30">30%</option>
+              <option value="40" selected>40%</option>
+              <option value="50">50%</option>
+              <option value="60">60%</option>
+            </select>
             <input
               type="number"
               id="poisson-ratio"
@@ -186,18 +311,26 @@
               max="0.5"
               style="display: none;"
             />
-            <label for="element-y"
-              ><strong>Nhập phần tử khảo sát 1:</strong></label
-            >
-            <input type="number" id="element-y" value="1" step="any" min="1" />
-            <label for="element-y-2"
-              ><strong>Nhập phần tử khảo sát 2:</strong></label
-            >
-            <input type="number" id="element-y-2" value="" step="any" min="1" />
-            <label for="element-y-3"
-              ><strong>Nhập phần tử khảo sát 3:</strong></label
-            >
-            <input type="number" id="element-y-3" value="" step="any" min="1" />
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="element-y"><strong>Nhập phần tử khảo sát 1:</strong></label>
+                  <input type="number" id="element-y" value="55" step="any" min="1" class="form-control" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="element-y-2"><strong>Nhập phần tử khảo sát 2:</strong></label>
+                  <input type="number" id="element-y-2" value="" step="any" min="1" class="form-control" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="element-y-3"><strong>Nhập phần tử khảo sát 3:</strong></label>
+                  <input type="number" id="element-y-3" value="" step="any" min="1" class="form-control" />
+                </div>
+              </div>
+            </div>
             <br />
             <div id="input-container" style="display: none">
               <label for="train-value">Giá trị huấn luyện đầu tiên:</label>
@@ -205,32 +338,28 @@
               <label for="step-value">Bước nhảy:</label>
               <input type="number" id="step-value" value="3" step="0.1" />
             </div>
-            <button onclick="processStrainEnergyData()">Tính toán năng lượng biến dạng</button>
+            <button onclick="runCalculationsTwice()" class="btn btn-primary" id="btn-run-calc-section1">Tính toán</button>
+            <button onclick="calculateAllMACs()" style="background-color: #17a2b8; color: white; margin-top: 10px;">Tính MAC</button>
 
-            <!-- Visualization Type Toggle -->
-            <div id="visualization-toggle-container" style="margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8f9fa;">
-              <label style="font-weight: bold; margin-bottom: 10px; display: block;">3D Visualization Type:</label>
-              <div style="display: flex; gap: 20px; align-items: center;">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" id="viz-plotly" name="visualization-type" value="plotly" checked onchange="handleVisualizationTypeChange()" style="margin-right: 5px;">
-                  <span>🌐 Plotly (Interactive)</span>
-                </label>
-                <label for="viz-matplotlib" style="display: flex; align-items: center; cursor: pointer;">
-                  <input type="radio" id="viz-matplotlib" name="visualization-type" value="matplotlib" onchange="handleVisualizationTypeChange()" style="margin-right: 5px;">
-                  <span>📈 Matplotlib (High Quality)</span>
-                </label>
-                <div id="matplotlib-status" style="font-size: 12px; color: #666; margin-left: 10px;">
-                  Checking backend status...
-                </div>
-              </div>
-              <div style="font-size: 11px; color: #666; margin-top: 5px;">
-                💡 Plotly: Interactive 3D charts with zoom/rotate. Matplotlib: High-quality static charts with Times New Roman fonts.
-              </div>
+            <div id="mac-results" style="margin-top: 20px;">
+              <table id="mac-table" class="table" style="display: none;">
+                <thead>
+                  <tr>
+                    <th>Mode</th>
+                    <th>Chỉ số MAC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Results will be inserted here by JavaScript -->
+                </tbody>
+              </table>
             </div>
 
-            <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
-            <button onclick="downloadMultiMode3DChartsTestCSV()" id="download-charts-test-csv-btn" style="background-color: #17a2b8; color: white; margin-top: 10px;">Download Multi-3D (TEST.csv Based)</button>
-            <button onclick="exportCompleteExcelReport()" style="background-color: #198754; color: white; margin-top: 10px;">📊 Xuất Báo Cáo Excel Hoàn Chỉnh</button>
+
+
+            <button onclick="downloadMultiMode3DCharts()" id="download-charts-btn" style="background-color: #28a745; color: white; margin-top: 10px; display: none !important;">Download Multi-Mode 3D Charts</button>
+            <button onclick="downloadMultiMode3DChartsTestCSV()" id="download-charts-test-csv-btn" style="background-color: #17a2b8; color: white; margin-top: 10px; display: none !important;">Download Multi-3D (TEST.csv Based)</button>
+
 
 
 
@@ -250,235 +379,54 @@
                 <div id="excel-progress-text">Calculating metrics for all combinations...</div>
                 <div style="background-color: #ddd; border-radius: 10px; margin-top: 5px;">
                   <div id="excel-progress-bar" style="background-color: #198754; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                            <!-- Threshold Slider -->
+                            <div class="row mt-3 align-items-center">
+                                <div class="col-md-12">
+                                    <label for="threshold-slider" class="form-label fw-bold">DI Threshold: <span id="threshold-value" class="badge bg-secondary">0.01</span></label>
+                                    <input type="range" class="form-range" id="threshold-slider" min="0" max="0.5" step="0.005" value="0.01">
+                                </div>
+                            </div>
                 </div>
                 <div id="excel-progress-details" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
               </div>
             </div>
             <div id="results"></div>
-            <div id="damage3DChart" style="width:1200px; height:900px;"></div>
+            <div id="damage3DChart" style="width:1200px; height:900px; display: none;"></div>
+            <div id="new3DChart_section1" style="width:1000px; height:600px; margin-top: 10px;"></div>
+            <button class="btn btn-success" id="download-3d-chart-btn-section1" onclick="downloadChart3D(1, { variant: 'default' })" style="display: none; margin-top: 10px;">Tải xuống biểu đồ 3D</button>
+            <div id="normalized3DChart_section1" style="width:1000px; height:600px; margin-top: 10px;"></div>
+            <button class="btn btn-success" id="download-3d-chart-btn-section1-normalized" onclick="downloadChart3D(1, { variant: 'normalized' })" style="display: none; margin-top: 10px;">Tải xuống biểu đồ 3D (Chuẩn hóa)</button>
+            <button class="btn btn-success" id="download-3d-chart-btn-section1-both" onclick="downloadBothChartsSection1()" style="display: none; margin-top: 10px;">Tải xuống cả hai biểu đồ 3D</button>
+            <button class="btn btn-primary" id="batch-download-btn" onclick="runBatchDownload()" style="margin-top: 10px;">Tải 5 ngưỡng (10-50%)</button>
+            <button class="btn btn-info" id="export-abc-csv-btn" onclick="exportABC_CSV()" style="margin-top: 10px;">Xuất báo cáo CSV (A, B, C)</button>
           </div>
         </div>
       </div>
     </div>
     <div class="main-part">
-      <button
-        onclick="switchToPartB();"
-        class="button-open"
-        title="Click để mở Section 2"
-      >
-        2. Chẩn đoán mức độ hư hỏng kết cấu
+      <button onclick="openVRViewer()" class="button-open">
+        5. Mô hình VR tích hợp Digital Twin
       </button>
       <div class="body-part">
-        <div id="partB" class="body-part">
+        <div id="partVR" class="body-part" style="display: none;">
           <div class="container">
-            <h1>2. Chẩn đoán mức độ hư hỏng kết cấu</h1>
+            <h1>5. Mô hình VR tích hợp Digital Twin</h1>
 
-            <!-- Hiển thị danh sách phần tử hư hỏng từ mục 1 -->
-            <div class="form-group mb-3">
-              <label class="form-label">
-                <strong>Danh sách phần tử hư hỏng (từ mục 1):</strong>
-              </label>
-              <div
-                id="damagedElementsDisplay"
-                class="form-control-plaintext"
-                style="background-color: #f8f9fa; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; max-width: 400px;"
-              >
-                <span id="damagedElementsText">Chưa có dữ liệu từ mục 1</span>
-              </div>
-              <small class="form-text text-muted">
-                Dữ liệu được lấy tự động từ kết quả phân tích mục 1. Phần tử có damage cao nhất sẽ được ưu tiên.
-              </small>
-            </div>
-
-            <div class="form-group">
-              <label for="trainFile" style="display: none"
-                >Tải dữ liệu huấn luyện (.csv):</label
-              >
-              <input
-                type="file"
-                id="trainFile"
-                class="form-control"
-                accept=".csv"
-                style="display: none"
-              />
-            </div>
-            <div class="form-group">
-              <label for="testFile" style="display: none"
-                >Tải dữ liệu chẩn đoán (.csv):</label
-              >
-              <input
-                type="file"
-                id="testFile"
-                class="form-control"
-                accept=".csv"
-                style="display: none"
-              />
-            </div>
-            <!-- ✅ REMOVED: fileInputTest - Section 2 now uses txt-file-damaged directly -->
-            <!-- TEST.txt input no longer needed as Section 2 uses Damage.txt from Section 1 -->
-            <button
-              class="btn btn-primary"
-              id="trainButton"
-              onclick="trainModel()"
-              style="display: none"
-            >
-              Huấn luyện dữ liệu
+            <button onclick="openVRViewerWindow()" class="btn btn-primary" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
+              Mở trình xem VR
             </button>
-            <button
-              class="btn btn-success"
-              id="predictButton"
-              onclick="predict()"
-              style="display: none"
-            >
-              Dự đoán mức độ hư hỏng
-            </button>
-            <button class="btn btn-info" onclick="trainAndPredict()">
-              Dự đoán mức độ hư hỏng
-            </button>
-            <div class="progress mt-3" id="progressBar" style="display: none">
-              <div
-                class="progress-bar progress-bar-striped progress-bar-animated"
-                role="progressbar"
-                style="width: 0%"
-                id="progress"
-              ></div>
-            </div>
-            <table
-              class="table table-bordered mt-4"
-              id="resultsTable"
-              style="display: none"
-            >
-              <thead>
-                <tr>
-                  <th>Phần tử 284</th>
-                  <th>Phần tử 285</th>
-                  <th>Phần tử 286</th>
-                </tr>
-              </thead>
-              <tbody id="resultsBody"></tbody>
-            </table>
-            <div class="chart-container">
-              <canvas id="predictionChart"></canvas>
-            </div>
-            <div id="prediction3DChart"></div>
-            <div id="lowValuesList" hidden>
-              <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
-              <ul id="lowValues"></ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-part">
-      <button onclick="switchToPartB4();processDataX();" class="button-open">
-        3. Cải thiện độ chính xác chẩn đoán kết cấu
-      </button>
-      <div class="body-part">
-        <div id="partB4" class="body-part">
-          <div class="container">
-            <h1>3. Cải thiện độ chính xác chẩn đoán kết cấu</h1>
-            <p>Sử dụng giá trị thickness từ Simulation.txt để dự đoán mức độ hư hỏng</p>
-
-            <button onclick="trainAndPredictSection3()" class="btn btn-primary">
-              Dự đoán mức độ hư hỏng kết cấu
+            <button onclick="openVRViewerNewTab()" class="btn btn-secondary" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
+              Mở trong cửa sổ mới
             </button>
 
-            <div class="progress-container" style="margin-top: 20px;">
-              <div class="progress-bar" id="progressSection3"></div>
-            </div>
-
-            <!-- Dedicated Section 3 elements -->
-            <table class="table table-bordered mt-4" id="resultsTableSection3" style="display: none">
-              <thead>
-                <tr></tr>
-              </thead>
-              <tbody id="resultsBodySection3"></tbody>
-            </table>
-
-            <div class="chart-container">
-              <canvas id="predictionChartSection3"></canvas>
-            </div>
-
-            <div id="prediction3DChartSection3"></div>
-
-            <div id="lowValuesListSection3" hidden>
-              <h3>Các phần tử có mức độ hư hỏng dưới 5%:</h3>
-              <ul id="lowValuesSection3"></ul>
-            </div>
-
-            <button onclick="downloadMultiMode3DChartsSection3()" id="download-charts-btn-section3" style="background-color: #28a745; color: white; margin-top: 10px;">Download Multi-Mode 3D Charts</button>
-
-            <div id="download-progress-section3" style="margin-top: 10px; display: none;">
-              <div style="background-color: #f0f0f0; border-radius: 5px; padding: 10px;">
-                <div id="progress-text-section3">Preparing download...</div>
-                <div style="background-color: #e9ecef; border-radius: 3px; height: 20px; margin-top: 5px;">
-                  <div id="progress-bar-section3" style="background-color: #28a745; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onclick="processDataX()"
-              style="visibility: hidden; position: absolute"
-            >
-              Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
-            </button>
-            <div id="resultsX4"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-part">
-      <button onclick="switchToPartB3();processDataX();" class="button-open">
-        4. Cải thiện kết quả chẩn đoán kết cấu
-      </button>
-      <div class="body-part">
-        <div id="partB3" class="body-part">
-          <div class="container">
-            <h1>4. Cải thiện kết quả chẩn đoán kết cấu</h1>
-            <button
-              onclick="processDataX()"
-              style="visibility: hidden; position: absolute"
-            >
-              Cải thiện chỉ số đánh giá độ chính xác chẩn đoán
-            </button>
-            <div id="resultsX"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="main-part">
-      <button onclick="openIFCViewer()" class="button-open">
-        5. Xem mô hình IFC 3D
-      </button>
-      <div class="body-part">
-        <div id="partIFC" class="body-part">
-          <div class="container">
-            <h1>5. Xem mô hình IFC 3D</h1>
-            <p>Truy cập vào trình xem mô hình IFC 3D để visualize kết cấu công trình</p>
-            <button onclick="openIFCViewerWindow()" class="btn btn-primary" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
-              🏗️ Mở IFC Viewer
-            </button>
-            <button onclick="openIFCViewerNewTab()" class="btn btn-secondary" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px 5px;">
-              🔗 Mở trong Tab Mới
-            </button>
-            <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
-              <h5>📋 Hướng dẫn sử dụng:</h5>
-              <ul style="margin-bottom: 0;">
-                <li>Click "Mở IFC Viewer" để xem mô hình trong cửa sổ hiện tại</li>
-                <li>Click "Mở trong Tab Mới" để xem mô hình trong tab mới</li>
-                <li>Sử dụng chuột để xoay, zoom và di chuyển mô hình 3D</li>
-                <li>Sử dụng các công cụ trong toolbar để đo đạc và phân tích</li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
     </div>
     <script src="js/switch.js"></script>
-    <script src="js/test_switch_functions.js"></script>
-    <script src="js/calculations.js"></script>
-    <script src="js/matplotlib_3d_integration.js"></script>
+    <script src="js/new3DPlot.js"></script>
+    <script src="js/calculations.js?v=SRSS_fix_4_csv_recalc"></script>
+
 
     <!-- ✅ EMERGENCY FIX: Ensure switchToPartB1 function exists -->
     <script>
@@ -504,48 +452,49 @@
 
       }
 
-      // IFC Viewer functions
-      function openIFCViewer() {
-        var partIFC = document.getElementById("partIFC");
-        if (partIFC) {
-          partIFC.style.display = partIFC.style.display === "block" ? "none" : "block";
+      // VR Viewer functions
+      function openVRViewer() {
+        var partVR = document.getElementById("partVR");
+        if (partVR) {
+          partVR.style.display = partVR.style.display === "block" ? "none" : "block";
         }
       }
 
-      function openIFCViewerWindow() {
-        // Navigate to IFC viewer in current window
-        window.location.href = '/viewer/index.html?projectId=PhuDien';
+      function openVRViewerWindow() {
+        // Navigate to VR viewer in current window
+        window.location.href = 'http://localhost:8080/app/index.html?projectId=SHM_STR_UPDATED';
       }
 
-      function openIFCViewerNewTab() {
-        // Open IFC viewer in new tab
-        window.open('/viewer/index.html?projectId=PhuDien', '_blank');
+      function openVRViewerNewTab() {
+        // Open VR viewer in new tab
+        window.open('http://localhost:8080/app/index.html?projectId=SHM_STR_UPDATED', '_blank');
       }
 
       // Make functions globally available
-      window.openIFCViewer = openIFCViewer;
-      window.openIFCViewerWindow = openIFCViewerWindow;
-      window.openIFCViewerNewTab = openIFCViewerNewTab;
+      window.openVRViewer = openVRViewer;
+      window.openVRViewerWindow = openVRViewerWindow;
+      window.openVRViewerNewTab = openVRViewerNewTab;
+
     </script>
-    <script src="js/fileHandling.js"></script>
-    <script src="js/chartProcessing.js"></script>
-    <script src="js/trainPredict.js"></script>
-    <script src="js/TestShm.js"></script>
+    <script src="js/fileHandling.js?v=final_cleanup"></script>
+    <script src="js/chartProcessing.js?v=final_cleanup"></script>
+    <script src="js/simulation_parser.js?v=final_cleanup"></script>
+    <!-- 3D Chart Download Feature -->
+    <script src="js/download_3d_chart.js?v=download_v8"></script>
+    <!-- Toggle all sections feature -->
+    <script src="js/toggle_sections.js?v=toggle_v1"></script>
+
+
+    <!-- Disabled all non-essential and debug scripts to prevent conflicts -->
+    <!--
     <script src="js/di_values_fix.js"></script>
     <script src="js/silent_csv_fix.js"></script>
-    <script src="js/train_csv_generator.js"></script>
     <script src="js/test_train_csv.js"></script>
     <script src="js/integrated_csv_generator.js"></script>
     <script src="js/safe_csv_wrapper.js"></script>
-
-
-
-
-
     <script src="js/enhanced_train_csv.js"></script>
     <script src="js/integrated_dynamic_csv.js"></script>
     <script src="js/fallback_csv_generator.js"></script>
-
     <script src="js/test_training_case_detection.js"></script>
     <script src="js/dynamic_csv_interface.js"></script>
     <script src="js/immediate_toggle_test.js"></script>
@@ -555,7 +504,6 @@
     <script src="js/test_damage_txt_integration.js"></script>
     <script src="js/analyze_section2_data_requirements.js"></script>
     <script src="js/show_test_csv_format.js"></script>
-    <script src="js/simulation_parser.js"></script>
     <script src="js/test_simulation_mapping.js"></script>
     <script src="js/debug_uz_values.js"></script>
     <script src="js/test_element_40_di3.js"></script>
@@ -578,6 +526,7 @@
     <script src="js/apply_immediate_fix.js"></script>
     <script src="js/quick_fix.js"></script>
     <script src="js/test_di_calculation.js"></script>
+    -->
 
     <!-- Debug tools available in console if needed -->
     <script>
@@ -586,9 +535,55 @@
         // - createImmediateFixReport() - Test toggle functions
         // - createLayoutTestReport() - Test section layout
         // - createTextAlignmentReport() - Test text alignment
-        
-        
+
+
       });
     </script>
+
+    <script>
+      function callNew3DPlotForSection1() {
+        if (!window.strainEnergyResults) return; // Exit if no data
+        // The Z0 value is already inside window.strainEnergyResults
+        drawStyled3DBarChart('new3DChart_section1', window.strainEnergyResults, 'Biểu đồ 3D - Vị trí hư hỏng', { showPercentages: false, zAxisRange: [0, 10], zAspect: 1 });
+      }
+
+      function callNormalized3DPlotForSection1() {
+        if (!window.strainEnergyResults) return; // Exit if no data
+
+        const originalData = window.strainEnergyResults;
+        const normalizedZ = {};
+        const Z0 = originalData.Z0 || 0;
+
+        for (const id in originalData.z) {
+            normalizedZ[id] = originalData.z[id] < Z0 ? 0 : originalData.z[id];
+        }
+
+        const normalizedChartData = {
+            ...originalData,
+            z: normalizedZ
+        };
+
+        drawStyled3DBarChart('normalized3DChart_section1', normalizedChartData, 'Biểu đồ 3D chuẩn hóa - Vị trí hư hỏng', { showPercentages: false, zAxisRange: [0, 10], zAspect: 1 });
+      }
+
+    </script>
+
+    <!-- Bộ điều khiển ẩn/hiện nhanh — dời xuống cuối trang -->
+    <div class="container d-flex justify-content-end align-items-center" style="margin: 10px 0;">
+      <div class="ui-visibility-wrap">
+        <button id="ui-visibility-toggle-btn" class="btn btn-outline-secondary btn-sm" type="button"
+                aria-haspopup="true" aria-controls="ui-visibility-menu" aria-expanded="false"
+                title="Ẩn/hiện nhanh các mục giao diện">
+          Tùy chọn hiển thị
+        </button>
+        <div id="ui-visibility-menu" class="dropdown-menu p-2" role="menu" aria-labelledby="ui-visibility-toggle-btn">
+          <div class="form-check" role="menuitem">
+            <input class="form-check-input" type="checkbox" id="chk-hide-action-buttons" aria-controls="action-buttons-container" />
+            <label class="form-check-label" for="chk-hide-action-buttons">Ẩn nhóm nút hành động</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

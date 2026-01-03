@@ -32,6 +32,7 @@ function parseSimulationFile(simulationContent) {
   const lines = contentString.trim().split('\n');
   const simulationData = {};
   let currentElementID = null;
+  window.simulationElementIds = []; // ✅ Initialize/clear the global array
   
   console.log(`📊 Processing ${lines.length} lines from Simulation.txt`);
   
@@ -43,6 +44,7 @@ function parseSimulationFile(simulationContent) {
       const idMatch = line.match(/ID:\s*(\d+)/);
       if (idMatch) {
         currentElementID = parseInt(idMatch[1]);
+        window.simulationElementIds.push(currentElementID); // ✅ Store the ID
         console.log(`🔍 Found element ID: ${currentElementID}`);
       }
     }

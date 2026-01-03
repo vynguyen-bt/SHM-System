@@ -6,17 +6,18 @@ const PORT = process.env.PORT || 8080;
 const config = require('./config');
 
 let app = express();
-app.use(express.static('src'));
-app.use(express.static('src', { 'extensions': ['html', 'js'] }));
+
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-
 app.use(express.json({ limit: '50mb' }));
+
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err);
-    res.status(err.statusCode).json(err);
+    res.status(err.statusCode || 500).json({ error: err.message });
 });
+
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on port ${PORT}`);

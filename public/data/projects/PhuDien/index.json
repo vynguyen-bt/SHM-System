@@ -1,0 +1,10 @@
+{
+  "id": "PhuDien",
+  "models": [
+    {
+      "id": "PhuDien_NTVY_Model",
+      "name": "Phu Dien NTVY Model",
+      "origin": [0,0,0]
+    }
+  ]
+}

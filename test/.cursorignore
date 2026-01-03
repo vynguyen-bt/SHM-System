@@ -1,0 +1,14 @@
+# Bỏ qua thư mục thư viện
+node_modules/
+venv/
+.git/
+
+# Bỏ qua file dữ liệu lớn & Assets (để tiết kiệm token và tăng tốc độ)
+*.csv
+*.xlsx
+*.pdf
+*.png
+*.jpg
+*.zip
+*.rvt  # Nếu bạn làm BIM/Revit
+*.las  # Nếu bạn làm Point cloud
